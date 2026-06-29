@@ -9,6 +9,7 @@ import AboutPage from "../pages/AboutPage";
 import AdmissionPage from "../pages/AdmissionPage";
 import ContactPage from "../pages/ContactPage";
 import Auth from "../pages/Auth";
+import EtudiantsInscription from "../feature/auth/pages/EtudiantsInscription";
 
 export default function AppRoutes() {
   return (
@@ -24,6 +25,7 @@ export default function AppRoutes() {
         <Route path="/admin" element={<DashboardLayout />} />
         <Route path="/etudiants" element={<DashboardEtudiants />} />
         <Route path="/enseignants" element={<DashboardEnseignants />} />
+        <Route path="/Inscriptions" element={<EtudiantsInscription />} />
       </Routes>
     </BrowserRouter>
   );

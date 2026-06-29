@@ -1,0 +1,131 @@
+@import "tailwindcss";
+
+/* ==========================
+   THEME LIGHT
+========================== */
+
+:root {
+  --bg: #f5f7f9;
+  --card: #ffffff;
+  --text: #111827;
+  --border: #e5e7eb;
+  --primary: #0b7a3b;
+}
+
+/* ==========================
+   THEME DARK
+========================== */
+
+.dark {
+  --bg: #050505;
+  --card: #111111;
+  --text: #ffffff;
+  --border: #262626;
+  --primary: #16a34a;
+}
+
+/* ==========================
+   BASE
+========================== */
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  transition:
+    background-color 0.4s ease,
+    color 0.4s ease;
+}
+
+/* ==========================
+   ANIMATIONS
+========================== */
+
+@theme {
+
+  --animate-float: float 6s ease-in-out infinite;
+
+  --animate-fade-up: fadeUp 0.8s ease forwards;
+
+  --animate-fade-in: fadeIn 0.8s ease forwards;
+
+  --animate-pulse-slow: pulseSlow 3s infinite;
+
+}
+
+/* ==========================
+   KEYFRAMES
+========================== */
+
+@keyframes float {
+  0%,100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSlow {
+  0%,100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+/* ==========================
+   UTILITIES PERSONNALISÉES
+========================== */
+
+@layer utilities {
+
+  .glass {
+    backdrop-filter: blur(12px);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+
+  .card-hover {
+    transition: all 0.4s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-8px);
+  }
+
+  .text-gradient {
+    background: linear-gradient(
+      to right,
+      #16a34a,
+      #22c55e
+    );
+
+    -webkit-background-clip: text;
+    color: transparent;
+  }
+}

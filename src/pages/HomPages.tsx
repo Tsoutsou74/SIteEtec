@@ -27,10 +27,6 @@ export default function HomPages() {
 
         <FiliersPage />
 
-        <AdmissionPage />
-
-        <ContactPage />
-
       </div>
     </>
   );

@@ -23,7 +23,7 @@ export default function HomPages() {
         
         <AboutPage />
 
-        <NewsPage />
+        <NewsPage /> 
 
         <FiliersPage />
 

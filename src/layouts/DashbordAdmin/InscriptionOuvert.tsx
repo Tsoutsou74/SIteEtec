@@ -1,0 +1,1 @@
+InscriptionOuvert.tsx

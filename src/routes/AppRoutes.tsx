@@ -10,7 +10,18 @@ import AdmissionPage from "../pages/AdmissionPage";
 import ContactPage from "../pages/ContactPage";
 import Auth from "../pages/Auth";
 import EtudiantsInscription from "../feature/auth/pages/EtudiantsInscription";
+import FiliersPage from "../pages/FiliersPage";
 
+// ── Espace étudiant ────────────────────────────────────
+import DashboardEtudiant from "../layouts/DashboardEtudiants";
+import EtudiantHome               from "../layouts/DashboardEtud/etudiant";
+import MesNotes               from "../layouts/DashboardEtud/etudiantNotes";
+import EmploiDuTemps          from "../layouts/DashboardEtud/employeDuTemps";
+import MesCours                from "../layouts/DashboardEtud/cours";
+import Documents               from "../layouts/DashboardEtud/documents";
+import Resultats                from "../layouts/DashboardEtud/resultats";
+import NotificationsEtudiant   from "../layouts/DashboardEtud/notifications";
+import ParametresEtudiant       from "../layouts/DashboardEtud/parametres";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -21,11 +32,29 @@ export default function AppRoutes() {
           <Route path="admission" element={<AdmissionPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="log_in" element={<Auth />} />
+          <Route path="/Inscriptions" element={<EtudiantsInscription />} />
+          <Route path="/formations" element={<FiliersPage />} />
         </Route>
+
+      // ── Route admin ────────────────────────────────────
         <Route path="/admin" element={<DashboardLayout />} />
-        <Route path="/etudiants" element={<DashboardEtudiants />} />
+
+
+      // ── Route étudiant ────────────────────────────────────
+         <Route path="/etudiants" element={<DashboardEtudiant />}>
+          <Route index                  element={<EtudiantHome />} />
+          <Route path="notes"           element={<MesNotes />} />
+          <Route path="edt"             element={<EmploiDuTemps />} />
+          <Route path="cours"           element={<MesCours />} />
+          <Route path="documents"       element={<Documents />} />
+          <Route path="resultats"       element={<Resultats />} />
+          <Route path="notifications"   element={<NotificationsEtudiant />} />
+          <Route path="parametres"      element={<ParametresEtudiant />} />
+        </Route>
+
+
+      // ── Route enseignant ────────────────────────────────────
         <Route path="/enseignants" element={<DashboardEnseignants />} />
-        <Route path="/Inscriptions" element={<EtudiantsInscription />} />
       </Routes>
     </BrowserRouter>
   );

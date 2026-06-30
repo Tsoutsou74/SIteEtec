@@ -49,7 +49,7 @@ export default function InscriptionEtudiants() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center p-4 md:p-8" style={{ backgroundColor: contentBg, color: 'var(--text)' }}>
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 pt-30" style={{ backgroundColor: contentBg, color: 'var(--text)' }}>
       <div className="w-full max-w-2xl rounded-2xl border p-6 md:p-8 shadow-xl transition-all duration-300"
         style={{ backgroundColor: cardBg, borderColor: borderCol }}>
         

@@ -68,6 +68,7 @@ const NAV_ITEMS: NavItem[] = [
       { label: 'Liste des étudiants', key: 'etudiants-liste' },
       { label: 'Inscriptions',        key: 'etudiants-inscriptions' },
       { label: 'Résultats',           key: 'etudiants-resultats' },
+      { label: 'Emplois du temps',    key: 'emploies_du_temps' },
     ],
   },
   {

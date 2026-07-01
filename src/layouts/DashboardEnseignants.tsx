@@ -21,7 +21,7 @@ const performanceClasses = [
   { matiere: 'Design (L1)',  moyenne: 14.5 },
 ];
 
-const participationData = [
+const participationData = [  
   { mois: 'Jan', presence: 94 },
   { mois: 'Fév', presence: 92 },
   { mois: 'Mar', presence: 89 },

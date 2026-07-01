@@ -2,7 +2,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import MainLayout from "../layouts/MainLayout";
 import DashboardLayout from '../layouts/DashboardLayout';
-import DashboardEtudiants from '../layouts/DashboardEtudiants';
 import DashboardEnseignants from '../layouts/DashboardEnseignants';
 import HomPages from "../pages/HomPages";
 import AboutPage from "../pages/AboutPage";
@@ -11,6 +10,35 @@ import ContactPage from "../pages/ContactPage";
 import Auth from "../pages/Auth";
 import EtudiantsInscription from "../feature/auth/pages/EtudiantsInscription";
 import FiliersPage from "../pages/FiliersPage";
+
+// ── Espace Administration ────────────────────────────────────
+
+import AdminHome from "../layouts/DashbordAdmin/AdminHome";
+
+import AdminEtudiants from "../layouts/DashbordAdmin/Etudiants/AdmineEtudiants";
+import Inscriptions from "../layouts/DashbordAdmin/Etudiants/Inscriptions";
+import AResultats from "../layouts/DashbordAdmin/Etudiants/Resultats";
+import LDT from "../layouts/DashbordAdmin/Etudiants/ListeDEtudiants";
+import EDT from "../layouts/DashbordAdmin/Etudiants/EmploisDuTemps";
+
+// import AdminFormations from "../layouts/DashboardAdmin/AdminFormations";
+
+import Enseignants from "../layouts/DashbordAdmin/Enseignant/AdminEnseignants";
+import EMDTE from "../layouts/DashbordAdmin/Enseignant/EmploisDTemps";
+
+import Programmes from "../layouts/DashbordAdmin/Formations/Programmes";
+import Modules from "../layouts/DashbordAdmin/Formations/Modules";
+import Filiers from "../layouts/DashbordAdmin/Formations/Filiers";
+
+import EmploisDTemps from "../layouts/DashbordAdmin/EmploisDTemps";
+import NotesResultats from "../layouts/DashbordAdmin/Notes&Resultats";
+import Actualites from "../layouts/DashbordAdmin/Actualites";
+import Campus from "../layouts/DashbordAdmin/campus";
+import Statistiques from "../layouts/DashbordAdmin/Statistiques";
+import Notifications from "../layouts/DashbordAdmin/Notifications";
+import Parametres from "../layouts/DashbordAdmin/Parametres";
+
+
 
 // ── Espace étudiant ────────────────────────────────────
 import DashboardEtudiant from "../layouts/DashboardEtudiants";
@@ -22,6 +50,8 @@ import Documents               from "../layouts/DashboardEtud/documents";
 import Resultats                from "../layouts/DashboardEtud/resultats";
 import NotificationsEtudiant   from "../layouts/DashboardEtud/notifications";
 import ParametresEtudiant       from "../layouts/DashboardEtud/parametres";
+
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -37,8 +67,28 @@ export default function AppRoutes() {
         </Route>
 
       // ── Route admin ────────────────────────────────────
-        <Route path="/admin" element={<DashboardLayout />} />
+        
+        <Route path="/admin" element={<DashboardLayout />}>
+          <Route index                             element={<AdminHome />} />
+          <Route path="etudiants"                  element={<AdminEtudiants />} />
+          <Route path="Etudiants/inscriptions"     element={<Inscriptions />} />
+          <Route path="Etudiants/resultats"        element={<AResultats />} />
+          <Route path="Enseignant/AdmineEnseignants"        element={<Enseignants />} />
+          <Route path="Enseignant/EmploisDTemps"            element={<EMDTE />} />
 
+          <Route path="Formations/Programmes"      element={<Programmes />} />
+          <Route path="Formations/Modules"         element={<Modules />} />
+          <Route path="Formations/Filiers"         element={<Modules />} />
+
+          <Route path="edt"                        element={<EDT />} />
+          <Route path="Notes&Resultats"                     element={<NotesResultats />} />
+          <Route path="actualites"                 element={<Actualites />} />
+          <Route path="campus"                     element={<Campus />} />
+          <Route path="statistiques"               element={<Statistiques />} />
+          <Route path="notifications"              element={<Notifications />} />
+          <Route path="parametres"                 element={<Parametres />} />
+        </Route>
+ 
 
       // ── Route étudiant ────────────────────────────────────
          <Route path="/etudiants" element={<DashboardEtudiant />}>

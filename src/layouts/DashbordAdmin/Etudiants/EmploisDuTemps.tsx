@@ -1,41 +1,46 @@
 import React, { useState } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import {
-  Search, Plus, Pencil, Trash2, X, Save,
-  Clock, BookOpen, MapPin, GraduationCap, CheckCircle
+  Search, Plus, Eye, Pencil, Trash2, X, Save,
+  Calendar, Clock, BookOpen, MapPin, User, CheckCircle
 } from 'lucide-react';
 
+type Filiere = 'Génie Logiciel' | 'Administration' | 'BTP' | 'Électromécanique';
+const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
+const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
 const JOURS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
 const HEURES = ['08:00', '10:00', '14:00', '16:00'];
-const ENSEIGNANTS = ['Dr. ANDRIA', 'Mme RASOA', 'M. RAKOTO', 'Mme MIORA'];
 
-interface CoursEnseignant {
+interface CoursEtudiant {
   id: number;
-  enseignant: string;
+  filiere: Filiere;
+  niveau: string;
   jour: string;
   heureDebut: string;
   matiere: string;
-  filiere: string;
-  niveau: string;
+  enseignant: string;
   salle: string;
+  annee: string;
 }
 
-const INITIAL_COURS: CoursEnseignant[] = [
-  { id: 1, enseignant: 'Dr. ANDRIA', jour: 'Mardi', heureDebut: '10:00', matiere: 'Algorithmique Avancée', filiere: 'Génie Logiciel', niveau: 'L1', salle: 'Amphi B' },
+const INITIAL_COURS: CoursEtudiant[] = [
+  { id: 1, filiere: 'Génie Logiciel', niveau: 'L3', jour: 'Lundi', heureDebut: '08:00', matiere: 'Développement Full-Stack', enseignant: 'M. RAKOTO', salle: 'Salle Lab 4', annee: '2026–2027' },
+  { id: 2, filiere: 'Génie Logiciel', niveau: 'L3', jour: 'Mercredi', heureDebut: '14:00', matiere: 'Architecture Microservices', enseignant: 'Mme RASOA', salle: 'Amphi A', annee: '2026–2027' },
 ];
 
 const EMPTY_FORM = {
-  enseignant: 'Dr. ANDRIA', jour: 'Lundi', heureDebut: '08:00',
-  matiere: '', filiere: 'Génie Logiciel', niveau: 'L1', salle: ''
+  filiere: 'Génie Logiciel' as Filiere, niveau: 'L1', jour: 'Lundi',
+  heureDebut: '08:00', matiere: '', enseignant: '', salle: '', annee: '2026–2027'
 };
 
-export default function EmploisDTemps() {
+export default function AdminEmploisDuTempsEtudiants() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<CoursEnseignant[]>(INITIAL_COURS);
-  const [selectedEnseignant, setSelectedEnseignant] = useState<string>('Dr. ANDRIA');
+  const [data, setData] = useState<CoursEtudiant[]>(INITIAL_COURS);
+  const [filtreFiliere, setFiltreFiliere] = useState<Filiere>('Génie Logiciel');
+  const [filtreNiveau, setFiltreNiveau] = useState<string>('L3');
 
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
-  const [selected, setSelected] = useState<CoursEnseignant | null>(null);
+  const [selected, setSelected] = useState<CoursEtudiant | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saved, setSaved] = useState(false);
@@ -52,14 +57,14 @@ export default function EmploisDTemps() {
     color: 'var(--text)',
   };
 
-  const currentSlots = data.filter(e => e.enseignant === selectedEnseignant);
+  const currentSlots = data.filter(e => e.filiere === filtreFiliere && e.niveau === filtreNiveau);
 
   const openAdd = (jour: string, heure: string) => {
-    setForm({ ...EMPTY_FORM, enseignant: selectedEnseignant, jour, heureDebut: heure });
+    setForm({ ...EMPTY_FORM, filiere: filtreFiliere, niveau: filtreNiveau, jour, heureDebut: heure });
     setModalMode('add');
   };
 
-  const openEdit = (e: CoursEnseignant) => {
+  const openEdit = (e: CoursEtudiant) => {
     const { id, ...rest } = e;
     setForm(rest);
     setSelected(e);
@@ -92,27 +97,31 @@ export default function EmploisDTemps() {
     <div className="space-y-5">
       {saved && (
         <div className="fixed top-20 right-6 z-[300] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white bg-green-500">
-          <CheckCircle size={15} /> Emploi du temps enseignant mis à jour
+          <CheckCircle size={15} /> Emploi du temps mis à jour
         </div>
       )}
 
       {/* En-tête */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl md:text-2xl font-black tracking-tight">Emploi du temps · Enseignants</h1>
-          <p className="text-xs opacity-45 mt-1">Gestion des charges horaires des professeurs</p>
+          <h1 className="text-xl md:text-2xl font-black tracking-tight">Emploi du temps · Étudiants</h1>
+          <p className="text-xs opacity-45 mt-1">Planification des cours par classe</p>
         </div>
       </div>
 
-      {/* Sélection de l'enseignant */}
+      {/* Sélection de la classe */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <select value={selectedEnseignant} onChange={e => setSelectedEnseignant(e.target.value)}
-          className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none w-full sm:w-72" style={inputStyle}>
-          {ENSEIGNANTS.map(p => <option key={p} value={p}>{p}</option>)}
+        <select value={filtreFiliere} onChange={e => setFiltreFiliere(e.target.value as Filiere)}
+          className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none" style={inputStyle}>
+          {FILIERES.map(f => <option key={f} value={f}>{f}</option>)}
+        </select>
+        <select value={filtreNiveau} onChange={e => setFiltreNiveau(e.target.value)}
+          className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none" style={inputStyle}>
+          {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
         </select>
       </div>
 
-      {/* Grille */}
+      {/* Grille de l'emploi du temps */}
       <div className="rounded-2xl border overflow-hidden" style={cardStyle}>
         <div className="overflow-x-auto">
           <div className="min-w-[900px] grid grid-cols-7 gap-px bg-[var(--border)]">
@@ -127,12 +136,12 @@ export default function EmploisDTemps() {
                   return (
                     <div key={`${jour}-${heure}`} className="p-2 min-h-[110px] bg-[var(--card)] transition hover:bg-black/5 flex flex-col justify-between group border-b border-r border-[var(--border)]">
                       {cours ? (
-                        <div className="p-2 rounded-xl h-full flex flex-col justify-between text-[11px] bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                        <div className="p-2 rounded-xl h-full flex flex-col justify-between text-[11px] bg-blue-500/10 text-blue-500 border border-blue-500/20">
                           <div>
                             <p className="font-black leading-tight line-clamp-2">{cours.matiere}</p>
-                            <p className="opacity-75 mt-0.5 flex items-center gap-0.5"><GraduationCap size={10} /> {cours.filiere} {cours.niveau}</p>
+                            <p className="opacity-75 mt-0.5 flex items-center gap-0.5"><User size={10} /> {cours.enseignant}</p>
                           </div>
-                          <div className="flex items-center justify-between mt-2 pt-1 border-t border-purple-500/10">
+                          <div className="flex items-center justify-between mt-2 pt-1 border-t border-blue-500/10">
                             <span className="font-mono opacity-90 flex items-center gap-0.5"><MapPin size={10} /> {cours.salle}</span>
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button onClick={() => openEdit(cours)} className="p-1 rounded bg-[var(--card)] border border-[var(--border)] text-amber-500"><Pencil size={10} /></button>
@@ -142,7 +151,7 @@ export default function EmploisDTemps() {
                         </div>
                       ) : (
                         <button onClick={() => openAdd(jour, heure)} className="w-full h-full rounded-xl border border-dashed border-[var(--border)] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all text-xs gap-1 text-[var(--text)]">
-                          <Plus size={12} /> Assigner
+                          <Plus size={12} /> Ajouter
                         </button>
                       )}
                     </div>
@@ -159,32 +168,32 @@ export default function EmploisDTemps() {
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
           <div className="w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden" style={cardStyle}>
             <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <h2 className="text-sm font-black">{modalMode === 'add' ? '➕ Assigner un cours' : '✏️ Modifier l\'affectation'}</h2>
+              <h2 className="text-sm font-black">{modalMode === 'add' ? '➕ Ajouter un cours' : '✏️ Modifier le cours'}</h2>
               <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Matière</label>
-                <input name="matiere" value={form.matiere} onChange={handleChange} placeholder="ex: Architecture Système" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Nom de la Matière</label>
+                <input name="matiere" value={form.matiere} onChange={handleChange} placeholder="ex: Programmation Web" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Enseignant</label>
+                <input name="enseignant" value={form.enseignant} onChange={handleChange} placeholder="ex: Dr. ANDRIA" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Filière</label>
-                  <input name="filiere" value={form.filiere} onChange={handleChange} placeholder="ex: Génie Logiciel" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Salle</label>
+                  <input name="salle" value={form.salle} onChange={handleChange} placeholder="ex: Salle 102" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Niveau</label>
-                  <input name="niveau" value={form.niveau} onChange={handleChange} placeholder="ex: M1" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Année Académique</label>
+                  <input name="annee" value={form.annee} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Salle de classe</label>
-                <input name="salle" value={form.salle} onChange={handleChange} placeholder="ex: Amphi Principal" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
               </div>
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Confirmer</button>
+              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
             </div>
           </div>
         </div>
@@ -196,12 +205,12 @@ export default function EmploisDTemps() {
           <div className="w-full max-w-sm rounded-3xl border shadow-2xl p-6 text-center space-y-4" style={cardStyle}>
             <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto"><Trash2 size={20} /></div>
             <div>
-              <h2 className="text-sm font-black">Libérer ce créneau ?</h2>
-              <p className="text-xs opacity-55">L'enseignant n'aura plus ce cours planifié à cette heure.</p>
+              <h2 className="text-sm font-black">Retirer ce cours ?</h2>
+              <p className="text-xs opacity-55">Ce créneau horaire redeviendra libre.</p>
             </div>
             <div className="flex gap-3 justify-center text-xs">
               <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500">Libérer</button>
+              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500">Retirer</button>
             </div>
           </div>
         </div>

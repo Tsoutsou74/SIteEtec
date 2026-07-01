@@ -20,7 +20,7 @@ const NAV_ITEMS = [
   { icon: <Settings size={18} />, label: 'Paramètres', path: '/etudiants/parametres' },
 ];
 
-// ─── Sidebar Item ─────────────────────────────────────────
+// ─── Sidebar Item ─────────────────────────────────────────  
 function SidebarItem({ item, isActive, onSelect, darkMode, collapsed }: {
   item: typeof NAV_ITEMS[0]; isActive: boolean; onSelect: () => void;
   darkMode: boolean; collapsed: boolean;

@@ -14,22 +14,16 @@ import FiliersPage from "../pages/FiliersPage";
 // ── Espace Administration ────────────────────────────────────
 
 import AdminHome from "../layouts/DashbordAdmin/AdminHome";
-
 import AdminEtudiants from "../layouts/DashbordAdmin/Etudiants/AdmineEtudiants";
 import Inscriptions from "../layouts/DashbordAdmin/Etudiants/Inscriptions";
 import AResultats from "../layouts/DashbordAdmin/Etudiants/Resultats";
 import LDT from "../layouts/DashbordAdmin/Etudiants/ListeDEtudiants";
 import EDT from "../layouts/DashbordAdmin/Etudiants/EmploisDuTemps";
-
-// import AdminFormations from "../layouts/DashboardAdmin/AdminFormations";
-
 import Enseignants from "../layouts/DashbordAdmin/Enseignant/AdminEnseignants";
 import EMDTE from "../layouts/DashbordAdmin/Enseignant/EmploisDTemps";
-
 import Programmes from "../layouts/DashbordAdmin/Formations/Programmes";
 import Modules from "../layouts/DashbordAdmin/Formations/Modules";
 import Filiers from "../layouts/DashbordAdmin/Formations/Filiers";
-
 import EmploisDTemps from "../layouts/DashbordAdmin/EmploisDTemps";
 import NotesResultats from "../layouts/DashbordAdmin/Notes&Resultats";
 import Actualites from "../layouts/DashbordAdmin/Actualites";
@@ -39,8 +33,21 @@ import Notifications from "../layouts/DashbordAdmin/Notifications";
 import Parametres from "../layouts/DashbordAdmin/Parametres";
 
 
+{/*── Espace enseignant ────────────────────────────────────*/}
 
-// ── Espace étudiant ────────────────────────────────────
+import ENseignants from "../layouts/DashboardEnseignants/Enseignant";
+import Cours from "../layouts/DashboardEnseignants/Cours";
+import EDTE from "../layouts/DashboardEnseignants/EDT";
+import Evaluations from "../layouts/DashboardEnseignants/Evaluations";
+import Niveaux from "../layouts/DashboardEnseignants/Niveaux";
+import Notification from "../layouts/DashboardEnseignants/Notifications";
+import Parametre from "../layouts/DashboardEnseignants/Parametres";
+import Ressource from "../layouts/DashboardEnseignants/Ressource";
+
+
+{/*── Espace enseignant ────────────────────────────────────*/}
+
+
 import DashboardEtudiant from "../layouts/DashboardEtudiants";
 import EtudiantHome               from "../layouts/DashboardEtud/etudiant";
 import MesNotes               from "../layouts/DashboardEtud/etudiantNotes";
@@ -66,7 +73,7 @@ export default function AppRoutes() {
           <Route path="/formations" element={<FiliersPage />} />
         </Route>
 
-      // ── Route admin ────────────────────────────────────
+        // ── Route admin ────────────────────────────────────
         
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index                             element={<AdminHome />} />
@@ -90,7 +97,7 @@ export default function AppRoutes() {
         </Route>
  
 
-      // ── Route étudiant ────────────────────────────────────
+        // ── Route étudiant ────────────────────────────────────
          <Route path="/etudiants" element={<DashboardEtudiant />}>
           <Route index                  element={<EtudiantHome />} />
           <Route path="notes"           element={<MesNotes />} />
@@ -102,10 +109,20 @@ export default function AppRoutes() {
           <Route path="parametres"      element={<ParametresEtudiant />} />
         </Route>
 
+        {/* ===== ENSEIGNANT ===== */}
+        <Route path="/enseignants" element={<DashboardEnseignants />}>
+          <Route index element={<ENseignants />} />
+          <Route path="Evaluations"   element={<Evaluations />} />
+          <Route path="EDTE"           element={<EDTE />} />
+          <Route path="Cours"         element={<Cours />} />
+          <Route path="Niveaux"       element={<Niveaux />} />
+          <Route path="Ressource"     element={<Ressource />} />
+          <Route path="Notification" element={<Notifications />} />
+          <Route path="Parametre"    element={<Parametres />} />
+        </Route>
 
-      // ── Route enseignant ────────────────────────────────────
-        <Route path="/enseignants" element={<DashboardEnseignants />} />
       </Routes>
+
     </BrowserRouter>
   );
 }

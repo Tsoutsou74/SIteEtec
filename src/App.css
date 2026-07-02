@@ -19,6 +19,8 @@
 
 .hero {
   position: relative;
+  /* ── FIX : Empêche les transformations 3D de faire déborder la page ── */
+  overflow: hidden; 
 
   .base,
   .framework,
@@ -63,6 +65,8 @@
   place-content: center;
   place-items: center;
   flex-grow: 1;
+  /* ── FIX : Sécurité pour éviter le scroll sur cette section centrale ── */
+  overflow: hidden; 
 
   @media (max-width: 1024px) {
     padding: 32px 20px 24px;
@@ -164,6 +168,8 @@
 .ticks {
   position: relative;
   width: 100%;
+  /* ── FIX : Empêche les pseudo-éléments (::before/::after) aux extrémités de casser le layout horizontal ── */
+  overflow: hidden; 
 
   &::before,
   &::after {

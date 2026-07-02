@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { icon: <LayoutDashboard size={18} />, label: 'Tableau de bord', key: '/enseignants/ENseignants' },
+  { icon: <LayoutDashboard size={18} />, label: 'Tableau de bord', key: '/enseignants' },
   { icon: <BookOpen size={18} />,        label: 'Mes cours',        key: '/enseignants/Cours'     },
   { icon: <Users size={18} />,           label: 'Mes classes',      key: '/enseignants/Niveaux'   },
   { icon: <Calendar size={18} />,        label: 'Emploi du temps',  key: '/enseignants/EDTE'       },

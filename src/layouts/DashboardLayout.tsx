@@ -142,7 +142,6 @@ export default function DashboardLayout() {
   const topbarBg  = darkMode ? 'rgba(10,10,10,0.95)'  : 'rgba(255,255,255,0.95)';
   const contentBg = darkMode ? '#0d0d0d'              : '#f4f6f8';
 
-  // Lien actif basé sur l'URL réelle
   const activeItem = NAV_ITEMS.find(i =>
     i.path === '/admin'
       ? location.pathname === '/admin'
@@ -181,8 +180,8 @@ export default function DashboardLayout() {
         )}
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 overflow-y-auto px-3 py-4">
+      {/* Nav : no-scrollbar ajouté pour la barre latérale */}
+      <nav className="flex-1 overflow-y-auto px-3 py-4 no-scrollbar">
         <ul className="space-y-1">
           {NAV_ITEMS.map(item => (
             <SidebarItem
@@ -250,8 +249,8 @@ export default function DashboardLayout() {
       {/* Main */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-        {/* Topbar */}
-        <header className="flex items-center justify-between px-4 md:px-6 py-3 border-b shrink-0"
+        {/* Topbar : h-[60px] et shrink-0 ajoutés pour stabiliser le layout */}
+        <header className="flex items-center justify-between px-4 md:px-6 h-[60px] border-b shrink-0"
           style={{ backgroundColor: topbarBg, borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-3">
             <button className="md:hidden p-2 rounded-xl border cursor-pointer transition hover:opacity-70"
@@ -335,8 +334,8 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* ── CONTENU : rendu par la route active ─── */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        {/* ── CONTENU CORRIGÉ : no-scrollbar ajouté pour masquer le scroll à droite ─── */}
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 no-scrollbar">
           <Outlet />
         </main>
       </div>

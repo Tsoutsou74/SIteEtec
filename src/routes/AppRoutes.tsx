@@ -35,7 +35,7 @@ import Parametres from "../layouts/DashbordAdmin/Parametres";
 
 {/*── Espace enseignant ────────────────────────────────────*/}
 
-import ENseignants from "../layouts/DashboardEnseignants/Enseignant";
+import Enseignant from "../layouts/DashboardEnseignants/Enseignant";
 import Cours from "../layouts/DashboardEnseignants/Cours";
 import EDTE from "../layouts/DashboardEnseignants/EDT";
 import Evaluations from "../layouts/DashboardEnseignants/Evaluations";
@@ -111,7 +111,7 @@ export default function AppRoutes() {
 
         {/* ===== ENSEIGNANT ===== */}
         <Route path="/enseignants" element={<DashboardEnseignants />}>
-          <Route index element={<ENseignants />} />
+          <Route index element={<Enseignant />} />
           <Route path="Evaluations"   element={<Evaluations />} />
           <Route path="EDTE"           element={<EDTE />} />
           <Route path="Cours"         element={<Cours />} />

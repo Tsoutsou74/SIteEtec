@@ -2,18 +2,34 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import {
-  LayoutDashboard, Users, GraduationCap, BookOpen, Calendar,
+  LayoutDashboard, Users, BookOpen, Calendar,
   FileText, Bell, Settings, LogOut, Menu, ChevronDown,
   TrendingUp, UserCheck, ClipboardList, Building2, Sun, Moon,
-  Search, ChevronRight,
+  Search, ChevronRight, Presentation, Landmark, Network, History,
+  GraduationCap, Laptop, BookMarcked
 } from 'lucide-react';
 
-// ─── Navigation avec paths réels ─────────────────────────
+// ─── Navigation avec les nouveaux paths demandés ─────────────────────────
 const NAV_ITEMS = [
   {
     icon: <LayoutDashboard size={18} />,
     label: 'Tableau de bord',
     path: '/admin',
+  },
+  {
+    icon: <Presentation size={18} />,
+    label: 'Slides',
+    path: '/admin/slides',
+  },
+  {
+    icon: <Landmark size={18} />,
+    label: 'Université',
+    path: '/admin/universite',
+    children: [
+      { label: 'Organigramme', path: '/admin/universite/organigramme' },
+      { label: 'Historique',   path: '/admin/universite/historique' },
+      { label: 'Nos Campus',   path: '/admin/universite/campus' },
+    ],
   },
   {
     icon: <Users size={18} />,
@@ -40,15 +56,17 @@ const NAV_ITEMS = [
     label: 'Formations',
     path: '/admin/formations',
     children: [
-      { label: 'Filières',    path: '/admin/Formations/Filiers' },
-      { label: 'Programmes',  path: '/admin/Formations/Programmes' },
-      { label: 'Modules',     path: '/admin/Formations/Modules' },
+      { label: 'Formation Initiale', path: '/admin/formations/initiale' },
+      { label: 'Formation Continue', path: '/admin/formations/continue' },
+      { label: 'Formation en Ligne', path: '/admin/formations/en-ligne' },
+      { label: 'Gestion Filières',   path: '/admin/Formations/Filiers' },
+      { label: 'Programmes',         path: '/admin/Formations/Programmes' },
+      { label: 'Modules',            path: '/admin/Formations/Modules' },
     ],
   },
   { icon: <Calendar size={18} />,      label: 'Emploi du temps',  path: '/admin/edt' },
   { icon: <ClipboardList size={18} />, label: 'Notes & Résultats', path: '/admin/Notes&Resultats', badge: 3 },
   { icon: <FileText size={18} />,      label: 'Actualités',        path: '/admin/actualites' },
-  { icon: <Building2 size={18} />,     label: 'Campus',            path: '/admin/campus' },
   { icon: <TrendingUp size={18} />,    label: 'Statistiques',      path: '/admin/statistiques' },
   { icon: <Bell size={18} />,          label: 'Notifications',     path: '/admin/notifications', badge: 5 },
   { icon: <Settings size={18} />,      label: 'Paramètres',        path: '/admin/parametres' },
@@ -87,7 +105,7 @@ function SidebarItem({ item, active, onSelect, darkMode, collapsed }: {
         title={collapsed ? item.label : undefined}
       >
         <span className="shrink-0">{item.icon}</span>
-        {!collapsed && <span className="flex-1 text-left">{item.label}</span>}
+        {!collapsed && <span className="flex-1 text-left truncate">{item.label}</span>}
         {!collapsed && item.badge && (
           <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
             style={{ backgroundColor: 'var(--primary)' }}>
@@ -118,7 +136,7 @@ function SidebarItem({ item, active, onSelect, darkMode, collapsed }: {
                 onClick={() => onSelect(child.path)}
               >
                 <ChevronRight size={11} className="shrink-0 opacity-50" />
-                {child.label}
+                <span className="truncate text-left flex-1">{child.label}</span>
               </button>
             </li>
           ))}
@@ -180,7 +198,7 @@ export default function DashboardLayout() {
         )}
       </div>
 
-      {/* Nav : no-scrollbar ajouté pour la barre latérale */}
+      {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 no-scrollbar">
         <ul className="space-y-1">
           {NAV_ITEMS.map(item => (
@@ -249,7 +267,7 @@ export default function DashboardLayout() {
       {/* Main */}
       <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
 
-        {/* Topbar : h-[60px] et shrink-0 ajoutés pour stabiliser le layout */}
+        {/* Topbar */}
         <header className="flex items-center justify-between px-4 md:px-6 h-[60px] border-b shrink-0"
           style={{ backgroundColor: topbarBg, borderColor: 'var(--border)' }}>
           <div className="flex items-center gap-3">
@@ -262,7 +280,7 @@ export default function DashboardLayout() {
             <div className="hidden sm:flex items-center gap-1.5 text-xs opacity-55">
               <span>Administration</span>
               <ChevronRight size={12} />
-              <span className="font-bold opacity-100" style={{ color: 'var(--text)' }}>{activeLabel}</span>
+              <span className="font-bold opacity-100 truncate max-w-[150px]" style={{ color: 'var(--text)' }}>{activeLabel}</span>
             </div>
           </div>
 
@@ -334,7 +352,7 @@ export default function DashboardLayout() {
           </div>
         </header>
 
-        {/* ── CONTENU CORRIGÉ : no-scrollbar ajouté pour masquer le scroll à droite ─── */}
+        {/* Contenu */}
         <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 no-scrollbar">
           <Outlet />
         </main>

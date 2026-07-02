@@ -6,8 +6,8 @@ import { useTheme } from '../../context/ThemeContext';
 // Le bouton "Connexion" n'apparaît que pendant cette période.
 // Format : mois 1-12, jour 1-31
 const ANNEE_SCOLAIRE = {
-  debut: { mois: 1,  jour: 1 },   // 1er Septembre
-  fin:   { mois: 3,  jour: 15 },  // 15 Juillet
+  debut: { mois: 6,  jour: 1 },   // 1er Septembre
+  fin:   { mois: 12,  jour: 15 },  // 15 Juillet
 };
 
 function isPeriodeScolaireActive(): boolean {
@@ -40,7 +40,6 @@ const NAV_LINKS = [
       { label: 'Mot du Président',    icon: '🎓' },
       { label: 'Organigramme',        icon: '🗂️' },
       { label: 'Chiffres clés',       icon: '📊' },
-      { label: 'Partenariats',        icon: '🤝' },
       { label: 'Campus Faravohitra',  icon: '📍' },
     ],
   },

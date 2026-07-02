@@ -21,16 +21,26 @@ import LDT from "../layouts/DashbordAdmin/Etudiants/ListeDEtudiants";
 import EDT from "../layouts/DashbordAdmin/Etudiants/EmploisDuTemps";
 import Enseignants from "../layouts/DashbordAdmin/Enseignant/AdminEnseignants";
 import EMDTE from "../layouts/DashbordAdmin/Enseignant/EmploisDTemps";
+
 import Programmes from "../layouts/DashbordAdmin/Formations/Programmes";
 import Modules from "../layouts/DashbordAdmin/Formations/Modules";
 import Filiers from "../layouts/DashbordAdmin/Formations/Filiers";
+import FormationsContinue from "../layouts/DashbordAdmin/Formations/Continue";
+import FormationsEnLigne from "../layouts/DashbordAdmin/Formations/Enligne";
+import FormationsInitiale from "../layouts/DashbordAdmin/Formations/Initiale";
+import Coures from "../layouts/DashbordAdmin/Formations/Cours";
+
 import EmploisDTemps from "../layouts/DashbordAdmin/EmploisDTemps";
 import NotesResultats from "../layouts/DashbordAdmin/Notes&Resultats";
 import Actualites from "../layouts/DashbordAdmin/Actualites";
-import Campus from "../layouts/DashbordAdmin/campus";
+import MotPresidents from "../layouts/DashbordAdmin/MPresidents";
 import Statistiques from "../layouts/DashbordAdmin/Statistiques";
 import Notifications from "../layouts/DashbordAdmin/Notifications";
 import Parametres from "../layouts/DashbordAdmin/Parametres";
+import Slide from "../layouts/DashbordAdmin/Slide";
+import Organigrammes from "../layouts/DashbordAdmin/Organigram";
+import Historiques from "../layouts/DashbordAdmin/Historique";
+import InscriptionsOuverts from "../layouts/DashbordAdmin/InscriptionOuvert";
 
 
 {/*── Espace enseignant ────────────────────────────────────*/}
@@ -85,15 +95,24 @@ export default function AppRoutes() {
 
           <Route path="Formations/Programmes"      element={<Programmes />} />
           <Route path="Formations/Modules"         element={<Modules />} />
-          <Route path="Formations/Filiers"         element={<Modules />} />
+          <Route path="Formations/Filiers"         element={<Filiers />} />
+          <Route path="Formations/formationcontinu" element={<FormationsContinue />} />
+          <Route path="Formations/formationenligne" element={<FormationsEnLigne />} />
+          <Route path="Formations/formationinitiale" element={<FormationsInitiale />} />
+          <Route path="Formations/coures" element={<Coures />} />
 
           <Route path="edt"                        element={<EDT />} />
           <Route path="Notes&Resultats"                     element={<NotesResultats />} />
           <Route path="actualites"                 element={<Actualites />} />
-          <Route path="campus"                     element={<Campus />} />
           <Route path="statistiques"               element={<Statistiques />} />
           <Route path="notifications"              element={<Notifications />} />
           <Route path="parametres"                 element={<Parametres />} />
+          <Route path="slide"                 element={<Slide />} />
+          <Route path="universite/organigramme"            element={<Organigrammes />} />
+          <Route path="universite/historique"              element={<Historiques />} />
+          <Route path="universite/mpresidents"              element={<MotPresidents />} />
+          <Route path="iouverts"              element={<InscriptionsOuverts />} />
+
         </Route>
  
 

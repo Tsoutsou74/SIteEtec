@@ -3,6 +3,7 @@ import {
   Plus, Search, Edit2, Trash2, BookOpen, 
   Clock, Calendar, CheckCircle, X, ShieldAlert 
 } from 'lucide-react';
+import { useTheme } from '../../../context/ThemeContext';
 
 // ─── INTERFACES ──────────────────────────────────────────
 interface Formation {
@@ -50,7 +51,7 @@ const INITIAL_FORMATIONS: Formation[] = [
   }
 ];
 
-export default function FormationsInitiale() {
+export default function Initiale() {
   const [formations, setFormations] = useState<Formation[]>(INITIAL_FORMATIONS);
   const [search, setSearch] = useState('');
   

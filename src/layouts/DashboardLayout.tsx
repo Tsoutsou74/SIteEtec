@@ -6,7 +6,7 @@ import {
   FileText, Bell, Settings, LogOut, Menu, ChevronDown,
   TrendingUp, UserCheck, ClipboardList, Building2, Sun, Moon,
   Search, ChevronRight, Presentation, Landmark, Network, History,
-  GraduationCap, Laptop, BookMarcked
+  GraduationCap, Laptop, BookMarcked, ClipboardCheck
 } from 'lucide-react';
 
 // ─── Navigation avec les nouveaux paths demandés ─────────────────────────
@@ -19,7 +19,7 @@ const NAV_ITEMS = [
   {
     icon: <Presentation size={18} />,
     label: 'Slides',
-    path: '/admin/slides',
+    path: '/admin/slide',
   },
   {
     icon: <Landmark size={18} />,
@@ -28,7 +28,7 @@ const NAV_ITEMS = [
     children: [
       { label: 'Organigramme', path: '/admin/universite/organigramme' },
       { label: 'Historique',   path: '/admin/universite/historique' },
-      { label: 'Nos Campus',   path: '/admin/universite/campus' },
+      { label: 'Mots du Présidents',   path: '/admin/universite/mpresidents' },
     ],
   },
   {
@@ -56,18 +56,20 @@ const NAV_ITEMS = [
     label: 'Formations',
     path: '/admin/formations',
     children: [
-      { label: 'Formation Initiale', path: '/admin/formations/initiale' },
-      { label: 'Formation Continue', path: '/admin/formations/continue' },
-      { label: 'Formation en Ligne', path: '/admin/formations/en-ligne' },
+      { label: 'Formation Initiale', path: '/admin/Formations/formationinitiale' },
+      { label: 'Formation Continue', path: '/admin/Formations/formationcontinu' },
+      { label: 'Formation en Ligne', path: '/admin/Formations/formationenligne' },
       { label: 'Gestion Filières',   path: '/admin/Formations/Filiers' },
       { label: 'Programmes',         path: '/admin/Formations/Programmes' },
       { label: 'Modules',            path: '/admin/Formations/Modules' },
+      { label: 'Cours',            path: '/admin/Formations/Coures' },
     ],
   },
   { icon: <Calendar size={18} />,      label: 'Emploi du temps',  path: '/admin/edt' },
   { icon: <ClipboardList size={18} />, label: 'Notes & Résultats', path: '/admin/Notes&Resultats', badge: 3 },
   { icon: <FileText size={18} />,      label: 'Actualités',        path: '/admin/actualites' },
   { icon: <TrendingUp size={18} />,    label: 'Statistiques',      path: '/admin/statistiques' },
+  { icon: <ClipboardCheck size={18} />,    label: 'Ouverture Inscriptions',      path: '/admin/iouverts' },
   { icon: <Bell size={18} />,          label: 'Notifications',     path: '/admin/notifications', badge: 5 },
   { icon: <Settings size={18} />,      label: 'Paramètres',        path: '/admin/parametres' },
 ];

@@ -207,7 +207,7 @@ export default function DashboardEtudiant() {
                   ].map((n, i) => (
                     <div key={i} className="flex items-start gap-3 px-4 py-3 border-b cursor-pointer hover:opacity-70 transition"
                       style={{ borderColor: 'var(--border)' }}
-                      onClick={() => { goTo('/etudiant/notifications'); setNotifOpen(false); }}>
+                      onClick={() => { goTo('/etudiants/notifications'); setNotifOpen(false); }}>
                       <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ backgroundColor: n.dot }} />
                       <div className="flex-1 min-w-0">
                         <p className="text-xs leading-snug">{n.msg}</p>

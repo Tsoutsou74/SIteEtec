@@ -21,7 +21,7 @@ export default function NewsSection() {
             </div>
           </div>
         ))}
-      </div>
+      </div> 
     </div>
   );
 }

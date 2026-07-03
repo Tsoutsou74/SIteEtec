@@ -162,7 +162,7 @@ export default function Evaluations() {
             style={borderStyle}
           >
             {(MATIERES_PAR_CLASSE[config.classe] || ['Général']).map(m => (
-              <option key={m} value={m} className="dark:bg-[#121212]">{m}</option>
+              <option key={m} value={m} className="dark:bg-[#121212]">{m}</option> 
             ))}
           </select>
         </div>

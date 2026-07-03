@@ -97,6 +97,7 @@ export default function NewsPage() {
       excerpt: "Les dossiers de candidature pour nos quatre filières majeures (BTP, Gestion, Électromécanique, Informatique) sont dès à présent disponibles en ligne."
     }
   ];
+  
 
   return (
     <div className="w-full px-0 sm:px-4 md:px-8 lg:px-12 py-10 md:py-16 animate-fade-in">
@@ -129,7 +130,7 @@ export default function NewsPage() {
 
       {/* Bouton Voir plus */}
       <div className="mt-10 md:mt-16 flex justify-center">
-        <button
+        <button onClick={() => navigate('/actualites')}
           className="flex items-center gap-2 px-5 md:px-6 py-3 text-xs font-bold uppercase tracking-wider rounded-full border transition-all duration-300 hover:scale-105 cursor-pointer shadow-md"
           style={{
             borderColor: 'var(--primary)',

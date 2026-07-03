@@ -10,6 +10,13 @@ import ContactPage from "../pages/ContactPage";
 import Auth from "../pages/Auth";
 import EtudiantsInscription from "../feature/auth/pages/EtudiantsInscription";
 import FiliersPage from "../pages/FiliersPage";
+import Historques from "../pages/Historique";
+import MtPresidents from "../pages/MotPresidents";
+import Orga from "../pages/Organigrammes";
+import Actu from "../pages/NewsPage";
+import FormationInitialePage from "../pages/FormationInitialePage";
+import FormationContinuePage from "../pages/FormationContinuePage";
+import FormationsEnLignePage from "../pages/FormationsEnLignePage";
 
 // ── Espace Administration ────────────────────────────────────
 
@@ -79,8 +86,16 @@ export default function AppRoutes() {
           <Route path="admission" element={<AdmissionPage />} />
           <Route path="contact" element={<ContactPage />} />
           <Route path="log_in" element={<Auth />} />
-          <Route path="/Inscriptions" element={<EtudiantsInscription />} />
-          <Route path="/formations" element={<FiliersPage />} />
+          <Route path="Inscriptions" element={<EtudiantsInscription />} />
+          <Route path="formations" element={<FiliersPage />} />
+          <Route path="formationInitiale" element={<FormationInitialePage />} />
+          <Route path="formationContinue" element={<FormationContinuePage />} />
+          <Route path="formationsEnligne" element={<FormationsEnLignePage />} />
+          <Route path="historiques" element={<Historques />} />
+          <Route path="organigrammes" element={<Orga />} />
+          <Route path="motduPresidents" element={<MtPresidents />} />
+          <Route path="actualites" element={<Actu />} />
+
         </Route>
 
         // ── Route admin ────────────────────────────────────

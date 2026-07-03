@@ -190,16 +190,16 @@ export default function Programmes() {
           <select value={filtreType} onChange={e => setFiltreType(e.target.value)}
             className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none flex-1 md:w-48" style={inputStyle}>
             <option value="">Tous les rythmes</option>
-            <option value="Initiale">Formation Initiale</option>
-            <option value="Continue">Formation Continue</option>
-            <option value="En ligne">Formation En Ligne</option>
+            <option value="Initiale" className="dark:bg-[#121212]">Formation Initiale</option>
+            <option value="Continue" className="dark:bg-[#121212]">Formation Continue</option>
+            <option value="En ligne" className="dark:bg-[#121212]">Formation En Ligne</option>
           </select>
 
           {/* Sélecteur de filière */}
           <select value={filtreFiliere} onChange={e => setFiltreFiliere(e.target.value)}
             className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none flex-1 md:w-48" style={inputStyle}>
             <option value="">Toutes les filières</option>
-            {FILIERES.map(f => <option key={f} value={f}>{f}</option>)}
+            {FILIERES.map(f => <option key={f} value={f} className="dark:bg-[#121212]">{f}</option>)}
           </select>
         </div>
       </div>

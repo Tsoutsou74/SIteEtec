@@ -36,6 +36,38 @@ body {
     color 0.4s ease;
 }
 
+select {
+  color-scheme: light;
+  background-color: var(--card);
+  color: var(--text);
+}
+
+select option {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+select option:checked {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.dark select {
+  color-scheme: dark;
+  background-color: #111111;
+  color: #ffffff;
+}
+
+.dark select option {
+  background-color: #050505;
+  color: #ffffff;
+}
+
+.dark select option:checked {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
 /* ==========================
    ANIMATIONS
 ========================== */

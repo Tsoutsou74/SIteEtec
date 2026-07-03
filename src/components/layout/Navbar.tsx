@@ -1,71 +1,61 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Search, Menu, X, ChevronDown } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Menu, Search, X } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 
-// ── Période de l'année scolaire ──────────────────────────
-// Le bouton "Connexion" n'apparaît que pendant cette période.
-// Format : mois 1-12, jour 1-31
 const ANNEE_SCOLAIRE = {
-  debut: { mois: 6,  jour: 1 },   // 1er Septembre
-  fin:   { mois: 12,  jour: 15 },  // 15 Juillet
+  debut: { mois: 6, jour: 1 },
+  fin: { mois: 12, jour: 15 },
 };
 
 function isPeriodeScolaireActive(): boolean {
   const now = new Date();
-  const month = now.getMonth() + 1; // getMonth() est 0-indexé
+  const month = now.getMonth() + 1;
   const day = now.getDate();
-
   const { debut, fin } = ANNEE_SCOLAIRE;
 
-  // Cas où l'année scolaire traverse le Nouvel An (ex: Sept → Juillet)
   if (debut.mois > fin.mois) {
     const apresDebut = month > debut.mois || (month === debut.mois && day >= debut.jour);
-    const avantFin   = month < fin.mois   || (month === fin.mois   && day <= fin.jour);
+    const avantFin = month < fin.mois || (month === fin.mois && day <= fin.jour);
     return apresDebut || avantFin;
   }
 
-  // Cas simple où début < fin dans la même année
   const apresDebut = month > debut.mois || (month === debut.mois && day >= debut.jour);
-  const avantFin   = month < fin.mois   || (month === fin.mois   && day <= fin.jour);
+  const avantFin = month < fin.mois || (month === fin.mois && day <= fin.jour);
   return apresDebut && avantFin;
 }
 
-// Sous-menus par lien
 const NAV_LINKS = [
-  { label: 'Accueil', path: '/', active: true },
+  { label: 'Accueil', path: '/' },
   {
-    label: 'Université',
+    label: 'Universite',
     submenu: [
-      { label: 'Historique',         icon: '🏛️' },
-      { label: 'Mot du Président',    icon: '🎓' },
-      { label: 'Organigramme',        icon: '🗂️' },
-      { label: 'Chiffres clés',       icon: '📊' },
-      { label: 'Campus Faravohitra',  icon: '📍' },
+      { label: 'Historique', icon: 'H', path: '/historiques' },
+      { label: 'Mot du President', icon: 'P', path: '/motduPresidents' },
+      { label: 'Organigramme', icon: 'O', path: '/organigrammes' },
     ],
   },
   {
     label: 'Formations',
     submenu: [
-      { label: 'Administration & Gestion',  icon: '💼' },
-      { label: 'Génie Logiciel & Réseaux',  icon: '💻' },
-      { label: 'Bâtiment & Travaux Publics', icon: '🏗️' },
-      { label: 'Électromécanique',           icon: '⚙️' },
+      { label: 'Formation initiale', icon: 'FI', path: '/formationInitiale' },
+      { label: 'Formation continue', icon: 'FC', path: '/formationContinue' },
+      { label: 'Formations en ligne', icon: 'EL', path: '/formationsEnligne' },
     ],
   },
   { label: 'Admissions', path: '/admission' },
-  { label: 'Actualités' },
+  { label: 'Actualites', path: '/actualites' },
   { label: 'Contact', path: '/contact' },
-];
+] as const;
 
 interface NavItemProps {
-  link: typeof NAV_LINKS[number];
+  link: (typeof NAV_LINKS)[number];
   darkMode: boolean;
-  onClick?: () => void;
+  onNavigate: (path?: string) => void;
 }
 
-function NavItem({ link, darkMode, onClick }: NavItemProps) {
+function NavItem({ link, darkMode, onNavigate }: NavItemProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLLIElement>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMouseEnter = () => {
@@ -77,17 +67,15 @@ function NavItem({ link, darkMode, onClick }: NavItemProps) {
     timerRef.current = setTimeout(() => setOpen(false), 120);
   };
 
-  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+  useEffect(() => () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+  }, []);
 
-  if (!link.submenu) {
+  if (!('submenu' in link)) {
     return (
       <li
-        onClick={onClick}
-        className={`cursor-pointer transition ${
-          link.active
-            ? `border-b-2 border-amber-400 pb-0.5 ${darkMode ? 'text-white' : 'text-black'}`
-            : 'opacity-75 hover:opacity-100'
-        }`}
+        onClick={() => onNavigate(link.path)}
+        className="cursor-pointer opacity-75 transition hover:opacity-100"
       >
         {link.label}
       </li>
@@ -96,7 +84,6 @@ function NavItem({ link, darkMode, onClick }: NavItemProps) {
 
   return (
     <li
-      ref={ref}
       className="relative cursor-pointer"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -116,9 +103,8 @@ function NavItem({ link, darkMode, onClick }: NavItemProps) {
 
       {open && (
         <div
-          className="absolute top-full left-1/2 -translate-x-1/2 mt-3 rounded-2xl border shadow-2xl overflow-hidden min-w-[220px]"
+          className="absolute top-full left-1/2 z-[300] mt-3 min-w-[230px] -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl"
           style={{
-            zIndex: 300,
             backgroundColor: darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)',
             borderColor: 'var(--border)',
             backdropFilter: 'blur(16px)',
@@ -126,31 +112,20 @@ function NavItem({ link, darkMode, onClick }: NavItemProps) {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-2 overflow-hidden">
-            <div
-              className="w-3 h-3 rotate-45 mx-auto mt-1 border-l border-t"
-              style={{
-                backgroundColor: darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)',
-                borderColor: 'var(--border)',
-              }}
-            />
-          </div>
-
           <ul className="py-2">
-            {link.submenu.map((item, idx) => (
-              <li key={idx}>
+            {link.submenu.map((item) => (
+              <li key={item.path}>
                 <button
-                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-semibold tracking-wide text-left transition-all duration-150 hover:opacity-70 cursor-pointer"
+                  onClick={() => {
+                    onNavigate(item.path);
+                    setOpen(false);
+                  }}
+                  className="flex w-full cursor-pointer items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold tracking-wide transition hover:opacity-70"
                   style={{ color: 'var(--text)' }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                      darkMode ? 'rgba(255,255,255,0.06)' : 'rgba(0,128,0,0.06)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'transparent';
-                  }}
                 >
-                  <span className="text-base w-5 text-center">{item.icon}</span>
+                  <span className="flex h-6 w-7 items-center justify-center rounded-lg bg-green-500/10 text-[10px] font-black text-green-500">
+                    {item.icon}
+                  </span>
                   <span>{item.label}</span>
                 </button>
               </li>
@@ -164,24 +139,23 @@ function NavItem({ link, darkMode, onClick }: NavItemProps) {
 
 export default function Navbar() {
   const { darkMode } = useTheme();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
-
-  // Le bouton Connexion est visible uniquement pendant l'année scolaire
   const [connexionVisible] = useState(isPeriodeScolaireActive());
 
-  const bgColor  = darkMode ? 'rgba(0,0,0,0.15)'    : 'rgba(255,255,255,0.35)';
-  const mobileBg = darkMode ? 'rgba(10,10,10,0.97)'  : 'rgba(255,255,255,0.98)';
+  const bgColor = darkMode ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.35)';
+  const mobileBg = darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)';
 
   const handleNavigation = (path?: string) => {
-    if (path) {
-      window.location.href = path;
-      setMenuOpen(false);
-    }
+    if (!path) return;
+    navigate(path);
+    setMenuOpen(false);
+    setMobileExpanded(null);
   };
 
   useEffect(() => {
@@ -211,7 +185,6 @@ export default function Navbar() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      console.log('Recherche :', searchQuery);
       setSearchOpen(false);
       setSearchQuery('');
     }
@@ -220,77 +193,70 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className="fixed top-10 left-0 right-0 z-50 flex justify-between items-center px-4 md:px-8 py-3 glass backdrop-blur-md animate-fade-in shadow-lg transition-all duration-300"
+        className="fixed top-10 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 shadow-lg transition-all duration-300 md:px-8 glass backdrop-blur-md animate-fade-in"
         style={{ backgroundColor: bgColor, color: 'var(--text)' }}
       >
-        {/* LOGO */}
-        <div className="flex items-center gap-2 md:gap-3 cursor-pointer" onClick={() => handleNavigation('/')}>
+        <div className="flex cursor-pointer items-center gap-2 md:gap-3" onClick={() => handleNavigation('/')}>
           <div
-            className="w-14 md:w-20 h-9 md:h-10 rounded-xl flex items-center justify-center border transition-colors"
+            className="flex h-9 w-14 items-center justify-center rounded-xl border transition-colors md:h-10 md:w-20"
             style={{
               backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,128,0,0.08)',
-              borderColor:      darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,128,0,0.3)',
+              borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,128,0,0.3)',
             }}
           >
-            <span className="font-black text-sm md:text-base" style={{ color: darkMode ? 'inherit' : '#16a34a' }}>
+            <span className="text-sm font-black md:text-base" style={{ color: darkMode ? 'inherit' : '#16a34a' }}>
               E-TEC
             </span>
           </div>
           <div className="hidden sm:block">
             <h1
-              className="text-[9px] md:text-[10px] font-bold tracking-widest uppercase leading-none opacity-90"
+              className="text-[9px] font-bold uppercase leading-none tracking-widest opacity-90 md:text-[10px]"
               style={{ color: darkMode ? 'inherit' : '#16a34a' }}
             >
               Education in Training Employments and Communication
             </h1>
-            <p className="text-xs font-black tracking-wider uppercase mt-0.5" style={{ color: darkMode ? 'inherit' : '#15803d' }}>
+            <p className="mt-0.5 text-xs font-black uppercase tracking-wider" style={{ color: darkMode ? 'inherit' : '#15803d' }}>
               Faravohitra
             </p>
           </div>
         </div>
 
-        {/* LIENS DESKTOP */}
         {!searchOpen && (
-          <ul className="hidden lg:flex gap-6 xl:gap-8 text-[11px] font-bold uppercase tracking-wider items-center">
+          <ul className="hidden items-center gap-6 text-[11px] font-bold uppercase tracking-wider lg:flex xl:gap-8">
             {NAV_LINKS.map((link) => (
-              <NavItem
-                key={link.label}
-                link={link}
-                darkMode={darkMode}
-                onClick={() => handleNavigation(link.path)}
-              />
+              <NavItem key={link.label} link={link} darkMode={darkMode} onNavigate={handleNavigation} />
             ))}
           </ul>
         )}
 
-        {/* DROITE */}
-        <div className="flex items-center gap-3 md:gap-4 flex-1 lg:flex-initial justify-end">
-
-          {/* Barre de recherche */}
+        <div className="flex flex-1 items-center justify-end gap-3 md:gap-4 lg:flex-initial">
           <div ref={searchBoxRef} className="relative flex items-center">
             {searchOpen ? (
               <form
                 onSubmit={handleSearchSubmit}
-                className="flex items-center gap-2 rounded-xl border px-3 py-2 transition-all duration-300 w-full sm:w-64 md:w-72"
+                className="flex w-full items-center gap-2 rounded-xl border px-3 py-2 transition-all duration-300 sm:w-64 md:w-72"
                 style={{
                   backgroundColor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.9)',
                   borderColor: 'var(--border)',
                 }}
               >
-                <Search size={15} className="opacity-50 shrink-0" />
+                <Search size={15} className="shrink-0 opacity-50" />
                 <input
                   ref={searchInputRef}
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Rechercher sur E-TEC..."
-                  className="flex-1 bg-transparent outline-none text-xs min-w-0"
+                  className="min-w-0 flex-1 bg-transparent text-xs outline-none"
                   style={{ color: 'var(--text)' }}
                 />
                 <button
                   type="button"
-                  onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-                  className="shrink-0 opacity-50 hover:opacity-90 transition cursor-pointer"
+                  onClick={() => {
+                    setSearchOpen(false);
+                    setSearchQuery('');
+                  }}
+                  className="shrink-0 cursor-pointer opacity-50 transition hover:opacity-90"
                   aria-label="Fermer la recherche"
                 >
                   <X size={14} />
@@ -299,7 +265,7 @@ export default function Navbar() {
             ) : (
               <button
                 onClick={() => setSearchOpen(true)}
-                className="cursor-pointer opacity-70 hover:opacity-100 transition p-1"
+                className="cursor-pointer p-1 opacity-70 transition hover:opacity-100"
                 aria-label="Ouvrir la recherche"
               >
                 <Search size={15} />
@@ -307,14 +273,13 @@ export default function Navbar() {
             )}
           </div>
 
-          {/* Bouton Connexion — masqué hors période scolaire ET hors recherche */}
           {!searchOpen && connexionVisible && (
             <button
               onClick={() => handleNavigation('/log_in')}
-              className="hidden sm:block text-[11px] font-bold px-3 md:px-4 py-2 rounded-xl border transition-all duration-300 cursor-pointer shrink-0"
+              className="hidden shrink-0 cursor-pointer rounded-xl border px-3 py-2 text-[11px] font-bold transition-all duration-300 sm:block md:px-4"
               style={{
                 backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                borderColor:      darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+                borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
                 color: 'var(--text)',
               }}
             >
@@ -322,13 +287,12 @@ export default function Navbar() {
             </button>
           )}
 
-          {/* Burger mobile */}
           {!searchOpen && (
             <button
-              className="lg:hidden p-2 rounded-xl border transition-all shrink-0"
+              className="shrink-0 rounded-xl border p-2 transition-all lg:hidden"
               style={{
                 backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
-                borderColor:      darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
+                borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',
                 color: 'var(--text)',
               }}
               onClick={() => setMenuOpen(!menuOpen)}
@@ -340,22 +304,19 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* MENU MOBILE */}
       {menuOpen && (
         <div
-          className="fixed top-[82px] left-0 right-0 z-40 lg:hidden shadow-xl border-b overflow-y-auto max-h-[80vh]"
+          className="fixed top-[82px] left-0 right-0 z-40 max-h-[80vh] overflow-y-auto border-b shadow-xl lg:hidden"
           style={{ backgroundColor: mobileBg, borderColor: 'var(--border)', color: 'var(--text)' }}
         >
-          <ul className="flex flex-col py-2 px-6">
+          <ul className="flex flex-col px-6 py-2">
             {NAV_LINKS.map((link) => (
               <li key={link.label}>
                 <div
-                  className={`flex items-center justify-between py-3 text-sm font-bold uppercase tracking-wider border-b cursor-pointer transition ${
-                    link.active ? 'text-amber-500' : 'opacity-75'
-                  }`}
+                  className="flex cursor-pointer items-center justify-between border-b py-3 text-sm font-bold uppercase tracking-wider opacity-75 transition"
                   style={{ borderColor: 'var(--border)' }}
                   onClick={() => {
-                    if (link.submenu) {
+                    if ('submenu' in link) {
                       setMobileExpanded(mobileExpanded === link.label ? null : link.label);
                     } else {
                       handleNavigation(link.path);
@@ -363,7 +324,7 @@ export default function Navbar() {
                   }}
                 >
                   <span>{link.label}</span>
-                  {link.submenu && (
+                  {'submenu' in link && (
                     <ChevronDown
                       size={14}
                       className="transition-transform duration-200"
@@ -372,15 +333,17 @@ export default function Navbar() {
                   )}
                 </div>
 
-                {link.submenu && mobileExpanded === link.label && (
-                  <ul className="pl-4 py-1 space-y-0.5">
-                    {link.submenu.map((sub, idx) => (
+                {'submenu' in link && mobileExpanded === link.label && (
+                  <ul className="space-y-0.5 py-1 pl-4">
+                    {link.submenu.map((sub) => (
                       <li
-                        key={idx}
-                        className="flex items-center gap-3 py-2.5 text-xs font-semibold tracking-wide cursor-pointer opacity-80 hover:opacity-100 transition"
-                        onClick={() => setMenuOpen(false)}
+                        key={sub.path}
+                        className="flex cursor-pointer items-center gap-3 py-2.5 text-xs font-semibold tracking-wide opacity-80 transition hover:opacity-100"
+                        onClick={() => handleNavigation(sub.path)}
                       >
-                        <span>{sub.icon}</span>
+                        <span className="flex h-6 w-8 items-center justify-center rounded-lg bg-green-500/10 text-[10px] font-black text-green-500">
+                          {sub.icon}
+                        </span>
                         <span>{sub.label}</span>
                       </li>
                     ))}
@@ -389,12 +352,11 @@ export default function Navbar() {
               </li>
             ))}
 
-            {/* Connexion mobile — même condition de période scolaire */}
             {connexionVisible && (
-              <li className="pt-4 pb-4 flex justify-center sm:hidden">
+              <li className="flex justify-center pb-4 pt-4 sm:hidden">
                 <button
                   onClick={() => handleNavigation('/log_in')}
-                  className="w-full text-center text-[11px] font-bold px-4 py-2.5 rounded-xl border transition-all duration-300 cursor-pointer"
+                  className="w-full cursor-pointer rounded-xl border px-4 py-2.5 text-center text-[11px] font-bold transition-all duration-300"
                   style={{
                     backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)',
                     borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)',

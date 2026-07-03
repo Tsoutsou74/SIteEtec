@@ -29,7 +29,7 @@ const CONFIG_INITIALE: ConfigurationSysteme = {
   statutInscriptions: true,
   seuilValidationModule: 10,
   doubleFacteurAuth: false,
-  sauvegardeAutomatique: true
+  sauvegardeAutomatique: true 
 };
 
 export default function AdminParametres() {

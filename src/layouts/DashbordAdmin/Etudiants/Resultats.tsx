@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 import { 
   Search, Award, BookOpen, ChevronLeft, ChevronRight, 
   FileText, Download, CheckCircle2, XCircle, AlertTriangle 
@@ -26,39 +27,6 @@ interface ResultatEtudiant {
   matieres: NoteMatiere[];
 }
 
-// ─── Données initiales (ETEC) ─────────────────────────────
-const INITIAL_RESULTATS: ResultatEtudiant[] = [
-  {
-    id: '1',
-    matricule: 'ET-2024-001',
-    nom: 'RAKOTOMALALA',
-    prenom: 'Andry',
-    filiere: 'Génie Logiciel',
-    niveau: 'L3',
-    semestre: 'Semestre 1',
-    matieres: [
-      { code: 'INF301', libelle: 'Architecture Cloud & DevOps', note: 14.5, credit: 6 },
-      { code: 'INF302', libelle: 'Développement Mobile (React Native)', note: 16.0, credit: 6 },
-      { code: 'INF303', libelle: 'Algorithmique Avancée & Java', note: 11.0, credit: 4 },
-      { code: 'MGT301', libelle: 'Gestion de Projet & Agilité', note: 9.5, credit: 4 },
-    ]
-  },
-  {
-    id: '2',
-    matricule: 'ET-2024-042',
-    nom: 'RAVELO',
-    prenom: 'Mialy',
-    filiere: 'Administration',
-    niveau: 'M1',
-    semestre: 'Semestre 1',
-    matieres: [
-      { code: 'ADM401', libelle: 'Comptabilité Analytique', note: 12.0, credit: 5 },
-      { code: 'ADM402', libelle: 'Droit des Affaires', note: 10.5, credit: 5 },
-      { code: 'ADM403', libelle: 'Management Stratégique', note: 15.0, credit: 6 },
-    ]
-  }
-];
-
 const SEMESTRES: Semestre[] = ['Semestre 1', 'Semestre 2'];
 const PAGE_SIZE = 5;
 
@@ -72,6 +40,9 @@ const calculerMoyenne = (matieres: NoteMatiere[]): number => {
 export default function Resultats() {
   const { darkMode } = useTheme();
 
+  // On initialise avec un tableau vide
+  const [data, setData] = useState<ResultatEtudiant[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filtreSemestre, setFiltreSemestre] = useState<Semestre | ''>('');
   const [page, setPage] = useState(1);
@@ -91,8 +62,45 @@ export default function Resultats() {
     color: 'var(--text)',
   };
 
+  // ─── Chargement des données de l'API ──────────────────────
+  const fetchResultats = async () => {
+    setLoading(true);
+    try {
+      // Modifie apiService.note si ton endpoint s'appelle autrement (ex: apiService.resultat)
+      const response = await apiService.note.getAll();
+      if (response && response.data) {
+        // Uniformisation et mapping des données reçues du backend
+        const mappedData = response.data.map((item: any) => ({
+          id: String(item.id),
+          matricule: item.matricule || item.etudiant?.matricule || '',
+          nom: item.nom || item.etudiant?.nom || '',
+          prenom: item.prenom || item.etudiant?.prenom || '',
+          filiere: item.filiere || 'Génie Logiciel',
+          niveau: item.niveau || 'L3',
+          semestre: item.semestre || 'Semestre 1',
+          // Récupération des matières reliées
+          matieres: (item.matieres || item.notes || []).map((m: any) => ({
+            code: m.code || m.matiere?.code || '',
+            libelle: m.libelle || m.matiere?.libelle || m.matiere?.nom || '',
+            note: m.note !== undefined ? m.note : 0,
+            credit: m.credit || m.matiere?.credit || m.coefficient || 1
+          }))
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des résultats :", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchResultats();
+  }, []);
+
   // ─── Filtrage ───────────────────────────────────────────
-  const filtered = INITIAL_RESULTATS.filter(r => {
+  const filtered = data.filter(r => {
     const q = search.toLowerCase();
     const matchSearch = 
       r.nom.toLowerCase().includes(q) || 
@@ -146,7 +154,11 @@ export default function Resultats() {
               </tr>
             </thead>
             <tbody>
-              {paginated.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="px-4 py-10 text-center opacity-40">Chargement des notes depuis le serveur...</td>
+                </tr>
+              ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-4 py-10 text-center opacity-40">Aucun résultat trouvé</td>
                 </tr>

@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import {
   Search, Plus, Pencil, Trash2, X, Save,
   Calendar, CheckCircle, AlertCircle, Laptop, GraduationCap, Clock
 } from 'lucide-react';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon l'emplacement de ton ApiService
 
 // ── Types Révisés avec TypeFormation ──────────────────────
 export type TypeFormation = 'Initiale' | 'Continue' | 'En ligne';
@@ -20,14 +21,6 @@ interface Programme {
   statut: 'Actif' | 'En attente' | 'Archivé';
 }
 
-const INITIAL_PROGRAMMES: Programme[] = [
-  { id: 1, anneeAcademique: '2025-2026', filiere: 'Génie Logiciel', niveau: 'L3', typeFormation: 'Initiale', titre: 'Parcours Web, Mobile & Architecture Cloud', heuresTheoriques: 240, heuresPratiques: 180, statut: 'Actif' },
-  { id: 2, anneeAcademique: '2025-2026', filiere: 'Administration', niveau: 'M1', typeFormation: 'Continue', titre: 'Executive Master — Entrepreneuriat & Finance', heuresTheoriques: 300, heuresPratiques: 100, statut: 'Actif' },
-  { id: 3, anneeAcademique: '2025-2026', filiere: 'BTP', niveau: 'L2', typeFormation: 'Initiale', titre: 'Infrastructures & Dessin Technique assisté par Ordinateur', heuresTheoriques: 200, heuresPratiques: 150, statut: 'En attente' },
-  { id: 4, anneeAcademique: '2025-2026', filiere: 'Génie Logiciel', niveau: 'L3', typeFormation: 'En ligne', titre: 'Parcours Distanciel — Développement Full-Stack', heuresTheoriques: 210, heuresPratiques: 140, statut: 'Actif' },
-  { id: 5, anneeAcademique: '2024-2025', filiere: 'Génie Logiciel', niveau: 'L3', typeFormation: 'Initiale', titre: 'Ancien Programme Systèmes & Réseaux', heuresTheoriques: 220, heuresPratiques: 160, statut: 'Archivé' },
-];
-
 const FILIERES = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
 const NIVEAUX: Programme['niveau'][] = ['L1', 'L2', 'L3', 'M1', 'M2'];
 const STATUTS: Programme['statut'][] = ['Actif', 'En attente', 'Archivé'];
@@ -39,7 +32,8 @@ const EMPTY_FORM = {
 
 export default function Programmes() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Programme[]>(INITIAL_PROGRAMMES);
+  const [data, setData] = useState<Programme[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreType, setFiltreType] = useState<string>(''); // Filtre par type de formation
@@ -63,6 +57,37 @@ export default function Programmes() {
     color: 'var(--text)',
   };
 
+  // ── Chargement des données depuis l'API ───────────────────
+  const fetchProgrammes = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.programmes.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: Number(item.id),
+          anneeAcademique: item.anneeAcademique || item.academicYear || '2025-2026',
+          filiere: item.filiere || item.department || 'Génie Logiciel',
+          niveau: item.niveau || 'L3',
+          typeFormation: (item.typeFormation || 'Initiale') as TypeFormation,
+          titre: item.titre || item.title || '',
+          heuresTheoriques: Number(item.heuresTheoriques || 0),
+          heuresPratiques: Number(item.heuresPratiques || 0),
+          statut: item.statut || 'En attente'
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur de récupération des programmes :", error);
+      showToast('Erreur lors du chargement des programmes.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProgrammes();
+  }, []);
+
   // ── Filtrage Amélioré ───────────────────────────────────
   const filtered = data.filter(p => {
     const q = search.toLowerCase();
@@ -85,28 +110,41 @@ export default function Programmes() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.titre || !form.anneeAcademique) {
       showToast('Veuillez renseigner le titre du parcours et l\'année académique.');
       return;
     }
 
-    if (modalMode === 'add') {
-      const newId = data.length > 0 ? Math.max(...data.map(p => p.id)) + 1 : 1;
-      setData([...data, { id: newId, ...form }]);
-      showToast('Nouveau programme académique créé');
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
-      showToast('Maquette pédagogique mise à jour');
+    try {
+      if (modalMode === 'add') {
+        const response = await apiService.programmes.create(form);
+        const newId = response?.data?.id ? Number(response.data.id) : (data.length > 0 ? Math.max(...data.map(p => p.id)) + 1 : 1);
+        setData([...data, { id: newId, ...form }]);
+        showToast('Nouveau programme académique créé');
+      } else if (modalMode === 'edit' && selected) {
+        await apiService.programmes.update(selected.id, form);
+        setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
+        showToast('Maquette pédagogique mise à jour');
+      }
+      setModalMode(null);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde du programme :", error);
+      showToast('Une erreur est survenue lors de l’enregistrement.');
     }
-    setModalMode(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId !== null) {
-      setData(data.filter(p => p.id !== deleteId));
-      setDeleteId(null);
-      showToast('Programme supprimé définitivement');
+      try {
+        await apiService.programmes.delete(deleteId);
+        setData(data.filter(p => p.id !== deleteId));
+        setDeleteId(null);
+        showToast('Programme supprimé définitivement');
+      } catch (error) {
+        console.error("Erreur lors de la suppression du programme :", error);
+        showToast('Impossible de supprimer ce programme.');
+      }
     }
   };
 
@@ -129,7 +167,6 @@ export default function Programmes() {
     return `px-2 py-0.5 rounded text-[10px] font-black uppercase ${styles[statut]}`;
   };
 
-  // Icône et couleur adaptées au type de formation
   const getTypeFormationBadge = (type: TypeFormation) => {
     switch (type) {
       case 'Initiale':
@@ -168,7 +205,7 @@ export default function Programmes() {
           <h1 className="text-xl md:text-2xl font-black tracking-tight">Programmes & Cursus</h1>
           <p className="text-xs opacity-45 mt-1">Gérez l'ingénierie pédagogique par rythme d'étude (Initiale, Continue, En ligne)</p>
         </div>
-        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center" style={{ backgroundColor: 'var(--primary)' }}>
+        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}>
           <Plus size={14} /> Nouveau Programme
         </button>
       </div>
@@ -206,7 +243,11 @@ export default function Programmes() {
 
       {/* Liste des Programmes par Cartes */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
+            Chargement des maquettes pédagogiques...
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
             Aucun parcours ou programme enregistré pour ces critères.
           </div>
@@ -226,7 +267,6 @@ export default function Programmes() {
                   <span className={getStatutBadge(p.statut)}>{p.statut}</span>
                 </div>
 
-                {/* Insertion visuelle du rythme d'étude */}
                 <div className="flex pt-0.5">
                   {getTypeFormationBadge(p.typeFormation)}
                 </div>
@@ -252,10 +292,10 @@ export default function Programmes() {
               <div className="flex items-center justify-between pt-1 text-xs">
                 <span className="text-[10px] opacity-45 flex items-center gap-1"><Calendar size={11} /> ETEC Management</span>
                 <div className="flex gap-1">
-                  <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5" style={{ borderColor: 'var(--border)' }}>
+                  <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
                     <Pencil size={12} />
                   </button>
-                  <button onClick={() => setDeleteId(p.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5" style={{ borderColor: 'var(--border)' }}>
+                  <button onClick={() => setDeleteId(p.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
                     <Trash2 size={12} />
                   </button>
                 </div>
@@ -271,7 +311,7 @@ export default function Programmes() {
           <div className="w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={cardStyle}>
             <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-sm font-black">{modalMode === 'add' ? '➕ Nouveau Plan de Programme' : '✏️ Modifier la Maquette'}</h2>
-              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} /></button>
+              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="space-y-1.5">
@@ -294,7 +334,6 @@ export default function Programmes() {
                 </div>
               </div>
 
-              {/* AJOUT : Sélection du Type de Formation dans le Formulaire Admin */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Rythme / Type de Formation</label>
                 <select name="typeFormation" value={form.typeFormation} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
@@ -334,8 +373,8 @@ export default function Programmes() {
             </div>
             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
-              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
+              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
             </div>
           </div>
         </div>
@@ -353,8 +392,8 @@ export default function Programmes() {
               <p className="text-xs opacity-55">La suppression de ce cursus effacera la configuration horaire ainsi que les filtres d'emploi du temps associés pour cette année académique.</p>
             </div>
             <div className="flex gap-3 justify-center text-xs">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold">Supprimer</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold cursor-pointer">Supprimer</button>
             </div>
           </div>
         </div>

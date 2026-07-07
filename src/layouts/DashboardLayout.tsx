@@ -6,7 +6,7 @@ import {
   FileText, Bell, Settings, LogOut, Menu, ChevronDown,
   TrendingUp, UserCheck, ClipboardList, Building2, Sun, Moon,
   Search, ChevronRight, Presentation, Landmark, Network, History,
-  GraduationCap, Laptop, BookMarcked, ClipboardCheck
+  GraduationCap, Laptop, BookMarcked, ClipboardCheck, MessageSquare
 } from 'lucide-react';
 
 // ─── Navigation avec les nouveaux paths demandés ─────────────────────────
@@ -35,7 +35,6 @@ const NAV_ITEMS = [
     icon: <Users size={18} />,
     label: 'Étudiants',
     path: '/admin/etudiants',
-    badge: 12,
     children: [
       { label: 'Liste des étudiants', path: '/admin/etudiants' },
       { label: 'Inscriptions',        path: '/admin/etudiants/inscriptions' },
@@ -59,6 +58,8 @@ const NAV_ITEMS = [
       { label: 'Formation Initiale', path: '/admin/Formations/formationinitiale' },
       { label: 'Formation Continue', path: '/admin/Formations/formationcontinu' },
       { label: 'Formation en Ligne', path: '/admin/Formations/formationenligne' },
+      { label: 'Devoirs', path: '/admin/Formations/devoir' },
+      { label: 'Quiz', path: '/admin/Formations/quiz' },
       { label: 'Gestion Filières',   path: '/admin/Formations/Filiers' },
       { label: 'Programmes',         path: '/admin/Formations/Programmes' },
       { label: 'Modules',            path: '/admin/Formations/Modules' },
@@ -66,11 +67,12 @@ const NAV_ITEMS = [
     ],
   },
   { icon: <Calendar size={18} />,      label: 'Emploi du temps',  path: '/admin/edt' },
-  { icon: <ClipboardList size={18} />, label: 'Notes & Résultats', path: '/admin/Notes&Resultats', badge: 3 },
+  { icon: <ClipboardList size={18} />, label: 'Notes & Résultats', path: '/admin/Notes&Resultats'},
   { icon: <FileText size={18} />,      label: 'Actualités',        path: '/admin/actualites' },
+  { icon: <MessageSquare size={18} />, label: 'Messages',          path: '/admin/messages' },
   { icon: <TrendingUp size={18} />,    label: 'Statistiques',      path: '/admin/statistiques' },
   { icon: <ClipboardCheck size={18} />,    label: 'Ouverture Inscriptions',      path: '/admin/iouverts' },
-  { icon: <Bell size={18} />,          label: 'Notifications',     path: '/admin/notifications', badge: 5 },
+  { icon: <Bell size={18} />,          label: 'Notifications',     path: '/admin/notifications'},
   { icon: <Settings size={18} />,      label: 'Paramètres',        path: '/admin/parametres' },
 ];
 

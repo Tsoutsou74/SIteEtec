@@ -1,26 +1,41 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BookOpenCheck, CalendarDays, CheckCircle, GraduationCap, Layers, Users } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import ApiService from '../services/ApiService';
 
-const parcours = [
+interface FormationInitiale {
+  id?: string | number;
+  code?: string;
+  titre?: string;
+  title?: string;
+  filiere?: string;
+  duree?: string;
+  duration?: string;
+  frais?: string;
+  description?: string;
+  statut?: string;
+  items?: string[];
+}
+
+const FALLBACK_PARCOURS: FormationInitiale[] = [
   {
-    title: 'Administration et Gestion',
-    duration: 'Licence 3 ans / Master 5 ans',
+    titre: 'Administration et Gestion',
+    duree: 'Licence 3 ans / Master 5 ans',
     items: ['Management', 'Comptabilite et finance', 'Marketing', 'Ressources humaines'],
   },
   {
-    title: 'Genie logiciel et reseaux',
-    duration: 'Licence 3 ans / Master 5 ans',
+    titre: 'Genie logiciel et reseaux',
+    duree: 'Licence 3 ans / Master 5 ans',
     items: ['Developpement web et mobile', 'Administration systeme', 'Cloud et reseaux', 'Cybersecurite'],
   },
   {
-    title: 'Batiment et Travaux Publics',
-    duration: 'Licence professionnelle 3 ans',
+    titre: 'Batiment et Travaux Publics',
+    duree: 'Licence professionnelle 3 ans',
     items: ['Dessin BTP', 'Topographie', 'Conduite de chantier', 'Structures et beton arme'],
   },
   {
-    title: 'Electromecanique',
-    duration: 'Licence professionnelle 3 ans',
+    titre: 'Electromecanique',
+    duree: 'Licence professionnelle 3 ans',
     items: ['Automatisme', 'Maintenance industrielle', 'Electricite', 'Systemes mecaniques'],
   },
 ];
@@ -29,6 +44,33 @@ const steps = ['Depot du dossier', 'Etude du profil', 'Entretien d orientation',
 
 export default function FormationInitialePage() {
   const { darkMode } = useTheme();
+  const [parcours, setParcours] = useState<FormationInitiale[]>(FALLBACK_PARCOURS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFormations = async () => {
+      try {
+        const response = await ApiService.formationInitiale.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setParcours(data);
+        }
+      } catch {
+        if (isMounted) {
+          setParcours(FALLBACK_PARCOURS);
+        }
+      }
+    };
+
+    loadFormations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.34)' : 'rgba(255,255,255,0.72)',
     borderColor: 'var(--border)',
@@ -65,19 +107,24 @@ export default function FormationInitialePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {parcours.map((item) => (
-            <article key={item.title} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
+          {parcours.map((item, index) => {
+            const title = item.titre || item.title || 'Formation initiale';
+            const duration = item.duree || item.duration || item.frais || 'Duree a preciser';
+            const details = item.items || [item.filiere, item.description, item.statut].filter(Boolean);
+
+            return (
+            <article key={item.id || `${title}-${index}`} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
               <div className="flex items-start gap-4">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-green-500/10 text-green-500 border border-green-500/20 shrink-0">
                   <BookOpenCheck size={22} />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black tracking-tight">{item.title}</h2>
-                  <p className="text-xs font-bold uppercase tracking-wide opacity-55 mt-1">{item.duration}</p>
+                  <h2 className="text-lg font-black tracking-tight">{title}</h2>
+                  <p className="text-xs font-bold uppercase tracking-wide opacity-55 mt-1">{duration}</p>
                 </div>
               </div>
               <ul className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {item.items.map((skill) => (
+                {details.map((skill) => (
                   <li key={skill} className="flex items-center gap-2 text-xs opacity-75">
                     <CheckCircle size={14} className="text-green-500 shrink-0" />
                     {skill}
@@ -85,7 +132,8 @@ export default function FormationInitialePage() {
                 ))}
               </ul>
             </article>
-          ))}
+          );
+          })}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

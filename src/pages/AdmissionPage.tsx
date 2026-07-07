@@ -1,10 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ClipboardCheck, User, Mail, Phone, BookOpen, Send, CheckCircle } from 'lucide-react';
+import ApiService from '../services/ApiService';
+
+interface FiliereApi {
+  id?: number;
+  code?: string;
+  nom?: string;
+  responsable?: string;
+}
 
 export default function AdmissionPage() {
   const { darkMode } = useTheme();
   const [submitted, setSubmitted] = useState(false);
+  const [filiers, setFiliers] = useState<FiliereApi[]>([]);
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
@@ -12,6 +21,32 @@ export default function AdmissionPage() {
     telephone: '',
     filiere: 'Administration et Gestion'
   });
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFiliers = async () => {
+      try {
+        const response = await ApiService.filiers.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setFiliers(data);
+          setFormData((current) => ({ ...current, filiere: data[0].nom || current.filiere }));
+        }
+      } catch {
+        if (isMounted) {
+          setFiliers([]);
+        }
+      }
+    };
+
+    loadFiliers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -185,10 +220,20 @@ export default function AdmissionPage() {
                       className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors cursor-pointer appearance-none"
                       style={inputStyle}
                     >
-                      <option value="Administration et Gestion">Administration et Gestion</option>
-                      <option value="Génie Logiciel et Administration Réseaux">Génie Logiciel et Administration Réseaux</option>
-                      <option value="Bâtiment et Travaux Publics">Bâtiment et Travaux Publics</option>
-                      <option value="Électromécanique et Industriels">Électromécanique et Industriels</option>
+                      {filiers.length > 0 ? (
+                        filiers.map((filiere) => (
+                          <option key={filiere.id || filiere.code || filiere.nom} value={filiere.nom || ''}>
+                            {filiere.nom}
+                          </option>
+                        ))
+                      ) : (
+                        <>
+                          <option value="Administration et Gestion">Administration et Gestion</option>
+                          <option value="Génie Logiciel et Administration Réseaux">Génie Logiciel et Administration Réseaux</option>
+                          <option value="Bâtiment et Travaux Publics">Bâtiment et Travaux Publics</option>
+                          <option value="Électromécanique et Industriels">Électromécanique et Industriels</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>

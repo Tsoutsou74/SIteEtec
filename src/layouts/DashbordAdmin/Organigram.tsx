@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
-  Users, Plus, Search, MoreVertical, Edit2, 
-  Trash2, X, Check, Shield, Mail, Phone, 
-  ChevronDown, ChevronUp, Layers
+  Plus, Search, MoreVertical, Edit2, 
+  Trash2, X, Check, Mail, Phone, 
+  ChevronDown, ChevronUp, Layers, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Member {
@@ -18,20 +19,13 @@ interface Member {
   order: number; // Pour gérer la priorité d'affichage
 }
 
-// ─── Données Initiales ──────────────────────────────────────────────
-const INITIAL_MEMBERS: Member[] = [
-  { id: 1, name: 'Dr. Fanilo Rakoto', role: 'Directeur Général', category: 'Direction', email: 'direction@etec.mg', phone: '+261 34 00 123 45', order: 1 },
-  { id: 2, name: 'Mme Miora Andriana', role: 'Directrice des Études', category: 'Direction', email: 'm.andriana@etec.mg', phone: '+261 32 00 123 46', order: 2 },
-  { id: 3, name: 'M. Niavo Ranaivo', role: 'Chef de Mention Informatique', category: 'Mentions', email: 'n.ranaivo@etec.mg', phone: '+261 33 00 555 01', order: 3 },
-  { id: 4, name: 'Dr. Randria Sylvain', role: 'Chef de Mention BTP', category: 'Mentions', email: 's.randria@etec.mg', phone: '+261 34 00 555 02', order: 4 },
-  { id: 5, name: 'Mme Rabe Justine', role: 'Responsable Scolarité', category: 'Administration', email: 'scolarite@etec.mg', phone: '+261 32 00 777 88', order: 5 },
-  { id: 6, name: 'M. Solo Herilanto', role: 'Enseignant Réseaux & Systèmes', category: 'Enseignants', email: 's.herilanto@etec.mg', phone: '+261 33 00 999 11', order: 6 },
-];
-
 const CATEGORIES = ['Direction', 'Mentions', 'Administration', 'Enseignants'] as const;
 
 export default function AdminOrganigramme() {
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   
@@ -40,6 +34,7 @@ export default function AdminOrganigramme() {
 
   // ─── State pour le Formulaire (Ajout / Édition) ────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -49,6 +44,25 @@ export default function AdminOrganigramme() {
     phone: '',
     order: 1
   });
+
+  // ─── Chargement initial depuis l'API ────────────────────────────────
+  useEffect(() => {
+    fetchMembers();
+  }, []);
+
+  const fetchMembers = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.organigrammes.getAll();
+      setMembers(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger l'organigramme.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // ─── Filtrage en temps réel ────────────────────────────────────────
   const filteredMembers = useMemo(() => {
@@ -69,7 +83,7 @@ export default function AdminOrganigramme() {
     };
     
     filteredMembers.forEach(m => {
-      groups[m.category].push(m);
+      groups[m.category]?.push(m);
     });
 
     // Trier chaque groupe par son ordre de priorité
@@ -108,32 +122,75 @@ export default function AdminOrganigramme() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
-    if (confirm('Voulez-vous vraiment retirer ce membre de l’organigramme officiel ?')) {
-      setMembers(prev => prev.filter(m => m.id !== id));
-      setActiveMenu(null);
+  const handleDelete = async (id: number) => {
+    if (!confirm('Voulez-vous vraiment retirer ce membre de l’organigramme officiel ?')) return;
+
+    const previous = members;
+    setMembers(prev => prev.filter(m => m.id !== id));
+    setActiveMenu(null);
+
+    try {
+      await ApiService.organigrammes.delete(id);
+    } catch (err) {
+      console.error(err);
+      setMembers(previous); // rollback
+      alert("La suppression a échoué, réessaie.");
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.role || !formData.email) return;
 
-    if (editingMember) {
-      setMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, ...formData } : m));
-    } else {
-      const newMember: Member = {
-        id: Date.now(),
-        ...formData
-      };
-      setMembers(prev => [...prev, newMember]);
+    setIsSaving(true);
+    try {
+      if (editingMember) {
+        const res = await ApiService.organigrammes.update(editingMember.id, formData);
+        const updatedMember: Member = res.data ?? { ...editingMember, ...formData };
+        setMembers(prev => prev.map(m => m.id === editingMember.id ? updatedMember : m));
+      } else {
+        const res = await ApiService.organigrammes.create(formData);
+        const newMember: Member = res.data;
+        setMembers(prev => [...prev, newMember]);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
 
   const toggleCategoryCollapse = (cat: string) => {
     setCollapsedCategories(prev => ({ ...prev, [cat]: !prev[cat] }));
   };
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement de l'organigramme...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchMembers}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -376,10 +433,11 @@ export default function AdminOrganigramme() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  <Check size={14} />
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                   {editingMember ? 'Sauvegarder' : 'Ajouter'}
                 </button>
               </div>

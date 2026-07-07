@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Mail, User, Phone, MapPin, Share2, Info, Send, CheckCircle } from 'lucide-react';
+import apiService from '../services/api';
 
 export default function ContactPage() {
   const { darkMode } = useTheme();
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
@@ -14,9 +17,23 @@ export default function ContactPage() {
     message: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setLoading(true);
+    setErrorMessage('');
+
+    try {
+      await apiService.contacts.create(formData);
+      setSubmitted(true);
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String(error.message)
+          : "Impossible d'envoyer le message pour le moment.";
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -170,6 +187,11 @@ export default function ContactPage() {
                   <p className="text-xs opacity-60">
                     Tous les champs sont obligatoires pour le traitement rapide de votre message.
                   </p>
+                  {errorMessage && (
+                    <p className="mt-2 text-xs font-semibold text-red-500">
+                      {errorMessage}
+                    </p>
+                  )}
                 </div>
 
                 {/* Nom + Prénom */}
@@ -259,10 +281,11 @@ export default function ContactPage() {
                 {/* Bouton envoi */}
                 <button
                   type="submit"
+                  disabled={loading}
                   className="w-full text-white font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition hover:opacity-95 cursor-pointer"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  Envoyer le message <Send size={13} />
+                  {loading ? 'Envoi en cours...' : 'Envoyer le message'} <Send size={13} />
                 </button>
               </form>
             )}

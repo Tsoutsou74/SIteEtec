@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Presentation, Plus, Search, MoreVertical, Edit2, 
-  Trash2, X, Check, Eye, Link, Image as ImageIcon, 
-  Layers, Power, FileText
+  Trash2, X, Check, Link, Image as ImageIcon, 
+  Power, FileText, Loader2
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Slide {
@@ -18,47 +19,17 @@ interface Slide {
   order: number;
 }
 
-// ─── Données Initiales ──────────────────────────────────────────────
-const INITIAL_SLIDES: Slide[] = [
-  { 
-    id: 1, 
-    title: 'Inscriptions Ouvertes pour la Rentrée 2026', 
-    subtitle: 'Rejoignez les filières d’avenir à l’E-TEC. Formations homologuées et axées sur la pratique.', 
-    imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?q=80&w=1200', 
-    ctaText: 'S’inscrire maintenant', 
-    ctaLink: '/Inscriptions', 
-    isActive: true,
-    order: 1
-  },
-  { 
-    id: 2, 
-    title: 'Innovez avec l’Intelligence Artificielle', 
-    subtitle: 'Découvrez notre nouveau parcours Master en Ingénierie des Données et IA.', 
-    imageUrl: 'https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?q=80&w=1200', 
-    ctaText: 'Découvrir la formation', 
-    ctaLink: '/formations', 
-    isActive: true,
-    order: 2
-  },
-  { 
-    id: 3, 
-    title: 'Vie de Campus & Infrastructures', 
-    subtitle: 'Un environnement moderne au cœur d’Antananarivo pour l’épanouissement de nos étudiants.', 
-    imageUrl: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?q=80&w=1200', 
-    ctaText: 'Visiter nos campus', 
-    ctaLink: '/about', 
-    isActive: false,
-    order: 3
-  }
-];
-
 export default function AdminSlides() {
-  const [slides, setSlides] = useState<Slide[]>(INITIAL_SLIDES);
+  const [slides, setSlides] = useState<Slide[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
 
   // ─── State pour le Formulaire (Ajout / Édition) ────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingSlide, setEditingSlide] = useState<Slide | null>(null);
   const [formData, setFormData] = useState({
     title: '',
@@ -69,6 +40,25 @@ export default function AdminSlides() {
     isActive: true,
     order: 1
   });
+
+  // ─── Chargement initial depuis l'API ────────────────────────────────
+  useEffect(() => {
+    fetchSlides();
+  }, []);
+
+  const fetchSlides = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await ApiService.slides.getAll();
+      setSlides(res.data);
+    } catch (err) {
+      console.error(err);
+      setError("Impossible de charger les slides. Vérifie que le service est bien démarré.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // ─── Filtrage en temps réel ────────────────────────────────────────
   const filteredSlides = useMemo(() => {
@@ -115,32 +105,84 @@ export default function AdminSlides() {
     setIsModalOpen(true);
   };
 
-  const toggleStatus = (id: number) => {
-    setSlides(prev => prev.map(s => s.id === id ? { ...s, isActive: !s.isActive } : s));
-  };
-
-  const handleDelete = (id: number) => {
-    if (confirm('Voulez-vous supprimer ce slide de l’écran d’accueil vitrine ?')) {
-      setSlides(prev => prev.filter(s => s.id !== id));
-      setActiveMenu(null);
+  const toggleStatus = async (slide: Slide) => {
+    const updated = { ...slide, isActive: !slide.isActive };
+    // mise à jour optimiste
+    setSlides(prev => prev.map(s => s.id === slide.id ? updated : s));
+    try {
+      await ApiService.slides.update(slide.id, updated);
+    } catch (err) {
+      console.error(err);
+      // rollback en cas d'échec
+      setSlides(prev => prev.map(s => s.id === slide.id ? slide : s));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleDelete = async (id: number) => {
+    if (!confirm('Voulez-vous supprimer ce slide de l’écran d’accueil vitrine ?')) return;
+
+    const previous = slides;
+    setSlides(prev => prev.filter(s => s.id !== id));
+    setActiveMenu(null);
+
+    try {
+      await ApiService.slides.delete(id);
+    } catch (err) {
+      console.error(err);
+      setSlides(previous); // rollback
+      alert("La suppression a échoué, réessaie.");
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.title || !formData.imageUrl) return;
 
-    if (editingSlide) {
-      setSlides(prev => prev.map(s => s.id === editingSlide.id ? { ...s, ...formData } : s));
-    } else {
-      const newSlide: Slide = {
-        id: Date.now(),
-        ...formData
-      };
-      setSlides(prev => [...prev, newSlide]);
+    setIsSaving(true);
+    try {
+      if (editingSlide) {
+        const res = await ApiService.slides.update(editingSlide.id, formData);
+        const updatedSlide: Slide = res.data ?? { ...editingSlide, ...formData };
+        setSlides(prev => prev.map(s => s.id === editingSlide.id ? updatedSlide : s));
+      } else {
+        const res = await ApiService.slides.create(formData);
+        const newSlide: Slide = res.data;
+        setSlides(prev => [...prev, newSlide]);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des slides...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <FileText size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{error}</p>
+        <button
+          onClick={fetchSlides}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -226,7 +268,7 @@ export default function AdminSlides() {
                   <div className="flex items-center gap-2">
                     {/* Toggle Switch d'activation rapide */}
                     <button 
-                      onClick={() => toggleStatus(slide.id)}
+                      onClick={() => toggleStatus(slide)}
                       className="px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all cursor-pointer border flex items-center gap-1 text-white"
                       style={{ 
                         backgroundColor: slide.isActive ? 'rgba(0,180,0,0.7)' : 'rgba(220,38,38,0.7)',
@@ -403,10 +445,11 @@ export default function AdminSlides() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  <Check size={14} />
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                   {editingSlide ? 'Enregistrer' : 'Publier'}
                 </button>
               </div>

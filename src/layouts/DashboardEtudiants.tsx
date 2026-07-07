@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import {
-  LayoutDashboard, BookOpen, Calendar, FileText, Bell,
+  LayoutDashboard, BookOpen, Calendar, FileText, Bell, MessageSquare,
   Settings, LogOut, Menu, Sun, Moon,
   Search, ChevronRight, GraduationCap, ClipboardList,
   TrendingUp, User,
@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { icon: <BookOpen size={18} />, label: 'Mes cours', path: '/etudiants/cours' },
   { icon: <FileText size={18} />, label: 'Documents', path: '/etudiants/documents' },
   { icon: <TrendingUp size={18} />, label: 'Résultats', path: '/etudiants/resultats' },
+  { icon: <MessageSquare size={18} />, label: 'Messages', path: '/etudiants/messages' },
   { icon: <Bell size={18} />, label: 'Notifications', path: '/etudiants/notifications', badge: 3 },
   { icon: <Settings size={18} />, label: 'Paramètres', path: '/etudiants/parametres' },
 ];

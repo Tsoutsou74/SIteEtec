@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import {
   Search, Plus, Pencil, Trash2, X, Save,
-  Calendar, CheckCircle, AlertCircle, Image, Tag, Eye
+  Calendar, CheckCircle, AlertCircle, Image, Tag, Eye, Loader2, Upload
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────
@@ -13,45 +14,11 @@ interface Actualite {
   titre: string;
   categorie: CategorieActualite;
   datePublication: string;
-  contenu: string;
+  contenu: string;  
   imageUrl: string;
   statut: 'Publié' | 'Brouillon' | 'Archivé';
   important: boolean;
 }
-
-// Données initiales réalistes pour ETEC University
-const INITIAL_ACTUALITES: Actualite[] = [
-  {
-    id: 1,
-    titre: 'Ouverture des inscriptions pour l\'année académique 2026-2027',
-    categorie: 'Pédagogie',
-    datePublication: '2026-06-15',
-    contenu: 'Les dossiers de candidature pour les cycles Licence et Master sont désormais acceptés en ligne et sur le campus principal. Date limite des dépôts de dossier : 15 Octobre 2026.',
-    imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=600&auto=format&fit=crop&q=60',
-    statut: 'Publié',
-    important: true
-  },
-  {
-    id: 2,
-    titre: 'Hackathon Inter-Universitaire : ETEC décroche la première place',
-    categorie: 'Vie Étudiante',
-    datePublication: '2026-05-20',
-    contenu: 'Félicitations à notre équipe d\'étudiants en Génie Logiciel qui a remporté le premier prix lors du Hackathon Tech Océan Indien grâce à leur projet d\'assistant domotique accessible.',
-    imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?w=600&auto=format&fit=crop&q=60',
-    statut: 'Publié',
-    important: false
-  },
-  {
-    id: 3,
-    titre: 'Maintenance programmée de la plateforme e-learning',
-    categorie: 'Flash Info',
-    datePublication: '2026-07-02',
-    contenu: 'La plateforme de cours en ligne sera inaccessible ce samedi de 22h à 04h du matin pour une mise à niveau des serveurs. Merci de votre compréhension.',
-    imageUrl: 'https://images.unsplash.com/photo-1588702547919-26089e690ecc?w=600&auto=format&fit=crop&q=60',
-    statut: 'Brouillon',
-    important: false
-  }
-];
 
 const CATEGORIES: CategorieActualite[] = ['Événement', 'Flash Info', 'Pédagogie', 'Vie Étudiante'];
 const STATUTS: Actualite['statut'][] = ['Publié', 'Brouillon', 'Archivé'];
@@ -61,16 +28,17 @@ const EMPTY_FORM = {
   categorie: 'Événement' as CategorieActualite,
   datePublication: new Date().toISOString().split('T')[0],
   contenu: '',
-  imageUrl: 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&auto=format&fit=crop&q=60', // image par défaut réutilisable
+  imageUrl: '', // Initialisé vide pour accueillir le Base64 ou l'image par défaut
   statut: 'Brouillon' as Actualite['statut'],
   important: false
 };
 
 export default function Actualites() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Actualite[]>(INITIAL_ACTUALITES);
+  const [data, setData] = useState<Actualite[]>([]);
   const [search, setSearch] = useState('');
   const [filtreCategorie, setFiltreCategorie] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   // États CRUD
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
@@ -78,6 +46,17 @@ export default function Actualites() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // ── Configuration des En-têtes (Headers) ──────────────────
+  const getRequestConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    };
+  };
 
   const inputStyle = {
     backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
@@ -91,6 +70,35 @@ export default function Actualites() {
     color: 'var(--text)',
   };
 
+  // ── Chargement depuis l'API ──────────────────────────────
+  useEffect(() => {
+    fetchActualites();
+  }, []);
+
+  const fetchActualites = async () => {
+    setIsLoading(true);
+    try {
+      const res = await ApiService.actualites.getAll(getRequestConfig());
+      if (res && res.data) {
+        const mappedData = res.data.map((item: any) => ({
+          id: Number(item.id),
+          titre: item.titre || item.title || '',
+          categorie: (item.categorie || 'Événement') as CategorieActualite,
+          datePublication: item.datePublication || item.date || new Date().toISOString().split('T')[0],
+          contenu: item.contenu || item.content || '',
+          imageUrl: item.imageUrl || item.image || '',
+          statut: (item.statut || 'Brouillon') as Actualite['statut'],
+          important: !!item.important
+        }));
+        setData(mappedData);
+      }
+    } catch (err) {
+      console.error("Erreur de chargement des actualités:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ── Filtrage ────────────────────────────────────────────
   const filtered = data.filter(act => {
     const q = search.toLowerCase();
@@ -101,7 +109,7 @@ export default function Actualites() {
 
   // ── Actions CRUD ────────────────────────────────────────
   const openAdd = () => {
-    setForm({ ...EMPTY_FORM, datePublication: new Date().toISOString().split('T')[0] });
+    setForm(EMPTY_FORM);
     setModalMode('add');
   };
 
@@ -112,28 +120,46 @@ export default function Actualites() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.titre || !form.contenu) {
       showToast('Veuillez renseigner le titre et le contenu de l\'article.');
       return;
     }
 
-    if (modalMode === 'add') {
-      const newId = data.length > 0 ? Math.max(...data.map(p => p.id)) + 1 : 1;
-      setData([{ id: newId, ...form }, ...data]);
-      showToast('Actualité créée avec succès');
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
-      showToast('Actualité mise à jour');
+    try {
+      const config = getRequestConfig();
+      if (modalMode === 'add') {
+        const res = await ApiService.actualites.create(form, config);
+        const newId = res?.data?.id ? Number(res.data.id) : Date.now();
+        setData([{ id: newId, ...form }, ...data]);
+        showToast('Actualité créée avec succès');
+      } else if (modalMode === 'edit' && selected) {
+        await ApiService.actualites.update(selected.id, form, config);
+        setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
+        showToast('Actualité mise à jour');
+      }
+      setModalMode(null);
+    } catch (err) {
+      console.error("Erreur d'enregistrement:", err);
+      showToast("Erreur lors de la sauvegarde.");
     }
-    setModalMode(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId !== null) {
-      setData(data.filter(p => p.id !== deleteId));
+      const idToDelete = deleteId;
+      const previousData = data;
+      setData(data.filter(p => p.id !== idToDelete));
       setDeleteId(null);
-      showToast('Article supprimé définitivement');
+
+      try {
+        await ApiService.actualites.delete(idToDelete, getRequestConfig());
+        showToast('Article supprimé définitivement');
+      } catch (err) {
+        console.error("Erreur de suppression:", err);
+        setData(previousData);
+        showToast("Impossible de supprimer l'article.");
+      }
     }
   };
 
@@ -145,6 +171,18 @@ export default function Actualites() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+  };
+
+  // Convertit le fichier de l'ordinateur en chaîne de caractères utilisable par l'image
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setForm({ ...form, imageUrl: reader.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,7 +223,7 @@ export default function Actualites() {
           <h1 className="text-xl md:text-2xl font-black tracking-tight">Portail Actualités & Campus</h1>
           <p className="text-xs opacity-45 mt-1">Publiez les événements, notes administratives et flash infos pour l'université</p>
         </div>
-        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center" style={{ backgroundColor: 'var(--primary)' }}>
+        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}>
           <Plus size={14} /> Publier un article
         </button>
       </div>
@@ -211,75 +249,76 @@ export default function Actualites() {
         </div>
       </div>
 
-      {/* Grille de cartes avec support visuel des Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filtered.length === 0 ? (
-          <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
-            Aucun article d'actualité ne correspond à vos critères.
-          </div>
-        ) : (
-          filtered.map(act => (
-            <div key={act.id} className="rounded-2xl border overflow-hidden flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150 relative" style={cardStyle}>
-              
-              {/* Badge d'importance critique */}
-              {act.important && (
-                <span className="absolute top-3 left-3 z-10 px-2 py-0.5 text-[9px] font-black tracking-wider text-white bg-red-500 rounded-md uppercase shadow-lg">
-                  🚨 Crucial
-                </span>
-              )}
-
-              {/* Conteneur de l'Image de l'actualité */}
-              <div className="h-44 w-full relative bg-black/10 overflow-hidden shrink-0">
-                {act.imageUrl ? (
-                  <img src={act.imageUrl} alt={act.titre} className="w-full h-full object-cover transition duration-300 hover:scale-105" onError={(e) => {
-                    // Fallback si l'URL saisie est morte
-                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&auto=format&fit=crop&q=60';
-                  }} />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center opacity-20">
-                    <Image size={24} />
-                    <span className="text-[10px] mt-1">Aucun média</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Contenu textuel */}
-              <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={getCategorieBadge(act.categorie)}>{act.categorie}</span>
-                    <span className={getStatutBadge(act.statut)}>{act.statut}</span>
-                  </div>
-
-                  <h3 className="font-black text-xs md:text-sm tracking-tight leading-snug line-clamp-2" title={act.titre}>
-                    {act.titre}
-                  </h3>
-                  
-                  <p className="text-[11px] opacity-60 line-clamp-3 leading-relaxed">
-                    {act.contenu}
-                  </p>
-                </div>
-
-                {/* Pied de la carte actualité */}
-                <div className="flex items-center justify-between pt-2 border-t text-[11px]" style={{ borderColor: 'var(--border)' }}>
-                  <span className="opacity-45 flex items-center gap-1 font-mono">
-                    <Calendar size={11} /> {act.datePublication}
-                  </span>
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(act)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5" style={{ borderColor: 'var(--border)' }}>
-                      <Pencil size={11} />
-                    </button>
-                    <button onClick={() => setDeleteId(act.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5" style={{ borderColor: 'var(--border)' }}>
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-
+      {/* Grille de cartes */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12 gap-2 opacity-50 text-xs">
+          <Loader2 size={16} className="animate-spin" /> Chargement des articles...
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+          {filtered.length === 0 ? (
+            <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
+              Aucun article d'actualité ne correspond à vos critères.
             </div>
-          ))
-        )}
-      </div>
+          ) : (
+            filtered.map(act => (
+              <div key={act.id} className="rounded-2xl border overflow-hidden flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150 relative" style={cardStyle}>
+                
+                {act.important && (
+                  <span className="absolute top-3 left-3 z-10 px-2 py-0.5 text-[9px] font-black tracking-wider text-white bg-red-500 rounded-md uppercase shadow-lg">
+                    🚨 Crucial
+                  </span>
+                )}
+
+                <div className="h-44 w-full relative bg-black/10 overflow-hidden shrink-0">
+                  {act.imageUrl ? (
+                    <img src={act.imageUrl} alt={act.titre} className="w-full h-full object-cover transition duration-300 hover:scale-105" onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&auto=format&fit=crop&q=60';
+                    }} />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center opacity-20">
+                      <Image size={24} />
+                      <span className="text-[10px] mt-1">Aucun média</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={getCategorieBadge(act.categorie)}>{act.categorie}</span>
+                      <span className={getStatutBadge(act.statut)}>{act.statut}</span>
+                    </div>
+
+                    <h3 className="font-black text-xs md:text-sm tracking-tight leading-snug line-clamp-2" title={act.titre}>
+                      {act.titre}
+                    </h3>
+                    
+                    <p className="text-[11px] opacity-60 line-clamp-3 leading-relaxed">
+                      {act.contenu}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t text-[11px]" style={{ borderColor: 'var(--border)' }}>
+                    <span className="opacity-45 flex items-center gap-1 font-mono">
+                      <Calendar size={11} /> {act.datePublication}
+                    </span>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEdit(act)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
+                        <Pencil size={11} />
+                      </button>
+                      <button onClick={() => setDeleteId(act.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       {/* Modal Formulaire (Création / Modification) */}
       {modalMode && (
@@ -287,17 +326,15 @@ export default function Actualites() {
           <div className="w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={cardStyle}>
             <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-sm font-black">{modalMode === 'add' ? '📣 Rédiger une Actualité' : '✏️ Éditer la publication'}</h2>
-              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} /></button>
+              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
             </div>
             
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
-              {/* Titre */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Titre de l'actualité</label>
                 <input name="titre" value={form.titre} onChange={handleChange} placeholder="ex: Cérémonie de remise des diplômes Promotion 2026" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
               </div>
 
-              {/* Catégorie & Statut */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Catégorie</label>
@@ -313,25 +350,31 @@ export default function Actualites() {
                 </div>
               </div>
 
-              {/* URL de l'Image & Aperçu en Direct */}
+              {/* Champ d'importation de fichier depuis l'ordinateur */}
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                  <Image size={12} /> URL de l'illustration (Lien Web Unsplash / Serveur)
+                  <Upload size={12} /> Illustration de l'article (Fichier local)
                 </label>
-                <input name="imageUrl" value={form.imageUrl} onChange={handleChange} placeholder="https://lien-image.com/photo.jpg" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none font-mono text-[11px]" style={inputStyle} />
                 
-                {/* Boîte de prévisualisation de l'image en direct dans le formulaire */}
-                <div className="h-28 w-full rounded-xl overflow-hidden border border-dashed relative bg-black/5 flex items-center justify-center" style={{ borderColor: 'var(--border)' }}>
+                <div className="relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition" style={{ borderColor: 'var(--border)' }}>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handleFileChange} 
+                    className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                  />
                   {form.imageUrl ? (
-                    <img src={form.imageUrl} alt="Prévisualisation" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                    <img src={form.imageUrl} alt="Prévisualisation" className="w-full h-full object-cover rounded-xl" />
                   ) : (
-                    <span className="opacity-30 text-[10px]">Aucun aperçu disponible</span>
+                    <div className="text-center p-4 opacity-50">
+                      <Upload size={20} className="mx-auto mb-1" />
+                      <span className="font-bold block text-[11px]">Parcourir l'ordinateur</span>
+                      <span className="text-[9px]">PNG, JPG ou WEBP</span>
+                    </div>
                   )}
-                  <span className="absolute bottom-2 right-2 px-1.5 py-0.5 text-[9px] bg-black/60 text-white font-bold rounded flex items-center gap-1"><Eye size={10}/> Aperçu dynamique</span>
                 </div>
               </div>
 
-              {/* Date & Importance */}
               <div className="grid grid-cols-2 gap-3 items-center pt-1">
                 <div className="space-y-1.5">
                   <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Date d'affichage</label>
@@ -346,16 +389,15 @@ export default function Actualites() {
                 </label>
               </div>
 
-              {/* Contenu rédactionnel */}
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Corps de l'article (Texte de l'actualité)</label>
-                <textarea name="contenu" value={form.contenu} onChange={handleChange} rows={4} placeholder="Saisissez les détails complets de l'information ou de la note ici..." className="w-full px-3 py-2.5 rounded-xl border focus:outline-none resize-none leading-relaxed" style={inputStyle} />
+                <textarea name="contenu" value={form.contenu} onChange={handleChange} rows={4} placeholder="Saisissez les détails complets de l'information..." className="w-full px-3 py-2.5 rounded-xl border focus:outline-none resize-none leading-relaxed" style={inputStyle} />
               </div>
             </div>
             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
-              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Mettre en ligne</button>
+              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Mettre en ligne</button>
             </div>
           </div>
         </div>
@@ -370,11 +412,11 @@ export default function Actualites() {
             </div>
             <div>
               <h2 className="text-sm font-black">Supprimer cette publication ?</h2>
-              <p className="text-xs opacity-55">Cet article sera définitivement retiré du flux d'actualités des étudiants et de la page d'accueil de l'université ETEC.</p>
+              <p className="text-xs opacity-55">Cet article sera définitivement retiré du flux d'actualités.</p>
             </div>
             <div className="flex gap-3 justify-center text-xs">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold">Confirmer</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold cursor-pointer">Confirmer</button>
             </div>
           </div>
         </div>

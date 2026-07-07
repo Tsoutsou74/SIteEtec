@@ -17,6 +17,8 @@ import Actu from "../pages/NewsPage";
 import FormationInitialePage from "../pages/FormationInitialePage";
 import FormationContinuePage from "../pages/FormationContinuePage";
 import FormationsEnLignePage from "../pages/FormationsEnLignePage";
+import DevoirPage from "../layouts/DashbordAdmin/Formations/Devoir";
+import QuizPage from "../layouts/DashbordAdmin/Formations/Quiz";
 
 // ── Espace Administration ────────────────────────────────────
 
@@ -48,6 +50,7 @@ import Slide from "../layouts/DashbordAdmin/Slide";
 import Organigrammes from "../layouts/DashbordAdmin/Organigram";
 import Historiques from "../layouts/DashbordAdmin/Historique";
 import InscriptionsOuverts from "../layouts/DashbordAdmin/InscriptionOuvert";
+import AdminMessages from "../layouts/DashbordAdmin/Messages";
 
 
 {/*── Espace enseignant ────────────────────────────────────*/}
@@ -60,6 +63,7 @@ import Niveaux from "../layouts/DashboardEnseignants/Niveaux";
 import Notification from "../layouts/DashboardEnseignants/Notifications";
 import Parametre from "../layouts/DashboardEnseignants/Parametres";
 import Ressource from "../layouts/DashboardEnseignants/Ressource";
+import TeacherMessages from "../layouts/DashboardEnseignants/Messages";
 
 
 {/*── Espace enseignant ────────────────────────────────────*/}
@@ -70,10 +74,12 @@ import EtudiantHome               from "../layouts/DashboardEtud/etudiant";
 import MesNotes               from "../layouts/DashboardEtud/etudiantNotes";
 import EmploiDuTemps          from "../layouts/DashboardEtud/employeDuTemps";
 import MesCours                from "../layouts/DashboardEtud/cours";
+import OnlineCoursePlatform    from "../layouts/DashboardEtud/OnlineCoursePlatform";
 import Documents               from "../layouts/DashboardEtud/documents";
 import Resultats                from "../layouts/DashboardEtud/resultats";
 import NotificationsEtudiant   from "../layouts/DashboardEtud/notifications";
 import ParametresEtudiant       from "../layouts/DashboardEtud/parametres";
+import StudentMessages          from "../layouts/DashboardEtud/Messages";
 
 
 export default function AppRoutes() {
@@ -115,10 +121,13 @@ export default function AppRoutes() {
           <Route path="Formations/formationenligne" element={<FormationsEnLigne />} />
           <Route path="Formations/formationinitiale" element={<FormationsInitiale />} />
           <Route path="Formations/coures" element={<Coures />} />
+          <Route path="Formations/devoir" element={<DevoirPage />} />
+          <Route path="Formations/quiz" element={<QuizPage />} />
 
           <Route path="edt"                        element={<EDT />} />
           <Route path="Notes&Resultats"                     element={<NotesResultats />} />
           <Route path="actualites"                 element={<Actualites />} />
+          <Route path="messages"                   element={<AdminMessages />} />
           <Route path="statistiques"               element={<Statistiques />} />
           <Route path="notifications"              element={<Notifications />} />
           <Route path="parametres"                 element={<Parametres />} />
@@ -137,8 +146,10 @@ export default function AppRoutes() {
           <Route path="notes"           element={<MesNotes />} />
           <Route path="edt"             element={<EmploiDuTemps />} />
           <Route path="cours"           element={<MesCours />} />
+          <Route path="cours-en-ligne/:courseId" element={<OnlineCoursePlatform />} />
           <Route path="documents"       element={<Documents />} />
           <Route path="resultats"       element={<Resultats />} />
+          <Route path="messages"        element={<StudentMessages />} />
           <Route path="notifications"   element={<NotificationsEtudiant />} />
           <Route path="parametres"      element={<ParametresEtudiant />} />
         </Route>
@@ -151,6 +162,7 @@ export default function AppRoutes() {
           <Route path="Cours"         element={<Cours />} />
           <Route path="Niveaux"       element={<Niveaux />} />
           <Route path="Ressource"     element={<Ressource />} />
+          <Route path="Messages"      element={<TeacherMessages />} />
           <Route path="Notification" element={<Notifications />} />
           <Route path="Parametre"    element={<Parametres />} />
         </Route>

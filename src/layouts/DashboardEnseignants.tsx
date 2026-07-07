@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'; // Ajout pour le routing
 import {
-  LayoutDashboard, BookOpen, Calendar, FileText, Bell,
+  LayoutDashboard, BookOpen, Calendar, FileText, Bell, MessageSquare,
   Settings, LogOut, Menu, ChevronRight, Sun, Moon,
   Search, Users, GraduationCap, FileCheck  
 } from 'lucide-react';
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { icon: <Calendar size={18} />,        label: 'Emploi du temps',  key: '/enseignants/EDTE'       },
   { icon: <FileCheck size={18} />,       label: 'Evaluations',      key: '/enseignants/Evaluations'     },
   { icon: <FileText size={18} />,        label: 'Ressources',       key: '/enseignants/Ressource'      },
+  { icon: <MessageSquare size={18} />,   label: 'Messages',         key: '/enseignants/Messages'      },
   { icon: <Bell size={18} />,            label: 'Notifications',    key: '/enseignants/Notification', badge: 2 },
   { icon: <Settings size={18} />,        label: 'Paramètres',       key: '/enseignants/Parametre'  },
 ];

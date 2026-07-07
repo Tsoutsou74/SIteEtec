@@ -4,10 +4,13 @@ import {
   User, Mail, Phone, MapPin, Calendar, GraduationCap, 
   FileText, ShieldCheck, ArrowRight, ArrowLeft, Check, Upload, AlertCircle
 } from 'lucide-react';
+import apiService from '../../../services/api';
 
 export default function InscriptionEtudiants() {
   const { darkMode } = useTheme();
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     // Étape 1 : Infos Personnelles
     nom: '',
@@ -43,8 +46,35 @@ export default function InscriptionEtudiants() {
   const nextStep = () => setStep(prev => Math.min(prev + 1, 4));
   const prevStep = () => setStep(prev => Math.max(prev - 1, 1));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
+    setErrorMessage('');
+
+    const payload = new FormData();
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value !== null) {
+        payload.append(key, value);
+      }
+    });
+
+    try {
+      await apiService.inscriptions.create(payload, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    } catch (error) {
+      const message =
+        error && typeof error === 'object' && 'message' in error
+          ? String(error.message)
+          : "Impossible d'envoyer l'inscription pour le moment.";
+      setErrorMessage(message);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
     nextStep(); // Passe à l'écran de succès (Étape 4)
   };
 
@@ -91,6 +121,11 @@ export default function InscriptionEtudiants() {
 
         {/* Formulaire Principal */}
         <form onSubmit={handleSubmit} className="space-y-5">
+          {errorMessage && (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs font-semibold text-red-500">
+              {errorMessage}
+            </div>
+          )}
           
           {/* ── ÉTAPE 1 : Informations Personnelles ── */}
           {step === 1 && (
@@ -261,9 +296,10 @@ export default function InscriptionEtudiants() {
                 </button>
               ) : (
                 <button type="submit"
+                  disabled={loading}
                   className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black text-white transition hover:opacity-90 cursor-pointer"
                   style={{ backgroundColor: '#22c55e' }}>
-                  Valider mon inscription
+                  {loading ? 'Envoi...' : 'Valider mon inscription'}
                   <Check size={14} />
                 </button>
               )}

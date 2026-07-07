@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Award, Calendar, ChevronRight, GraduationCap, Quote, Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import ApiService from '../services/ApiService';
 
 const VALUES = [
   { icon: GraduationCap, label: 'Excellence academique' },
@@ -8,8 +9,54 @@ const VALUES = [
   { icon: Sparkles, label: 'Innovation pedagogique' },
 ];
 
+interface PresidentMessage {
+  id?: number;
+  authorName: string;
+  authorTitle: string;
+  quote: string;
+  content: string;
+  imageUrl: string;
+  dateUpdated?: string;
+  isActive?: boolean;
+}
+
+const FALLBACK_MESSAGE: PresidentMessage = {
+  authorName: 'Pr. Andrianaivoravelona',
+  authorTitle: 'President fondateur',
+  quote: "Batir ensemble l'avenir technologique et professionnel de Madagascar.",
+  content:
+    "Chers etudiants, chers parents, chers partenaires,\n\nBienvenue a E-TEC University. Notre ambition est simple : offrir une formation superieure utile, exigeante et directement reliee aux realites du monde professionnel.\n\nLes metiers evoluent rapidement. Le numerique, la gestion, les reseaux, le batiment et les technologies industrielles demandent des profils capables d'apprendre, de pratiquer et de s'adapter. C'est dans cet esprit que nous construisons nos programmes.\n\nA E-TEC, nous croyons a la discipline, au travail concret, a l'accompagnement des etudiants et a la responsabilite. Notre mission est de former des jeunes competents, confiants et prets a contribuer au developpement de Madagascar.\n\nJe vous invite a decouvrir nos formations, notre histoire et notre organisation. Votre parcours commence par une decision, et nous sommes prets a vous accompagner.",
+  imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=520',
+};
+
 export default function MotPresidents() {
   const { darkMode } = useTheme();
+  const [message, setMessage] = useState<PresidentMessage>(FALLBACK_MESSAGE);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadPresidentMessage = async () => {
+      try {
+        const response = await ApiService.mots.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setMessage(data.find((item: PresidentMessage) => item.isActive) || data[0]);
+        }
+      } catch {
+        if (isMounted) {
+          setMessage(FALLBACK_MESSAGE);
+        }
+      }
+    };
+
+    loadPresidentMessage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.72)',
@@ -36,14 +83,14 @@ export default function MotPresidents() {
           <aside className="lg:col-span-4 rounded-3xl border p-6 md:p-7 text-center shadow-sm" style={cardStyle}>
             <div className="relative mx-auto mb-5 w-40 h-52 rounded-3xl overflow-hidden border shadow-md" style={{ borderColor: 'var(--border)' }}>
               <img
-                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=520"
+                src={message.imageUrl || FALLBACK_MESSAGE.imageUrl}
                 alt="President de E-TEC University"
                 className="w-full h-full object-cover"
               />
             </div>
 
-            <h2 className="text-lg font-black tracking-tight">Pr. Andrianaivoravelona</h2>
-            <p className="text-xs font-black uppercase tracking-wider text-blue-500 mt-1">President fondateur</p>
+            <h2 className="text-lg font-black tracking-tight">{message.authorName}</h2>
+            <p className="text-xs font-black uppercase tracking-wider text-blue-500 mt-1">{message.authorTitle}</p>
             <p className="text-[11px] opacity-50 mt-1">E-TEC University - Faravohitra</p>
 
             <div className="mt-6 pt-5 border-t space-y-3 text-left" style={{ borderColor: 'var(--border)' }}>
@@ -67,23 +114,13 @@ export default function MotPresidents() {
             <Quote size={90} className="absolute -top-2 right-5 opacity-[0.04]" />
             <div className="space-y-5 relative">
               <h2 className="text-xl md:text-2xl font-black tracking-tight text-blue-500">
-                Batir ensemble l'avenir technologique et professionnel de Madagascar.
+                {message.quote}
               </h2>
 
               <div className="space-y-4 text-sm leading-relaxed opacity-80 text-justify">
-                <p>Chers etudiants, chers parents, chers partenaires,</p>
-                <p>
-                  Bienvenue a E-TEC University. Notre ambition est simple : offrir une formation superieure utile, exigeante et directement reliee aux realites du monde professionnel.
-                </p>
-                <p>
-                  Les metiers evoluent rapidement. Le numerique, la gestion, les reseaux, le batiment et les technologies industrielles demandent des profils capables d'apprendre, de pratiquer et de s'adapter. C'est dans cet esprit que nous construisons nos programmes.
-                </p>
-                <p>
-                  A E-TEC, nous croyons a la discipline, au travail concret, a l'accompagnement des etudiants et a la responsabilite. Notre mission est de former des jeunes competents, confiants et prets a contribuer au developpement de Madagascar.
-                </p>
-                <p>
-                  Je vous invite a decouvrir nos formations, notre histoire et notre organisation. Votre parcours commence par une decision, et nous sommes prets a vous accompagner.
-                </p>
+                {message.content.split('\n').filter(Boolean).map((paragraph, index) => (
+                  <p key={index}>{paragraph}</p>
+                ))}
               </div>
 
               <div className="pt-5 border-t flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ borderColor: 'var(--border)' }}>

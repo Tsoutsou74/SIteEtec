@@ -1,352 +1,403 @@
-import React, { useState } from 'react';
-import { 
-  Plus, Search, Edit2, Trash2, BookOpen, 
-  Clock, Calendar, CheckCircle, X, ShieldAlert 
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import {
+  Search, Plus, Pencil, Trash2, X, Save,
+  Calendar, CheckCircle, AlertCircle, Laptop, GraduationCap, Clock
+} from 'lucide-react';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon l'emplacement de ton ApiService
 
-// ─── INTERFACES ──────────────────────────────────────────
-interface Formation {
-  id: string;
-  code: string;
-  titre: string;
-  filiere: string;
-  duree: string; // ex: "3 ans (Licence)"
-  frais: string; // ex: "1 200 000 Ariary / an"
-  description: string;
-  statut: 'Actif' | 'Inactif';
+// ── Types Révisés avec TypeFormation ──────────────────────
+export type TypeFormation = 'Initiale' | 'Continue' | 'En ligne';
+
+interface Programme {
+  id: number;
+  anneeAcademique: string; // ex: 2025-2026
+  filiere: string;          // ex: Génie Logiciel
+  niveau: 'L1' | 'L2' | 'L3' | 'M1' | 'M2';
+  typeFormation: TypeFormation; // Le type de rythme d'étude
+  titre: string;           // ex: Parcours Web & Mobile Avancé
+  heuresTheoriques: number;
+  heuresPratiques: number;
+  statut: 'Actif' | 'En attente' | 'Archivé';
 }
 
-// ─── DONNÉES INITIALES DE TEST ───────────────────────────
-const INITIAL_FORMATIONS: Formation[] = [
-  {
-    id: '1',
-    code: 'INF-L',
-    titre: 'Licence en Informatique de Gestion',
-    filiere: 'Informatique',
-    duree: '3 ans',
-    frais: '1 400 000 Ar',
-    description: 'Formation axée sur le développement logiciel, les bases de données et la gestion d\'entreprise.',
-    statut: 'Actif',
-  },
-  {
-    id: '2',
-    code: 'BTP-M',
-    titre: 'Master en Bâtiment et Travaux Publics',
-    filiere: 'Génie Civil',
-    duree: '2 ans',
-    frais: '1 800 000 Ar',
-    description: 'Approfondissement des structures, de la gestion de chantiers et du dimensionnement.',
-    statut: 'Actif',
-  },
-  {
-    id: '3',
-    code: 'MGT-L',
-    titre: 'Licence en Management des Entreprises',
-    filiere: 'Management',
-    duree: '3 ans',
-    frais: '1 200 000 Ar',
-    description: 'Acquisition des fondamentaux de la gestion, finance, et ressources humaines.',
-    statut: 'Inactif',
-  }
-];
+const FILIERES = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
+const NIVEAUX: Programme['niveau'][] = ['L1', 'L2', 'L3', 'M1', 'M2'];
+const STATUTS: Programme['statut'][] = ['Actif', 'En attente', 'Archivé'];
+const TYPES_FORMATION: TypeFormation[] = ['Initiale', 'Continue', 'En ligne'];
 
-export default function Initiale() {
-  const [formations, setFormations] = useState<Formation[]>(INITIAL_FORMATIONS);
+const EMPTY_FORM = {
+  anneeAcademique: '2025-2026', filiere: 'Génie Logiciel', niveau: 'L3' as Programme['niveau'], typeFormation: 'Initiale' as TypeFormation, titre: '', heuresTheoriques: 120, heuresPratiques: 120, statut: 'En attente' as Programme['statut']
+};
+
+export default function Programmes() {
+  const { darkMode } = useTheme();
+  const [data, setData] = useState<Programme[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
-  // États pour le Modal (Formulaire)
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentFormation, setCurrentFormation] = useState<Partial<Formation> | null>(null);
+  const [filtreFiliere, setFiltreFiliere] = useState('');
+  const [filtreType, setFiltreType] = useState<string>(''); // Filtre par type de formation
 
-  // ─── GESTION CRUD ───────────────────────────────────────
-  
-  // Ouvrir pour ajouter ou modifier
-  const openModal = (formation: Formation | null = null) => {
-    if (formation) {
-      setCurrentFormation(formation); // Mode Édition
-    } else {
-      setCurrentFormation({ code: '', titre: '', filiere: '', duree: '', frais: '', description: '', statut: 'Actif' }); // Mode Ajout
-    }
-    setIsModalOpen(true);
+  // États CRUD
+  const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
+  const [selected, setSelected] = useState<Programme | null>(null);
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const inputStyle = {
+    backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    borderColor: 'var(--border)',
+    color: 'var(--text)',
   };
 
-  // Soumettre le formulaire (Ajouter ou Sauvegarder modification)
-  const handleSave = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentFormation?.code || !currentFormation?.titre) return;
-
-    if (currentFormation.id) {
-      // Update
-      setFormations(prev => prev.map(f => f.id === currentFormation.id ? (currentFormation as Formation) : f));
-    } else {
-      // Create
-      const newFormation: Formation = {
-        ...(currentFormation as Omit<Formation, 'id'>),
-        id: Date.now().toString(),
-      };
-      setFormations(prev => [newFormation, ...prev]);
-    }
-    setIsModalOpen(false);
-    setCurrentFormation(null);
+  const cardStyle = {
+    backgroundColor: 'var(--card)',
+    borderColor: 'var(--border)',
+    color: 'var(--text)',
   };
 
-  // Supprimer une formation
-  const handleDelete = (id: string) => {
-    if (window.confirm("Voulez-vous vraiment supprimer cette formation initiale ?")) {
-      setFormations(prev => prev.filter(f => f.id !== id));
+  // ── Chargement des données depuis l'API ───────────────────
+  const fetchProgrammes = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.programmes.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: Number(item.id),
+          anneeAcademique: item.anneeAcademique || item.academicYear || '2025-2026',
+          filiere: item.filiere || item.department || 'Génie Logiciel',
+          niveau: item.niveau || 'L3',
+          typeFormation: (item.typeFormation || 'Initiale') as TypeFormation,
+          titre: item.titre || item.title || '',
+          heuresTheoriques: Number(item.heuresTheoriques || 0),
+          heuresPratiques: Number(item.heuresPratiques || 0),
+          statut: item.statut || 'En attente'
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur de récupération des programmes :", error);
+      showToast('Erreur lors du chargement des programmes.');
+    } finally {
+      setLoading(false);
     }
   };
 
-  // Filtrer les formations en temps réel
-  const filteredFormations = formations.filter(f =>
-    f.titre.toLowerCase().includes(search.toLowerCase()) ||
-    f.code.toLowerCase().includes(search.toLowerCase()) ||
-    f.filiere.toLowerCase().includes(search.toLowerCase())
-  );
+  useEffect(() => {
+    fetchProgrammes();
+  }, []);
+
+  // ── Filtrage Amélioré ───────────────────────────────────
+  const filtered = data.filter(p => {
+    const q = search.toLowerCase();
+    const matchSearch = p.titre.toLowerCase().includes(q) || p.anneeAcademique.includes(q);
+    const matchFiliere = filtreFiliere ? p.filiere === filtreFiliere : true;
+    const matchType = filtreType ? p.typeFormation === filtreType : true;
+    return matchSearch && matchFiliere && matchType;
+  });
+
+  // ── Actions CRUD ────────────────────────────────────────
+  const openAdd = () => {
+    setForm(EMPTY_FORM);
+    setModalMode('add');
+  };
+
+  const openEdit = (p: Programme) => {
+    const { id, ...rest } = p;
+    setForm(rest);
+    setSelected(p);
+    setModalMode('edit');
+  };
+
+  const handleSave = async () => {
+    if (!form.titre || !form.anneeAcademique) {
+      showToast('Veuillez renseigner le titre du parcours et l\'année académique.');
+      return;
+    }
+
+    try {
+      if (modalMode === 'add') {
+        const response = await apiService.programmes.create(form);
+        const newId = response?.data?.id ? Number(response.data.id) : (data.length > 0 ? Math.max(...data.map(p => p.id)) + 1 : 1);
+        setData([...data, { id: newId, ...form }]);
+        showToast('Nouveau programme académique créé');
+      } else if (modalMode === 'edit' && selected) {
+        await apiService.programmes.update(selected.id, form);
+        setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
+        showToast('Maquette pédagogique mise à jour');
+      }
+      setModalMode(null);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde du programme :", error);
+      showToast('Une erreur est survenue lors de l’enregistrement.');
+    }
+  };
+
+  const handleDelete = async () => {
+    if (deleteId !== null) {
+      try {
+        await apiService.programmes.delete(deleteId);
+        setData(data.filter(p => p.id !== deleteId));
+        setDeleteId(null);
+        showToast('Programme supprimé définitivement');
+      } catch (error) {
+        console.error("Erreur lors de la suppression du programme :", error);
+        showToast('Impossible de supprimer ce programme.');
+      }
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const val = e.target.type === 'number' ? parseInt(e.target.value) || 0 : e.target.value;
+    setForm({ ...form, [e.target.name]: val });
+  };
+
+  const getStatutBadge = (statut: Programme['statut']) => {
+    const styles = {
+      Actif: 'bg-green-500/10 text-green-500',
+      'En attente': 'bg-amber-500/10 text-amber-500',
+      Archivé: 'bg-black/10 dark:bg-white/10 opacity-50 text-[var(--text)]'
+    };
+    return `px-2 py-0.5 rounded text-[10px] font-black uppercase ${styles[statut]}`;
+  };
+
+  const getTypeFormationBadge = (type: TypeFormation) => {
+    switch (type) {
+      case 'Initiale':
+        return (
+          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 font-bold rounded-md bg-blue-500/10 text-blue-500 border border-blue-500/20">
+            <GraduationCap size={11} /> Initiale (Lun - Ven)
+          </span>
+        );
+      case 'Continue':
+        return (
+          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 font-bold rounded-md bg-purple-500/10 text-purple-500 border border-purple-500/20">
+            <Clock size={11} /> Continue (Samedi)
+          </span>
+        );
+      case 'En ligne':
+        return (
+          <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 font-bold rounded-md bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+            <Laptop size={11} /> E-learning / En ligne
+          </span>
+        );
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      
-      {/* ─── ENTÊTE & BARRE D'ACTIONS ────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-black tracking-wide">Formations Initiales</h1>
-          <p className="text-xs opacity-50">Gestion du catalogue des cursus à temps plein d'E-TEC</p>
+    <div className="space-y-5">
+      {/* Toast Notification */}
+      {toastMessage && (
+        <div className="fixed top-20 right-6 z-[300] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white bg-green-500">
+          <CheckCircle size={15} /> {toastMessage}
         </div>
-        
-        <button
-          onClick={() => openModal(null)}
-          className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white shadow-lg shadow-emerald-900/10 transition-all hover:opacity-90 active:scale-95 cursor-pointer"
-          style={{ backgroundColor: 'var(--primary)' }}
-        >
-          <Plus size={16} />
-          Ajouter une formation
+      )}
+
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl md:text-2xl font-black tracking-tight">Programmes & Cursus</h1>
+          <p className="text-xs opacity-45 mt-1">Gérez l'ingénierie pédagogique par rythme d'étude (Initiale, Continue, En ligne)</p>
+        </div>
+        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}>
+          <Plus size={14} /> Nouveau Programme
         </button>
       </div>
 
-      {/* ─── BARRE DE RECHERCHE ──────────────────────────── */}
-      <div className="flex items-center gap-3 px-3 py-2 rounded-xl border text-xs max-w-md"
-        style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-        <Search size={14} className="opacity-40" />
-        <input 
-          type="text" 
-          placeholder="Rechercher par code, titre, filière..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="bg-transparent outline-none w-full"
-          style={{ color: 'var(--text)' }} 
-        />
-      </div>
+      {/* Barre de Recherche et Filtres d'Administration */}
+      <div className="flex flex-col md:flex-row gap-3">
+        <div className="flex items-center gap-2 flex-1 px-3 py-2.5 rounded-xl border"
+          style={{ borderColor: 'var(--border)', backgroundColor: darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)' }}>
+          <Search size={14} className="opacity-40 shrink-0" />
+          <input
+            type="text" placeholder="Rechercher par titre de parcours ou année..."
+            value={search} onChange={e => setSearch(e.target.value)}
+            className="flex-1 bg-transparent outline-none text-xs" style={{ color: 'var(--text)' }}
+          />
+        </div>
+        
+        <div className="flex gap-2 w-full md:w-auto">
+          {/* Sélecteur de rythme / type */}
+          <select value={filtreType} onChange={e => setFiltreType(e.target.value)}
+            className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none flex-1 md:w-48" style={inputStyle}>
+            <option value="">Tous les rythmes</option>
+            <option value="Initiale" className="dark:bg-[#121212]">Formation Initiale</option>
+            <option value="Continue" className="dark:bg-[#121212]">Formation Continue</option>
+            <option value="En ligne" className="dark:bg-[#121212]">Formation En Ligne</option>
+          </select>
 
-      {/* ─── LISTE / TABLEAU DES FORMATIONS ──────────────── */}
-      <div className="border rounded-2xl overflow-hidden shadow-sm" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr className="border-b bg-neutral-500/5 font-bold opacity-70" style={{ borderColor: 'var(--border)' }}>
-                <th className="p-4 w-24">Code</th>
-                <th className="p-4">Cursus / Titre</th>
-                <th className="p-4">Filière</th>
-                <th className="p-4">Durée</th>
-                <th className="p-4">Frais de Scolarité</th>
-                <th className="p-4 w-24 text-center">Statut</th>
-                <th className="p-4 w-24 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y" style={{ divideColor: 'var(--border)' }}>
-              {filteredFormations.length > 0 ? (
-                filteredFormations.map((formation) => (
-                  <tr key={formation.id} className="hover:bg-neutral-500/5 transition">
-                    <td className="p-4 font-bold tracking-wider" style={{ color: 'var(--primary)' }}>{formation.code}</td>
-                    <td className="p-4">
-                      <div className="font-semibold text-sm">{formation.titre}</div>
-                      <div className="text-[10px] opacity-50 max-w-md truncate mt-0.5">{formation.description}</div>
-                    </td>
-                    <td className="p-4 opacity-80">{formation.filiere}</td>
-                    <td className="p-4 opacity-80">{formation.duree}</td>
-                    <td className="p-4 font-medium opacity-90">{formation.frais}</td>
-                    <td className="p-4 text-center">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        formation.statut === 'Actif' 
-                          ? 'bg-emerald-500/10 text-emerald-500' 
-                          : 'bg-rose-500/10 text-rose-500'
-                      }`}>
-                        {formation.statut}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button 
-                          onClick={() => openModal(formation)}
-                          className="p-1.5 rounded-lg border hover:bg-neutral-500/10 transition cursor-pointer"
-                          style={{ borderColor: 'var(--border)' }}
-                          title="Modifier"
-                        >
-                          <Edit2 size={13} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(formation.id)}
-                          className="p-1.5 rounded-lg border hover:bg-rose-500/10 text-rose-500 transition cursor-pointer"
-                          style={{ borderColor: 'var(--border)' }}
-                          title="Supprimer"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={7} className="p-8 text-center opacity-40 italic">
-                    Aucune formation initiale trouvée.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          {/* Sélecteur de filière */}
+          <select value={filtreFiliere} onChange={e => setFiltreFiliere(e.target.value)}
+            className="px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none flex-1 md:w-48" style={inputStyle}>
+            <option value="">Toutes les filières</option>
+            {FILIERES.map(f => <option key={f} value={f} className="dark:bg-[#121212]">{f}</option>)}
+          </select>
         </div>
       </div>
 
-      {/* ─── MODAL FORMULAIRE (AJOUT / MODIFICATION) ──────── */}
-      {isModalOpen && currentFormation && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div 
-            className="w-full max-w-lg rounded-2xl border shadow-2xl animate-fade-in flex flex-col overflow-hidden"
-            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
-          >
-            {/* Header Modal */}
-            <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
-              <div className="flex items-center gap-2">
-                <BookOpen size={16} style={{ color: 'var(--primary)' }} />
-                <h3 className="text-sm font-black uppercase tracking-wide">
-                  {currentFormation.id ? 'Modifier la formation' : 'Nouvelle formation'}
-                </h3>
+      {/* Liste des Programmes par Cartes */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        {loading ? (
+          <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
+            Chargement des maquettes pédagogiques...
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
+            Aucun parcours ou programme enregistré pour ces critères.
+          </div>
+        ) : (
+          filtered.map(p => (
+            <div key={p.id} className="p-5 rounded-2xl border flex flex-col justify-between space-y-4 animate-in fade-in zoom-in-95 duration-150" style={cardStyle}>
+              <div className="space-y-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-black bg-blue-500/10 text-blue-500">{p.niveau}</span>
+                      <span className="text-xs font-bold opacity-75">{p.filiere}</span>
+                      <span className="text-[10px] font-mono opacity-40">• {p.anneeAcademique}</span>
+                    </div>
+                    <h3 className="font-black text-sm tracking-tight leading-snug pt-0.5">{p.titre}</h3>
+                  </div>
+                  <span className={getStatutBadge(p.statut)}>{p.statut}</span>
+                </div>
+
+                <div className="flex pt-0.5">
+                  {getTypeFormationBadge(p.typeFormation)}
+                </div>
+
+                {/* Répartition de la charge horaire */}
+                <div className="grid grid-cols-3 gap-2 bg-black/5 dark:bg-white/5 p-2.5 rounded-xl text-[11px]">
+                  <div>
+                    <p className="opacity-40 text-[10px] font-bold uppercase">Théorie (CM)</p>
+                    <p className="font-bold mt-0.5">{p.heuresTheoriques}h</p>
+                  </div>
+                  <div>
+                    <p className="opacity-40 text-[10px] font-bold uppercase">Pratique (TP)</p>
+                    <p className="font-bold mt-0.5">{p.heuresPratiques}h</p>
+                  </div>
+                  <div>
+                    <p className="opacity-40 text-[10px] font-bold uppercase font-black text-blue-500">Total Global</p>
+                    <p className="font-black text-blue-500 mt-0.5">{p.heuresTheoriques + p.heuresPratiques}h</p>
+                  </div>
+                </div>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-1.5 rounded-lg opacity-50 hover:opacity-100 transition cursor-pointer"
-              >
-                <X size={16} />
-              </button>
+
+              {/* Actions de pied de page */}
+              <div className="flex items-center justify-between pt-1 text-xs">
+                <span className="text-[10px] opacity-45 flex items-center gap-1"><Calendar size={11} /> ETEC Management</span>
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(p)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
+                    <Pencil size={12} />
+                  </button>
+                  <button onClick={() => setDeleteId(p.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              </div>
             </div>
+          ))
+        )}
+      </div>
 
-            {/* Formulaire */}
-            <form onSubmit={handleSave} className="p-5 space-y-4 text-xs overflow-y-auto max-h-[75vh] no-scrollbar">
-              <div className="grid grid-cols-3 gap-3">
-                <div className="col-span-1 space-y-1">
-                  <label className="font-bold opacity-60">Code Formation *</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: INF-L"
-                    value={currentFormation.code}
-                    onChange={e => setCurrentFormation({...currentFormation, code: e.target.value})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none font-bold tracking-wider"
-                    style={{ borderColor: 'var(--border)' }}
-                  />
-                </div>
-                <div className="col-span-2 space-y-1">
-                  <label className="font-bold opacity-60">Intitulé du cursus *</label>
-                  <input 
-                    type="text" 
-                    required
-                    placeholder="ex: Licence Professionnelle en..."
-                    value={currentFormation.titre}
-                    onChange={e => setCurrentFormation({...currentFormation, titre: e.target.value})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none font-semibold"
-                    style={{ borderColor: 'var(--border)' }}
-                  />
-                </div>
+      {/* Modal Formulaire (Ajout / Édition) */}
+      {modalMode && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200" style={cardStyle}>
+            <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <h2 className="text-sm font-black">{modalMode === 'add' ? '➕ Nouveau Plan de Programme' : '✏️ Modifier la Maquette'}</h2>
+              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
+            </div>
+            <div className="p-6 space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Intitulé / Titre du Programme</label>
+                <input name="titre" value={form.titre} onChange={handleChange} placeholder="ex: Génie Logiciel avancé et Intégration IA" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold opacity-60">Filière / Département</label>
-                  <input 
-                    type="text" 
-                    placeholder="ex: Informatique, Management..."
-                    value={currentFormation.filiere}
-                    onChange={e => setCurrentFormation({...currentFormation, filiere: e.target.value})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none"
-                    style={{ borderColor: 'var(--border)' }}
-                  />
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Filière</label>
+                  <select name="filiere" value={form.filiere} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
+                    {FILIERES.map(f => <option key={f} value={f}>{f}</option>)}
+                  </select>
                 </div>
-                <div className="space-y-1">
-                  <label className="font-bold opacity-60">Durée d'études</label>
-                  <input 
-                    type="text" 
-                    placeholder="ex: 3 ans, 2 ans"
-                    value={currentFormation.duree}
-                    onChange={e => setCurrentFormation({...currentFormation, duree: e.target.value})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none"
-                    style={{ borderColor: 'var(--border)' }}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="font-bold opacity-60">Frais Annuels (Ariary)</label>
-                  <input 
-                    type="text" 
-                    placeholder="ex: 1 400 000 Ar"
-                    value={currentFormation.frais}
-                    onChange={e => setCurrentFormation({...currentFormation, frais: e.target.value})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none"
-                    style={{ borderColor: 'var(--border)' }}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="font-bold opacity-60">Statut d'inscription</label>
-                  <select 
-                    value={currentFormation.statut}
-                    onChange={e => setCurrentFormation({...currentFormation, statut: e.target.value as 'Actif' | 'Inactif'})}
-                    className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none font-medium"
-                    style={{ borderColor: 'var(--border)' }}
-                  >
-                    <option value="Actif">Actif (Inscriptions Ouvertes)</option>
-                    <option value="Inactif">Inactif (Fermé)</option>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Niveau d'Étude</label>
+                  <select name="niveau" value={form.niveau} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
+                    {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="font-bold opacity-60">Description & Débouchés</label>
-                <textarea 
-                  rows={3}
-                  placeholder="Détails du programme de formation..."
-                  value={currentFormation.description}
-                  onChange={e => setCurrentFormation({...currentFormation, description: e.target.value})}
-                  className="w-full p-2.5 rounded-xl border bg-neutral-500/5 outline-none resize-none"
-                  style={{ borderColor: 'var(--border)' }}
-                />
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Rythme / Type de Formation</label>
+                <select name="typeFormation" value={form.typeFormation} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
+                  {TYPES_FORMATION.map(type => (
+                    <option key={type} value={type}>
+                      {type === 'Initiale' && 'Formation Initiale (En semaine, cours en présentiel)'}
+                      {type === 'Continue' && 'Formation Continue (Samedi intensif / Professionnels)'}
+                      {type === 'En ligne' && 'Formation En Ligne (Distanciel / E-learning)'}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Boutons d'action du Modal */}
-              <div className="flex items-center justify-end gap-2 pt-2 border-t" style={{ borderColor: 'var(--border)' }}>
-                <button 
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl border font-bold hover:bg-neutral-500/5 transition cursor-pointer"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  Annuler
-                </button>
-                <button 
-                  type="submit"
-                  className="px-4 py-2 rounded-xl font-bold text-white transition hover:opacity-90 active:scale-95 cursor-pointer"
-                  style={{ backgroundColor: 'var(--primary)' }}
-                >
-                  Sauvegarder
-                </button>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Année Académique</label>
+                  <input name="anneeAcademique" value={form.anneeAcademique} onChange={handleChange} placeholder="ex: 2025-2026" className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Statut initial</label>
+                  <select name="statut" value={form.statut} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
+                    {STATUTS.map(s => <option key={s} value={s}>{s}</option>)}
+                  </select>
+                </div>
               </div>
-            </form>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Heures Cours Théoriques (CM)</label>
+                  <input type="number" name="heuresTheoriques" value={form.heuresTheoriques} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Heures Travaux Pratiques (TP)</label>
+                  <input type="number" name="heuresPratiques" value={form.heuresPratiques} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
+                </div>
+              </div>
+            </div>
+            
+            <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
+              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
+            </div>
           </div>
         </div>
       )}
 
+      {/* Modal Confirmation Suppression */}
+      {deleteId !== null && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
+          <div className="w-full max-w-sm rounded-3xl border shadow-2xl p-6 text-center space-y-4" style={cardStyle}>
+            <div className="w-12 h-12 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center mx-auto">
+              <AlertCircle size={20} />
+            </div>
+            <div>
+              <h2 className="text-sm font-black">Confirmer la suppression ?</h2>
+              <p className="text-xs opacity-55">La suppression de ce cursus effacera la configuration horaire ainsi que les filtres d'emploi du temps associés pour cette année académique.</p>
+            </div>
+            <div className="flex gap-3 justify-center text-xs">
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold cursor-pointer">Supprimer</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

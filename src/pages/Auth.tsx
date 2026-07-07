@@ -1,23 +1,29 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   GraduationCap,
-  Mail,
   Lock,
   User,
-  Phone,
   Eye,
   EyeOff,
-  BookOpen,
   ArrowRight,
 } from "lucide-react";
+import apiService from "../services/api";
 
 type Role = "etudiant" | "enseignant";
+type StudentFormationType = "initiale" | "continue" | "enligne";
+
+const STUDENT_FORMATION_STORAGE_KEY = "etec_student_formation_type";
 
 export default function Auth() {
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showPassword2, setShowPassword2] = useState(false);
   const [role, setRole] = useState<Role>("etudiant");
+  const [formationType, setFormationType] = useState<StudentFormationType>("enligne");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const [form, setForm] = useState({
     nom: "",
@@ -30,9 +36,46 @@ export default function Auth() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log({ role, isLogin, ...form });
+    setLoading(true);
+    setErrorMessage("");
+
+    try {
+      if (isLogin) {
+        await apiService.login({
+          role,
+          username: form.nom,
+          password: form.password,
+        });
+        if (role === "etudiant") {
+          localStorage.setItem(STUDENT_FORMATION_STORAGE_KEY, formationType);
+        }
+        navigate(role === "enseignant" ? "/enseignants" : "/etudiants");
+        return;
+      }
+
+      await apiService.register({
+        role,
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        password: form.password,
+        password_confirmation: form.confirm,
+      });
+      if (role === "etudiant") {
+        localStorage.setItem(STUDENT_FORMATION_STORAGE_KEY, formationType);
+      }
+      setIsLogin(true);
+    } catch (error) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String(error.message)
+          : "Impossible de traiter la demande.";
+      setErrorMessage(message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const inputStyle = {
@@ -64,6 +107,11 @@ export default function Auth() {
 
           {/* ── Formulaire ── */}
           <form onSubmit={handleSubmit} className="mt-4 space-y-3">
+            {errorMessage && (
+              <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-500">
+                {errorMessage}
+              </p>
+            )}
 
             {/* Nom + Prénom — uniquement en mode Inscription */}
             {!isLogin && (
@@ -149,6 +197,7 @@ export default function Auth() {
             {/* Bouton Se connecter / Créer un compte */}
             <button
               type="submit"
+              disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold uppercase tracking-wider text-white bg-green-600 transition-all hover:bg-green-700 cursor-pointer mt-1"
             >
               {isLogin ? "Se connecter" : "Créer mon compte"}

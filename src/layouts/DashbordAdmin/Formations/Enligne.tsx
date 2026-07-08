@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Edit2, Trash2, Laptop, 
   Video, FileText, Link, CheckCircle, X, Users 
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── INTERFACES ──────────────────────────────────────────
 interface FormationEnLigne {
@@ -18,50 +19,44 @@ interface FormationEnLigne {
   statut: 'Publié' | 'Brouillon' | 'Archivé';
 }
 
-// ─── DONNÉES INITIALES DE TEST ───────────────────────────
-const INITIAL_ONLINE: FormationEnLigne[] = [
-  {
-    id: '1',
-    code: 'EL-PHP-SYM',
-    titre: 'Développement Web Avancé avec Symfony',
-    categorie: 'Informatique',
-    nbChapitres: 12,
-    nbVideos: 45,
-    lienPlateforme: 'https://elearning.etec.mg/course/view.php?id=102',
-    enseignant: 'Dr. Rakoto',
-    statut: 'Publié',
-  },
-  {
-    id: '2',
-    code: 'EL-MGT-FIN',
-    titre: 'Analyse Financière et Gestion de Trésorerie',
-    categorie: 'Management & Finance',
-    nbChapitres: 8,
-    nbVideos: 28,
-    lienPlateforme: 'https://elearning.etec.mg/course/view.php?id=88',
-    enseignant: 'Mme Rabe',
-    statut: 'Publié',
-  },
-  {
-    id: '3',
-    code: 'EL-BTP-CAD',
-    titre: 'Dessin Technique et Initiation AutoCAD 2D/3D',
-    categorie: 'Génie Civil & BTP',
-    nbChapitres: 6,
-    nbVideos: 18,
-    lienPlateforme: 'https://elearning.etec.mg/course/view.php?id=45',
-    enseignant: 'Ing. Randria',
-    statut: 'Brouillon',
-  }
-];
-
 export default function EnLigne() {
-  const [formations, setFormations] = useState<FormationEnLigne[]>(INITIAL_ONLINE);
+  const [formations, setFormations] = useState<FormationEnLigne[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
   // États pour le Modal Formulaire
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentEL, setCurrentEL] = useState<Partial<FormationEnLigne>>({});
+
+  // ─── CHARGEMENT INITIAL DEPUIS L'API ──────────────────────
+  const fetchFormations = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.formationsEnLigne.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: String(item.id),
+          code: item.code || '',
+          titre: item.titre || item.name || '',
+          categorie: item.categorie || '',
+          nbChapitres: Number(item.nbChapitres || 0),
+          nbVideos: Number(item.nbVideos || 0),
+          lienPlateforme: item.lienPlateforme || '',
+          enseignant: item.enseignant || '',
+          statut: item.statut || 'Brouillon',
+        }));
+        setFormations(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la récupération des cours en ligne :", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFormations();
+  }, []);
 
   // ─── GESTION CRUD ───────────────────────────────────────
   
@@ -74,28 +69,39 @@ export default function EnLigne() {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentEL.code || !currentEL.titre) return;
 
-    if (currentEL.id) {
-      // Modification
-      setFormations(prev => prev.map(f => f.id === currentEL.id ? (currentEL as FormationEnLigne) : f));
-    } else {
-      // Création
-      const newEL: FormationEnLigne = {
-        ...(currentEL as Omit<FormationEnLigne, 'id'>),
-        id: Date.now().toString(),
-      };
-      setFormations(prev => [newEL, ...prev]);
+    try {
+      if (currentEL.id) {
+        // Modification API
+        await apiService.formationsEnLigne.update(currentEL.id, currentEL);
+        setFormations(prev => prev.map(f => f.id === currentEL.id ? (currentEL as FormationEnLigne) : f));
+      } else {
+        // Création API
+        const response = await apiService.formationsEnLigne.create(currentEL);
+        const newEL: FormationEnLigne = {
+          ...(currentEL as Omit<FormationEnLigne, 'id'>),
+          id: response?.data?.id ? String(response.data.id) : Date.now().toString(),
+        };
+        setFormations(prev => [newEL, ...prev]);
+      }
+      setIsModalOpen(false);
+      setCurrentEL({});
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde du cours en ligne :", error);
     }
-    setIsModalOpen(false);
-    setCurrentEL({});
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Voulez-vous vraiment supprimer ce cours en ligne ?")) {
-      setFormations(prev => prev.filter(f => f.id !== id));
+      try {
+        await apiService.formationsEnLigne.delete(id);
+        setFormations(prev => prev.filter(f => f.id !== id));
+      } catch (error) {
+        console.error("Erreur lors de la suppression du cours en ligne :", error);
+      }
     }
   };
 
@@ -157,7 +163,13 @@ export default function EnLigne() {
               </tr>
             </thead>
             <tbody className="divide-y" style={{ divideColor: 'var(--border)' }}>
-              {filteredFormations.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center opacity-40 italic">
+                    Récupération des cours en ligne sur le serveur...
+                  </td>
+                </tr>
+              ) : filteredFormations.length > 0 ? (
                 filteredFormations.map((el) => (
                   <tr key={el.id} className="hover:bg-neutral-500/5 transition">
                     <td className="p-4 font-bold tracking-wider" style={{ color: 'var(--primary)' }}>{el.code}</td>

@@ -8,6 +8,7 @@ import FiliersPage from "./FiliersPage";
 import ContactPage from "./ContactPage";
 import HeroBanner from "../components/layout/HeroBanner";
 import { ArrowRight, ChevronRight, Radio, Image as ImageIcon, Play } from "lucide-react";
+import PresidentMessageSection from "../components/layout/PresidentMessageSection";
 
 export default function HomPages() {
   return (
@@ -22,6 +23,8 @@ export default function HomPages() {
       <div className="w-full px-12 py-5">
         
         <AboutPage />
+
+        <PresidentMessageSection />
 
         <NewsPage /> 
 

@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Award, BookOpenCheck, Building2, Calendar, GraduationCap, Rocket, Users } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import ApiService from '../services/ApiService';
 
 const TIMELINE_EVENTS = [
   {
@@ -51,8 +52,57 @@ const HIGHLIGHTS = [
   { label: 'Approche professionnalisante', value: '100%' },
 ];
 
+interface HistoriqueApi {
+  id?: number;
+  year?: string;
+  title?: string;
+  description?: string;
+  date?: string;
+  action?: string;
+  target?: string;
+}
+
+function toTimelineEvent(item: HistoriqueApi, index: number) {
+  const icons = [Rocket, BookOpenCheck, Award, Building2, GraduationCap];
+  const colors = ['text-green-500', 'text-blue-500', 'text-amber-500', 'text-indigo-500', 'text-emerald-500'];
+
+  return {
+    year: item.year || item.date || '',
+    title: item.title || item.action || item.target || 'Historique E-TEC',
+    icon: icons[index % icons.length],
+    color: colors[index % colors.length],
+    description: item.description || item.target || '',
+  };
+}
+
 export default function Historique() {
   const { darkMode } = useTheme();
+  const [events, setEvents] = useState(TIMELINE_EVENTS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadHistorique = async () => {
+      try {
+        const response = await ApiService.historiques.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setEvents(data.map(toTimelineEvent));
+        }
+      } catch {
+        if (isMounted) {
+          setEvents(TIMELINE_EVENTS);
+        }
+      }
+    };
+
+    loadHistorique();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.72)',
@@ -91,10 +141,10 @@ export default function Historique() {
         <div className="relative">
           <div className="hidden md:block absolute left-[118px] top-6 bottom-6 w-px bg-green-500/25" />
           <div className="space-y-5">
-            {TIMELINE_EVENTS.map((event) => {
+            {events.map((event, index) => {
               const Icon = event.icon;
               return (
-                <article key={event.year} className="grid grid-cols-1 md:grid-cols-[96px_44px_1fr] gap-4 md:gap-5 items-start">
+                <article key={`${event.year}-${event.title}-${index}`} className="grid grid-cols-1 md:grid-cols-[96px_44px_1fr] gap-4 md:gap-5 items-start">
                   <div className="text-2xl font-black tracking-tight text-green-500 md:text-right">{event.year}</div>
                   <div className="hidden md:flex w-11 h-11 rounded-2xl border items-center justify-center z-10" style={cardStyle}>
                     <Icon size={18} className={event.color} />

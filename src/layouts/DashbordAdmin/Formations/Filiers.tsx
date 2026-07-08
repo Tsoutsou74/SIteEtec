@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
 import {
   Search, Plus, Pencil, Trash2, X, Save,
   BookOpen, Layers, Users, CheckCircle, GraduationCap
 } from 'lucide-react';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 interface Filiere {
   id: number;
@@ -14,20 +15,14 @@ interface Filiere {
   nombreEtudiants: number;
 }
 
-const INITIAL_FILIERES: Filiere[] = [
-  { id: 1, code: 'GL', nom: 'Génie Logiciel', responsable: 'Dr. ANDRIA', description: 'Développement d’applications web, mobiles et architectures cloud.', nombreEtudiants: 124 },
-  { id: 2, code: 'ADM', nom: 'Administration', responsable: 'Mme RASOA', description: 'Gestion des entreprises, comptabilité et management stratégique.', nombreEtudiants: 98 },
-  { id: 3, code: 'BTP', nom: 'Bâtiment et Travaux Publics', responsable: 'M. RAKOTO', description: 'Infrastructures, génie civil et résistance des matériaux.', nombreEtudiants: 64 },
-  { id: 4, code: 'EM', nom: 'Électromécanique', responsable: 'Mme MIORA', description: 'Systèmes automatisés, maintenance industrielle et électricité.', nombreEtudiants: 45 },
-];
-
 const EMPTY_FORM = {
   code: '', nom: '', responsable: '', description: '', nombreEtudiants: 0
 };
 
 export default function Filieres() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Filiere[]>(INITIAL_FILIERES);
+  const [data, setData] = useState<Filiere[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
   // États pour le CRUD
@@ -49,6 +44,34 @@ export default function Filieres() {
     color: 'var(--text)',
   };
 
+  // ── Chargement des données ──────────────────────────────
+  const fetchFilieres = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.filieres.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: Number(item.id),
+          code: item.code || '',
+          nom: item.nom || item.name || '',
+          responsable: item.responsable || '',
+          description: item.description || '',
+          nombreEtudiants: Number(item.nombreEtudiants || 0)
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur de récupération des filières :", error);
+      showToast('Erreur lors du chargement des filières.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFilieres();
+  }, []);
+
   // ── Filtrage ────────────────────────────────────────────
   const filtered = data.filter(f => 
     f.nom.toLowerCase().includes(search.toLowerCase()) || 
@@ -69,28 +92,41 @@ export default function Filieres() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.code || !form.nom) {
       showToast('Veuillez remplir au moins le code et le nom.');
       return;
     }
 
-    if (modalMode === 'add') {
-      const newId = data.length > 0 ? Math.max(...data.map(f => f.id)) + 1 : 1;
-      setData([...data, { id: newId, ...form }]);
-      showToast('Filière ajoutée avec succès');
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(f => f.id === selected.id ? { ...f, ...form } : f));
-      showToast('Filière mise à jour');
+    try {
+      if (modalMode === 'add') {
+        const response = await apiService.filieres.create(form);
+        const newId = response?.data?.id ? Number(response.data.id) : (data.length > 0 ? Math.max(...data.map(f => f.id)) + 1 : 1);
+        setData([...data, { id: newId, ...form }]);
+        showToast('Filière ajoutée avec succès');
+      } else if (modalMode === 'edit' && selected) {
+        await apiService.filieres.update(selected.id, form);
+        setData(data.map(f => f.id === selected.id ? { ...f, ...form } : f));
+        showToast('Filière mise à jour');
+      }
+      setModalMode(null);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde de la filière :", error);
+      showToast('Une erreur est survenue lors de l’enregistrement.');
     }
-    setModalMode(null);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId !== null) {
-      setData(data.filter(f => f.id !== deleteId));
-      setDeleteId(null);
-      showToast('Filière supprimée');
+      try {
+        await apiService.filieres.delete(deleteId);
+        setData(data.filter(f => f.id !== deleteId));
+        setDeleteId(null);
+        showToast('Filière supprimée');
+      } catch (error) {
+        console.error("Erreur lors de la suppression de la filière :", error);
+        showToast('Impossible de supprimer cette filière.');
+      }
     }
   };
 
@@ -118,7 +154,7 @@ export default function Filieres() {
           <h1 className="text-xl md:text-2xl font-black tracking-tight">Gestion des Filières</h1>
           <p className="text-xs opacity-45 mt-1">Configurez les départements et les parcours d'études</p>
         </div>
-        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center" style={{ backgroundColor: 'var(--primary)' }}>
+        <button onClick={openAdd} className="flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl font-bold text-xs text-white transition hover:opacity-90 self-start sm:self-center cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}>
           <Plus size={14} /> Nouvelle Filière
         </button>
       </div>
@@ -136,7 +172,11 @@ export default function Filieres() {
 
       {/* Grille des Filières */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
+            Récupération des filières depuis le serveur...
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="col-span-full py-12 text-center opacity-40 text-xs border border-dashed rounded-2xl" style={{ borderColor: 'var(--border)' }}>
             Aucune filière trouvée.
           </div>
@@ -154,10 +194,10 @@ export default function Filieres() {
                   
                   {/* Actions d'édition rapides */}
                   <div className="flex gap-1">
-                    <button onClick={() => openEdit(filiere)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5" style={{ borderColor: 'var(--border)' }}>
+                    <button onClick={() => openEdit(filiere)} className="p-1.5 rounded-lg border text-amber-500 transition hover:bg-amber-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
                       <Pencil size={12} />
                     </button>
-                    <button onClick={() => setDeleteId(filiere.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5" style={{ borderColor: 'var(--border)' }}>
+                    <button onClick={() => setDeleteId(filiere.id)} className="p-1.5 rounded-lg border text-red-500 transition hover:bg-red-500/5 cursor-pointer" style={{ borderColor: 'var(--border)' }}>
                       <Trash2 size={12} />
                     </button>
                   </div>
@@ -182,7 +222,7 @@ export default function Filieres() {
           <div className="w-full max-w-md rounded-3xl border shadow-2xl overflow-hidden" style={cardStyle}>
             <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-sm font-black">{modalMode === 'add' ? '➕ Créer une filière' : '✏️ Modifier la filière'}</h2>
-              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70"><X size={16} /></button>
+              <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
             </div>
             <div className="p-6 space-y-4 text-xs">
               <div className="grid grid-cols-3 gap-3">
@@ -208,8 +248,8 @@ export default function Filieres() {
             </div>
             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
-              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
+              <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
             </div>
           </div>
         </div>
@@ -227,8 +267,8 @@ export default function Filieres() {
               <p className="text-xs opacity-55">Cette action retirera la structure de la filière mais ne supprimera pas les étudiants associés.</p>
             </div>
             <div className="flex gap-3 justify-center text-xs">
-              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold">Confirmer</button>
+              <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
+              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold cursor-pointer">Confirmer</button>
             </div>
           </div>
         </div>

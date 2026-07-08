@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import ApiService from '../../../services/ApiService';
 import { 
   Search, GraduationCap, Mail, Phone, MapPin, 
-  ChevronLeft, ChevronRight, Filter, BookOpen, ShieldCheck 
+  ChevronLeft, ChevronRight, BookOpen, ShieldCheck, Loader2, AlertTriangle
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -20,21 +21,16 @@ interface Etudiant {
   statut: 'Actif' | 'Inactif';
 }
 
-// ─── Données initiales (ETEC) ─────────────────────────────
-const INITIAL_ETUDIANTS: Etudiant[] = [
-  { id: '1', matricule: 'ET-2024-001', nom: 'RAKOTOMALALA', prenom: 'Andry', email: 'andry.rakoto@etec.mg', telephone: '+261 34 11 222 33', filiere: 'Génie Logiciel', niveau: 'L3', statut: 'Actif' },
-  { id: '2', matricule: 'ET-2024-042', nom: 'RAVELO', prenom: 'Mialy', email: 'mialy.ravelo@etec.mg', telephone: '+261 33 22 333 44', filiere: 'Administration', niveau: 'M1', statut: 'Actif' },
-  { id: '3', matricule: 'ET-2025-015', nom: 'RANDRIA', prenom: 'Faly', email: 'faly.randria@etec.mg', telephone: '+261 32 44 555 66', filiere: 'BTP', niveau: 'L2', statut: 'Actif' },
-  { id: '4', matricule: 'ET-2023-089', nom: 'ANDRIAMALALA', prenom: 'Thierry', email: 'thierry.andria@etec.mg', telephone: '+261 34 55 666 77', filiere: 'Électromécanique', niveau: 'L3', statut: 'Inactif' },
-  { id: '5', matricule: 'ET-2024-112', nom: 'RASOANANDRASANA', prenom: 'Hariniaina', email: 'hari.rasoa@etec.mg', telephone: '+261 33 77 888 99', filiere: 'Génie Logiciel', niveau: 'L3', statut: 'Actif' },
-];
-
 const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
 const NIVEAUX = ['L1', 'L2', 'L3', 'M1', 'M2'];
 const PAGE_SIZE = 4;
 
 export default function ListEtudiants() {
   const { darkMode } = useTheme();
+
+  const [etudiants, setEtudiants] = useState<Etudiant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // États de filtrage et recherche
   const [search, setSearch] = useState('');
@@ -58,8 +54,27 @@ export default function ListEtudiants() {
     color: 'var(--text)',
   };
 
+  // ─── Chargement initial depuis l'API ────────────────────
+  useEffect(() => {
+    fetchEtudiants();
+  }, []);
+
+  const fetchEtudiants = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.etudiant.getAll();
+      setEtudiants(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger l'annuaire des étudiants.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ─── Filtrage Logique ───────────────────────────────────
-  const filtered = INITIAL_ETUDIANTS.filter(e => {
+  const filtered = etudiants.filter(e => {
     const q = search.toLowerCase();
     const matchSearch = 
       e.nom.toLowerCase().includes(q) || 
@@ -75,6 +90,32 @@ export default function ListEtudiants() {
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginatedData = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement de l'annuaire...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchEtudiants}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">

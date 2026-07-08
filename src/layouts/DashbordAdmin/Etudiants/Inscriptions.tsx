@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin si nécessaire
 import {
   Search, Eye, Check, X, Trash2, Calendar, 
   User, Mail, Phone, GraduationCap, CheckCircle, 
@@ -23,13 +24,6 @@ interface Inscription {
   remarque?: string;
 }
 
-// ─── Données initiales ────────────────────────────────────
-const INITIAL_INSCRIPTIONS: Inscription[] = [
-  { id: 1, dateDemande: '2026-06-15', nom: 'RAZAFY', prenom: 'Toky', email: 'toky.razafy@gmail.com', telephone: '+261 34 22 111 22', filiere: 'Génie Logiciel', niveauDemande: 'L1', statut: 'En attente' },
-  { id: 2, dateDemande: '2026-06-14', nom: 'HERINIOTY', prenom: 'Sitraka', email: 'sitraka.her@gmail.com', telephone: '+261 33 44 555 66', filiere: 'Administration', niveauDemande: 'L1', statut: 'Approuvé' },
-  { id: 3, dateDemande: '2026-06-12', nom: 'ANDRIANINA', prenom: 'Rova', email: 'rova.andri@gmail.com', telephone: '+261 32 88 999 00', filiere: 'BTP', niveauDemande: 'L1', statut: 'Rejeté', remarque: 'Dossier incomplet (bulletins manquants)' },
-];
-
 const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
 const STATUTS: StatutInscription[] = ['En attente', 'Approuvé', 'Rejeté'];
 const PAGE_SIZE = 5;
@@ -44,7 +38,8 @@ const statutIcon = (s: StatutInscription) =>
 export default function AdminInscription() {
   const { darkMode } = useTheme();
 
-  const [data, setData] = useState<Inscription[]>(INITIAL_INSCRIPTIONS);
+  // On initialise avec un tableau vide pour l'API
+  const [data, setData] = useState<Inscription[]>([]);
   const [search, setSearch] = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
@@ -67,6 +62,34 @@ export default function AdminInscription() {
     color: 'var(--text)',
   };
 
+  // ─── Chargement des données depuis l'API ────────────────
+  const fetchInscriptions = async () => {
+    try {
+      const response = await apiService.etudiant.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: item.id,
+          dateDemande: item.dateInscription || item.createdAt || new Date().toLocaleDateString('fr-FR'),
+          nom: item.nom || '',
+          prenom: item.prenom || '',
+          email: item.email || '',
+          telephone: item.telephone || item.phone || '',
+          filiere: item.filiere || 'Génie Logiciel',
+          niveauDemande: item.niveau || 'L1',
+          statut: item.statut || 'En attente',
+          remarque: item.remarque || ''
+        }));
+        setData(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur de chargement des inscriptions", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchInscriptions();
+  }, []);
+
   // ── Filtrage + Pagination ───────────────────────────────
   const filtered = data.filter(i => {
     const q = search.toLowerCase();
@@ -82,20 +105,30 @@ export default function AdminInscription() {
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  // ── Actions Backend Simulé ──────────────────────────────
-  const updateStatut = (id: number, nouveauStatut: StatutInscription) => {
-    setData(data.map(item => item.id === id ? { ...item, statut: nouveauStatut } : item));
-    if (selected && selected.id === id) {
-      setSelected({ ...selected, statut: nouveauStatut });
+  // ── Actions Backend Reliées à l'API ─────────────────────
+  const updateStatut = async (id: number, nouveauStatut: StatutInscription) => {
+    try {
+      await apiService.etudiant.update(id, { statut: nouveauStatut });
+      setData(data.map(item => item.id === id ? { ...item, statut: nouveauStatut } : item));
+      if (selected && selected.id === id) {
+        setSelected({ ...selected, statut: nouveauStatut });
+      }
+      showToast(`Demande ${nouveauStatut.toLowerCase()}e avec succès`);
+    } catch (error) {
+      console.error("Erreur lors de la modification du statut", error);
     }
-    showToast(`Demande ${nouveauStatut.toLowerCase()}e avec succès`);
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (deleteId !== null) {
-      setData(data.filter(item => item.id !== deleteId));
-      setDeleteId(null);
-      showToast('Demande d\'inscription supprimée');
+      try {
+        await apiService.etudiant.delete(deleteId);
+        setData(data.filter(item => item.id !== deleteId));
+        setDeleteId(null);
+        showToast('Demande d\'inscription supprimée');
+      } catch (error) {
+        console.error("Erreur lors de la suppression", error);
+      }
     }
   };
 

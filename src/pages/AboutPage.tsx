@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Info, Target, Eye, Heart, Award, ShieldCheck } from 'lucide-react';
+import ApiService from '../services/ApiService';
 
 interface ValeurCardProps {
   icon: React.ReactNode;
@@ -31,8 +32,57 @@ function ValeurCard({ icon, title, desc }: ValeurCardProps) {
   );
 }
 
+interface AboutCounts {
+  actualites: number;
+  organigramme: number;
+  historiques: number;
+  mots: number;
+}
+
+const FALLBACK_COUNTS: AboutCounts = {
+  actualites: 0,
+  organigramme: 0,
+  historiques: 0,
+  mots: 0,
+};
+
 export default function AboutPage() {
   const { darkMode } = useTheme();
+  const [counts, setCounts] = useState<AboutCounts>(FALLBACK_COUNTS);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadCounts = async () => {
+      try {
+        const [actualitesRes, organigrammesRes, historiquesRes, motsRes] = await Promise.all([
+          ApiService.actualites.getAll(),
+          ApiService.organigrammes.getAll(),
+          ApiService.historiques.getAll(),
+          ApiService.mots.getAll(),
+        ]);
+
+        if (!isMounted) return;
+
+        setCounts({
+          actualites: Array.isArray(actualitesRes.data) ? actualitesRes.data.length : 0,
+          organigramme: Array.isArray(organigrammesRes.data) ? organigrammesRes.data.length : 0,
+          historiques: Array.isArray(historiquesRes.data) ? historiquesRes.data.length : 0,
+          mots: Array.isArray(motsRes.data) ? motsRes.data.length : 0,
+        });
+      } catch {
+        if (isMounted) {
+          setCounts(FALLBACK_COUNTS);
+        }
+      }
+    };
+
+    loadCounts();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const glassStyle = {
     backgroundColor: darkMode ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.55)",
@@ -83,12 +133,12 @@ export default function AboutPage() {
               style={{ borderColor: 'var(--border)' }}
             >
               <div>
-                <div className="text-xl md:text-2xl font-black text-amber-500">98%</div>
-                <div className="text-[10px] font-bold uppercase opacity-50">Insertion Pro</div>
+                <div className="text-xl md:text-2xl font-black text-amber-500">{counts.actualites}</div>
+                <div className="text-[10px] font-bold uppercase opacity-50">Actualites</div>
               </div>
               <div>
-                <div className="text-xl md:text-2xl font-black text-blue-500">10+</div>
-                <div className="text-[10px] font-bold uppercase opacity-50">Partenaires</div>
+                <div className="text-xl md:text-2xl font-black text-blue-500">{counts.organigramme + counts.historiques + counts.mots}</div>
+                <div className="text-[10px] font-bold uppercase opacity-50">Structures</div>
               </div>
             </div>
           </div>

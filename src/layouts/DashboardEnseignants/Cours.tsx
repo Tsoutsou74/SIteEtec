@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   BookOpen, Plus, Search, Edit2, Trash2, 
-  Clock, Users, Layers, X, Save, AlertCircle 
+  Clock, Layers, X, Save, AlertCircle, Loader2 
 } from 'lucide-react';
 
 // ─── Interfaces ───────────────────────────────────────────
@@ -15,18 +16,12 @@ interface Cours {
   description: string;
 }
 
-// ─── Données Initiales de Démo ───────────────────────────
-const INITIAL_COURS: Cours[] = [
-  { id: '1', titre: 'Développement Web Avancé (React & Node.js)', code: 'DEV-401', classe: 'L3 Informatique', volumeHoraire: 45, description: 'Architecture SPA, gestion d\'état globale et API REST.' },
-  { id: '2', titre: 'Architecture des Systèmes d\'Information', code: 'SI-402', classe: 'M1 Génie Logiciel', volumeHoraire: 30, description: 'Modélisation UML avancée, patterns architecturaux et microservices.' },
-  { id: '3', titre: 'Bases de Données Relationnelles & NoSQL', code: 'BD-302', classe: 'L2 Informatique', volumeHoraire: 40, description: 'Optimisation de requêtes SQL et introduction à MongoDB.' },
-];
-
 export default function CoursPage() {
   const { darkMode } = useTheme();
   
-  // ─── États ──────────────────────────────────────────────
-  const [listeCours, setListeCours] = useState<Cours[]>(INITIAL_COURS);
+  // ─── États Dynamiques ───────────────────────────────────
+  const [listeCours, setListeCours] = useState<Cours[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCours, setEditingCours] = useState<Cours | null>(null);
@@ -43,9 +38,41 @@ export default function CoursPage() {
   const cardBg  = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const inputBg = darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
 
+  // Configuration de base pour les requêtes (Headers JSON + Auth Token)
+  const getRequestConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    };
+  };
+
+  // ─── Charger les cours depuis l'API ──────────────────────
+  const fetchCours = async () => {
+    setIsLoading(true);
+    try {
+      if (ApiService.enseignant?.getCours) {
+        const res = await ApiService.enseignant.getCours(getRequestConfig());
+        if (res && res.data) {
+          setListeCours(res.data);
+        }
+      }
+    } catch (err) {
+      console.error("Erreur lors de la récupération des cours :", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCours();
+  }, []);
+
   // ─── Actions CRUD ───────────────────────────────────────
   
-  // Ouvrir le modal pour Ajout ou Edition
+  // Ouvrir le modal (Ajout ou Édition)
   const openModal = (cours: Cours | null = null) => {
     if (cours) {
       setEditingCours(cours);
@@ -54,7 +81,7 @@ export default function CoursPage() {
         code: cours.code,
         classe: cours.classe,
         volumeHoraire: cours.volumeHoraire,
-        description: cours.description
+        description: cours.description || ''
       });
     } else {
       setEditingCours(null);
@@ -63,37 +90,49 @@ export default function CoursPage() {
     setIsModalOpen(true);
   };
 
-  // Soumission du Formulaire (Create & Update)
-  const handleSubmit = (e: React.FormEvent) => {
+  // Soumission du Formulaire (Create & Update via l'API)
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.titre || !formData.code || !formData.classe) return;
 
-    if (editingCours) {
-      // Update
-      setListeCours(prev => prev.map(c => c.id === editingCours.id ? { ...c, ...formData } : c));
-    } else {
-      // Create
-      const newCours: Cours = {
-        id: Date.now().toString(),
-        ...formData
-      };
-      setListeCours(prev => [newCours, ...prev]);
+    try {
+      if (editingCours) {
+        // Mode ÉDITION (Update)
+        if (ApiService.enseignant?.updateCours) {
+          await ApiService.enseignant.updateCours(editingCours.id, formData, getRequestConfig());
+        }
+      } else {
+        // Mode CRÉATION (Create)
+        if (ApiService.enseignant?.createCours) {
+          await ApiService.enseignant.createCours(formData, getRequestConfig());
+        }
+      }
+      setIsModalOpen(false);
+      fetchCours(); // Rechargement dynamique de la liste
+    } catch (err) {
+      console.error("Erreur lors de l'enregistrement du cours :", err);
     }
-    setIsModalOpen(false);
   };
 
-  // Suppression (Delete)
-  const handleDelete = (id: string) => {
+  // Suppression (Delete via l'API)
+  const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
-      setListeCours(prev => prev.filter(c => c.id !== id));
+      try {
+        if (ApiService.enseignant?.deleteCours) {
+          await ApiService.enseignant.deleteCours(id, getRequestConfig());
+          fetchCours(); // Rechargement dynamique de la liste
+        }
+      } catch (err) {
+        console.error("Erreur lors de la suppression du cours :", err);
+      }
     }
   };
 
-  // Filtrage pour la recherche
+  // Filtrage local pour la barre de recherche
   const coursFiltrés = listeCours.filter(c => 
-    c.titre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.classe.toLowerCase().includes(searchTerm.toLowerCase())
+    c.titre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.classe?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -133,8 +172,13 @@ export default function CoursPage() {
         />
       </div>
 
-      {/* ─── Liste des Cours (Cards) ─── */}
-      {coursFiltrés.length === 0 ? (
+      {/* ─── Zone de contenu principal (Chargement vs Liste) ─── */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-24 gap-2 opacity-50 text-xs">
+          <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
+          <p className="font-semibold">Chargement de vos modules de cours...</p>
+        </div>
+      ) : coursFiltrés.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 border border-dashed rounded-2xl opacity-40 space-y-2"
           style={{ borderColor: 'var(--border)' }}>
           <AlertCircle size={32} />

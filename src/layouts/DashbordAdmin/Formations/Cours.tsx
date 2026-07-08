@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   BookOpen, Search, Filter, GraduationCap, 
   Clock, User, BookMarked, Plus, MoreVertical, 
   Edit2, Trash2, X, Check
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Course {
@@ -18,21 +19,12 @@ interface Course {
   etudiants: number;
 }
 
-// ─── Données Initiales ──────────────────────────────────────────────
-const INITIAL_COURSES: Course[] = [
-  { id: 1, code: 'INF-301', name: 'Architecture Microservices & Cloud', filiere: 'Informatique', niveau: 'Master 1', enseignant: 'Dr. Fanilo', heures: 45, etudiants: 28 },
-  { id: 2, code: 'INF-302', name: 'Intelligence Artificielle & NLP', filiere: 'Informatique', niveau: 'Master 1', enseignant: 'Mme Rabe', heures: 60, etudiants: 25 },
-  { id: 3, code: 'INF-201', name: 'Développement Full-Stack (React & Spring)', filiere: 'Informatique', niveau: 'Licence 3', enseignant: 'M. Niavo', heures: 50, etudiants: 42 },
-  { id: 4, code: 'MGT-101', name: 'Management Stratégique', filiere: 'Management', niveau: 'Licence 1', enseignant: 'Mme Miora', heures: 30, etudiants: 55 },
-  { id: 5, code: 'MGT-204', name: 'Gestion de Projet Agile (Scrum)', filiere: 'Management', niveau: 'Licence 3', enseignant: 'M. Rakoto', heures: 36, etudiants: 38 },
-  { id: 6, code: 'BTP-301', name: 'Calcul des Structures & Béton', filiere: 'BTP', niveau: 'Master 1', enseignant: 'Dr. Randria', heures: 55, etudiants: 19 },
-];
-
 const FILIERES = ['Toutes', 'Informatique', 'Management', 'BTP'];
 const NIVEAUX = ['Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2'];
 
 export default function AdminCours() {
-  const [courses, setCourses] = useState<Course[]>(INITIAL_COURSES);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFiliere, setSelectedFiliere] = useState('Toutes');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
@@ -49,6 +41,35 @@ export default function AdminCours() {
     heures: 30,
     etudiants: 0
   });
+
+  // ─── Chargement initial depuis l'API ───────────────────────────────
+  const fetchCourses = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.cours.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: Number(item.id),
+          code: item.code || '',
+          name: item.name || item.titre || item.intitule || '',
+          filiere: item.filiere || 'Informatique',
+          niveau: item.niveau || 'Licence 1',
+          enseignant: item.enseignant || item.professeur || '',
+          heures: Number(item.heures || item.volumeHoraire || 0),
+          etudiants: Number(item.etudiants || item.nombreEtudiants || 0),
+        }));
+        setCourses(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des cours :", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, []);
 
   // ─── Filtrage intelligent des cours ─────────────────────────────────
   const filteredCourses = useMemo(() => {
@@ -73,7 +94,7 @@ export default function AdminCours() {
     };
   }, [filteredCourses]);
 
-  // ─── Logique CRUD Actions ──────────────────────────────────────────
+  // ─── Logique CRUD Actions reliées à l'API ──────────────────────────
   const openAddModal = () => {
     setEditingCourse(null);
     setFormData({
@@ -103,29 +124,40 @@ export default function AdminCours() {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Voulez-vous vraiment supprimer ce cours ?')) {
-      setCourses(prev => prev.filter(c => c.id !== id));
-      setActiveMenu(null);
+      try {
+        await apiService.cours.delete(String(id));
+        setCourses(prev => prev.filter(c => c.id !== id));
+        setActiveMenu(null);
+      } catch (error) {
+        console.error("Erreur lors de la suppression du cours :", error);
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.code || !formData.name || !formData.enseignant) return;
 
-    if (editingCourse) {
-      // Action: UPDATE
-      setCourses(prev => prev.map(c => c.id === editingCourse.id ? { ...c, ...formData } : c));
-    } else {
-      // Action: CREATE
-      const newCourse: Course = {
-        id: Date.now(),
-        ...formData
-      };
-      setCourses(prev => [newCourse, ...prev]);
+    try {
+      if (editingCourse) {
+        // Action API: UPDATE
+        await apiService.cours.update(String(editingCourse.id), formData);
+        setCourses(prev => prev.map(c => c.id === editingCourse.id ? { ...c, ...formData } : c));
+      } else {
+        // Action API: CREATE
+        const response = await apiService.cours.create(formData);
+        const newCourse: Course = {
+          id: response?.data?.id ? Number(response.data.id) : Date.now(),
+          ...formData
+        };
+        setCourses(prev => [newCourse, ...prev]);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde du cours :", error);
     }
-    setIsModalOpen(false);
   };
 
   return (
@@ -222,7 +254,12 @@ export default function AdminCours() {
 
       {/* ── Grille Bento des Cours ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredCourses.length > 0 ? (
+        {loading ? (
+          <div className="col-span-full py-12 text-center border border-dashed rounded-2xl opacity-40"
+            style={{ borderColor: 'var(--border)' }}>
+            <p className="text-xs font-bold">Récupération des cours sur le serveur...</p>
+          </div>
+        ) : filteredCourses.length > 0 ? (
           filteredCourses.map(course => (
             <div 
               key={course.id}
@@ -290,7 +327,7 @@ export default function AdminCours() {
                     <Clock size={13} className="opacity-50" /> {course.heures}h
                   </span>
                   <span className="flex items-center gap-1">
-                    <GraduationCap size={13} className="opacity-50" /> {course.etudiants}
+                    <AmberGraduationIcon /> {course.etudiants}
                   </span>
                 </div>
               </div>
@@ -425,4 +462,9 @@ export default function AdminCours() {
       )}
     </div>
   );
+}
+
+// Petit composant interne pour préserver l'icône de graduation
+function AmberGraduationIcon() {
+  return <GraduationCap size={13} className="opacity-50" />;
 }

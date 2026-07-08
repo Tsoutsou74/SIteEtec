@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, Search, Edit2, Trash2, Briefcase, 
   Clock, Award, CheckCircle, X, Layers 
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
+import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── INTERFACES ──────────────────────────────────────────
 interface FormationContinue {
@@ -18,52 +19,46 @@ interface FormationContinue {
   statut: 'Disponible' | 'En cours' | 'Clôturé';
 }
 
-// ─── DONNÉES INITIALES DE TEST ───────────────────────────
-const INITIAL_CONTINUE: FormationContinue[] = [
-  {
-    id: '1',
-    code: 'FC-DEV-AI',
-    titre: 'Intégration des API d\'Intelligence Artificielle (Gemini/OpenAI)',
-    domaine: 'Informatique & Tech',
-    volumeHoraire: '36 heures (Cours du soir)',
-    tarifEntreprise: '850 000 Ar',
-    typePublic: 'Développeurs, Chefs de projet',
-    description: 'Conception d\'assistants virtuels et intégration de modèles LLM dans des architectures d\'entreprise.',
-    statut: 'Disponible',
-  },
-  {
-    id: '2',
-    code: 'FC-MGT-AG',
-    titre: 'Management Agile et Certification Scrum Master',
-    domaine: 'Management & RH',
-    volumeHoraire: '24 heures (Weekend)',
-    tarifEntreprise: '600 000 Ar',
-    typePublic: 'Managers, Team Leads',
-    description: 'Maîtrise des frameworks Scrum et Kanban pour piloter des projets complexes à Antananarivo.',
-    statut: 'En cours',
-  },
-  {
-    id: '3',
-    code: 'FC-BTP-REV',
-    titre: 'Modélisation 3D et initiation BIM avec Revit',
-    domaine: 'Génie Civil & BTP',
-    volumeHoraire: '60 heures',
-    tarifEntreprise: '1 200 000 Ar',
-    typePublic: 'Architectes, Techniciens supérieurs',
-    description: 'Prise en main des outils collaboratifs de conception numérique pour les infrastructures modernes.',
-    statut: 'Clôturé',
-  }
-];
-
 export default function Continue() {
-  const [formations, setFormations] = useState<FormationContinue[]>(INITIAL_CONTINUE);
+  const [formations, setFormations] = useState<FormationContinue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
   // États pour le Modal Formulaire
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentFC, setCurrentFC] = useState<Partial<FormationContinue> | null>(null);
 
-  // ─── GESTION CRUD ───────────────────────────────────────
+  // ─── CHARGEMENT VIA API ─────────────────────────────────
+  const fetchFormations = async () => {
+    setLoading(true);
+    try {
+      const response = await apiService.formationContinue.getAll();
+      if (response && response.data) {
+        const mappedData = response.data.map((item: any) => ({
+          id: String(item.id),
+          code: item.code || '',
+          titre: item.titre || item.intitule || '',
+          domaine: item.domaine || '',
+          volumeHoraire: item.volumeHoraire || item.duree || '',
+          tarifEntreprise: item.tarifEntreprise || item.prix || item.cout || '',
+          typePublic: item.typePublic || item.publicCible || '',
+          description: item.description || '',
+          statut: item.statut || 'Disponible',
+        }));
+        setFormations(mappedData);
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des formations continues :", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFormations();
+  }, []);
+
+  // ─── GESTION CRUD RELIÉE À L'API ────────────────────────
   
   const openModal = (formation: FormationContinue | null = null) => {
     if (formation) {
@@ -74,28 +69,39 @@ export default function Continue() {
     setIsModalOpen(true);
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentFC?.code || !currentFC?.titre) return;
 
-    if (currentFC.id) {
-      // Modification
-      setFormations(prev => prev.map(f => f.id === currentFC.id ? (currentFC as FormationContinue) : f));
-    } else {
-      // Création
-      const newFC: FormationContinue = {
-        ...(currentFC as Omit<FormationContinue, 'id'>),
-        id: Date.now().toString(),
-      };
-      setFormations(prev => [newFC, ...prev]);
+    try {
+      if (currentFC.id) {
+        // Modification API
+        await apiService.formationContinue.update(currentFC.id, currentFC);
+        setFormations(prev => prev.map(f => f.id === currentFC.id ? (currentFC as FormationContinue) : f));
+      } else {
+        // Création API
+        const response = await apiService.formationContinue.create(currentFC);
+        const createdFC: FormationContinue = {
+          ...(currentFC as Omit<FormationContinue, 'id'>),
+          id: response?.data?.id ? String(response.data.id) : Date.now().toString(),
+        };
+        setFormations(prev => [createdFC, ...prev]);
+      }
+      setIsModalOpen(false);
+      setCurrentFC(null);
+    } catch (error) {
+      console.error("Erreur lors de la sauvegarde :", error);
     }
-    setIsModalOpen(false);
-    setCurrentFC(null);
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm("Voulez-vous supprimer ce module de formation continue ?")) {
-      setFormations(prev => prev.filter(f => f.id !== id));
+      try {
+        await apiService.formationContinue.delete(id);
+        setFormations(prev => prev.filter(f => f.id !== id));
+      } catch (error) {
+        console.error("Erreur lors de la suppression :", error);
+      }
     }
   };
 
@@ -156,7 +162,13 @@ export default function Continue() {
               </tr>
             </thead>
             <tbody className="divide-y" style={{ divideColor: 'var(--border)' }}>
-              {filteredFormations.length > 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={8} className="p-8 text-center opacity-40 italic">
+                    Chargement des modules depuis le serveur...
+                  </td>
+                </tr>
+              ) : filteredFormations.length > 0 ? (
                 filteredFormations.map((fc) => (
                   <tr key={fc.id} className="hover:bg-neutral-500/5 transition">
                     <td className="p-4 font-bold tracking-wider" style={{ color: 'var(--primary)' }}>{fc.code}</td>

@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   History, Search, Filter, Trash2, ShieldAlert, 
-  RefreshCw, FilePlus, Edit, AlertCircle, Calendar, 
-  Clock, User, CheckCircle2, Download
+  FilePlus, Edit, AlertCircle, Calendar, 
+  Clock, User, Download, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface LogEntry {
@@ -18,22 +19,35 @@ interface LogEntry {
   ipAddress: string;
 }
 
-// ─── Données Initiales (Logs récents de l'application) ──────────────
-const INITIAL_LOGS: LogEntry[] = [
-  { id: 1, adminName: 'Dr. Fanilo', action: 'Création du cours', target: 'Architecture Microservices & Cloud (INF-301)', type: 'create', date: '2026-07-02', time: '14:32', ipAddress: '192.168.1.42' },
-  { id: 2, adminName: 'Mme Miora', action: 'Modification du slide vitrine', target: 'Inscriptions Ouvertes 2026 (ID: 1)', type: 'update', date: '2026-07-02', time: '11:15', ipAddress: '192.168.1.15' },
-  { id: 3, adminName: 'Système / Sécurité', action: 'Tentative de connexion échouée', target: 'Compte admin [admin_test]', type: 'security', date: '2026-07-02', time: '09:04', ipAddress: '41.204.18.22' },
-  { id: 4, adminName: 'Dr. Fanilo', action: 'Suppression d’un membre de l’organigramme', target: 'Ancien Enseignant (ID: 14)', type: 'delete', date: '2026-07-01', time: '16:45', ipAddress: '192.168.1.42' },
-  { id: 5, adminName: 'Mme Miora', action: 'Modification des horaires de cours', target: 'Management Stratégique (MGT-101)', type: 'update', date: '2026-07-01', time: '10:20', ipAddress: '192.168.1.15' },
-  { id: 6, adminName: 'M. Niavo', action: 'Création du cours', target: 'Intelligence Artificielle & NLP (INF-302)', type: 'create', date: '2026-06-30', time: '15:10', ipAddress: '192.168.1.89' },
-];
-
 const LOG_TYPES = ['Tous', 'Création', 'Modification', 'Suppression', 'Sécurité'];
 
 export default function AdminHistorique() {
-  const [logs, setLogs] = useState<LogEntry[]>(INITIAL_LOGS);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isPurging, setIsPurging] = useState(false);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('Tous');
+
+  // ─── Chargement initial depuis l'API ────────────────────────────────
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.historiques.getAll();
+      setLogs(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger l'historique des activités.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // ─── Filtrage intelligent des logs ──────────────────────────────────
   const filteredLogs = useMemo(() => {
@@ -63,14 +77,48 @@ export default function AdminHistorique() {
   }, [filteredLogs, logs]);
 
   // ─── Actions de l'historique ────────────────────────────────────────
-  const handlePurgeLogs = () => {
-    if (confirm('Voulez-vous vraiment vider tout l’historique des logs ? Cette action est irréversible.')) {
-      setLogs([]);
+  const handlePurgeLogs = async () => {
+    if (!confirm('Voulez-vous vraiment vider tout l’historique des logs ? Cette action est irréversible.')) return;
+
+    const previous = logs;
+    setIsPurging(true);
+    setLogs([]);
+
+    try {
+      await ApiService.historiques.purgeAll();
+    } catch (err) {
+      console.error(err);
+      setLogs(previous); // rollback
+      alert("La purge a échoué côté serveur, réessaie.");
+    } finally {
+      setIsPurging(false);
     }
   };
 
   const handleExportCSV = () => {
-    alert('Exportation des logs au format CSV simulée avec succès.');
+    if (filteredLogs.length === 0) {
+      alert("Aucun log à exporter avec les filtres actuels.");
+      return;
+    }
+
+    const headers = ['Type', 'Utilisateur', 'Action', 'Cible', 'Date', 'Heure', 'Adresse IP'];
+    const rows = filteredLogs.map(log => [
+      log.type, log.adminName, log.action, log.target, log.date, log.time, log.ipAddress
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `historique_etec_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Rendu de l'icône selon le type de log
@@ -93,6 +141,32 @@ export default function AdminHistorique() {
     }
   };
 
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement de l'historique...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchLogs}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* ── En-tête ── */}
@@ -112,10 +186,10 @@ export default function AdminHistorique() {
           </button>
           <button 
             onClick={handlePurgeLogs}
-            disabled={logs.length === 0}
+            disabled={logs.length === 0 || isPurging}
             className="flex items-center justify-center gap-2 px-3.5 py-2 rounded-xl font-bold text-xs text-red-500 border border-red-500/20 bg-red-500/5 transition hover:bg-red-500/10 cursor-pointer disabled:opacity-30 disabled:pointer-events-none"
           >
-            <Trash2 size={14} />
+            {isPurging ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />}
             Purger
           </button>
         </div>

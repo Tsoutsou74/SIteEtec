@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import {
   Search, Plus, Trash2, X, Send,
-  Calendar, CheckCircle, AlertCircle, Bell, Users, GraduationCap, Info
+  Calendar, CheckCircle, AlertCircle, Bell, Users, GraduationCap, Info,
+  Loader2, AlertTriangle
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────
@@ -19,37 +21,6 @@ interface NotificationAdmin {
   luPar: number; // Nombre d'utilisateurs ayant ouvert la notification
 }
 
-// Données de test réalistes
-const INITIAL_NOTIFICATIONS: NotificationAdmin[] = [
-  {
-    id: 1,
-    titre: 'Rappel : Clôture de la saisie des notes du 1er Semestre',
-    message: 'Chers enseignants, merci de finaliser la saisie des notes de vos modules respectifs avant ce vendredi à 18h pour permettre les délibérations.',
-    cible: 'Enseignants',
-    type: 'Rappel',
-    dateEnvoi: '2026-06-29 09:15',
-    luPar: 42
-  },
-  {
-    id: 2,
-    titre: 'Alerte Météo : Suspension des cours en présentiel',
-    message: 'En raison des fortes perturbations climatiques sur Antananarivo, les cours se feront exclusivement en ligne (e-learning) pour la journée de demain.',
-    cible: 'Tous',
-    type: 'Alerte',
-    dateEnvoi: '2026-06-12 16:30',
-    luPar: 512
-  },
-  {
-    id: 3,
-    titre: 'Mise à jour des profils étudiants requise',
-    message: 'N\'oubliez pas de téléverser votre fiche de réinscription scannée dans votre espace personnel, onglet Documents.',
-    cible: 'Étudiants',
-    type: 'Système',
-    dateEnvoi: '2026-05-02 11:00',
-    luPar: 380
-  }
-];
-
 const CIBLES: CibleNotification[] = ['Tous', 'Étudiants', 'Enseignants'];
 const TYPES: TypeNotification[] = ['Alerte', 'Message', 'Rappel', 'Système'];
 
@@ -62,13 +33,18 @@ const EMPTY_FORM = {
 
 export default function Notifications() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<NotificationAdmin[]>(INITIAL_NOTIFICATIONS);
+  const [data, setData] = useState<NotificationAdmin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
   const [filtreCible, setFiltreCible] = useState('');
 
   // États CRUD
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -84,6 +60,25 @@ export default function Notifications() {
     color: 'var(--text)',
   };
 
+  // ── Chargement initial depuis l'API ────────────────────────
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.notifications.getAll();
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger l'historique des notifications.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ── Filtrage ────────────────────────────────────────────
   const filtered = data.filter(n => {
     const q = search.toLowerCase();
@@ -93,34 +88,46 @@ export default function Notifications() {
   });
 
   // ── Actions ─────────────────────────────────────────────
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!form.titre || !form.message) {
       showToast('Veuillez remplir le titre et le contenu du message.');
       return;
     }
 
-    const now = new Date();
-    const dateStr = `${now.toISOString().split('T')[0]} ${now.toTimeString().split(' ')[0].substring(0, 5)}`;
-    const newId = data.length > 0 ? Math.max(...data.map(n => n.id)) + 1 : 1;
-
-    const newNotification: NotificationAdmin = {
-      id: newId,
-      ...form,
-      dateEnvoi: dateStr,
-      luPar: 0
-    };
-
-    setData([newNotification, ...data]);
-    setIsModalOpen(false);
-    setForm(EMPTY_FORM);
-    showToast('Notification push envoyée avec succès');
+    setIsSending(true);
+    try {
+      const res = await ApiService.notifications.create(form);
+      const newNotification: NotificationAdmin = res.data;
+      setData(prev => [newNotification, ...prev]);
+      setIsModalOpen(false);
+      setForm(EMPTY_FORM);
+      showToast('Notification push envoyée avec succès');
+    } catch (err) {
+      console.error(err);
+      showToast("Échec de l'envoi, réessaie.");
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleDelete = () => {
-    if (deleteId !== null) {
-      setData(data.filter(n => n.id !== deleteId));
-      setDeleteId(null);
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+
+    const previous = data;
+    const idToDelete = deleteId;
+    setData(prev => prev.filter(n => n.id !== idToDelete));
+    setDeleteId(null);
+    setIsDeleting(true);
+
+    try {
+      await ApiService.notifications.delete(idToDelete);
       showToast('Notification supprimée de l\'historique');
+    } catch (err) {
+      console.error(err);
+      setData(previous); // rollback
+      showToast('La suppression a échoué, réessaie.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -153,6 +160,32 @@ export default function Notifications() {
         return <span className="flex items-center gap-1 text-purple-500 font-bold"><Users size={12} /> Espace Profs</span>;
     }
   };
+
+  // ── États de chargement / erreur ────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des notifications...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchNotifications}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -278,7 +311,15 @@ export default function Notifications() {
             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSend} className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Send size={13} /> Envoyer maintenant</button>
+              <button
+                onClick={handleSend}
+                disabled={isSending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ backgroundColor: 'var(--primary)' }}
+              >
+                {isSending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
+                Envoyer maintenant
+              </button>
             </div>
           </div>
         </div>
@@ -297,7 +338,14 @@ export default function Notifications() {
             </div>
             <div className="flex gap-3 justify-center text-xs">
               <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold">Retirer</button>
+              <button
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                {isDeleting ? <Loader2 size={13} className="animate-spin" /> : null}
+                Retirer
+              </button>
             </div>
           </div>
         </div>

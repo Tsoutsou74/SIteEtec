@@ -1,9 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   FolderOpen, FileText, Video, Archive, Search, 
   UploadCloud, Trash2, Download, HardDrive, 
-  Filter, Plus, CheckCircle, FileUp
+  CheckCircle, Loader2, AlertCircle
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -18,62 +18,48 @@ interface FichierRessource {
   format: 'document' | 'video' | 'archive';
 }
 
-// ─── Données Simulées (Mock Data) ─────────────────────────
-const INITIAL_FICHIERS: FichierRessource[] = [
-  {
-    id: 'f-1',
-    nom: 'Ch01_Introduction_Algorithmique_V2.pdf',
-    classe: 'L1 Info A',
-    matiere: 'Algorithmique',
-    taille: '2.4 MB',
-    dateDepot: 'Aujourd\'hui, 09:15',
-    downloads: 42,
-    format: 'document'
-  },
-  {
-    id: 'f-2',
-    nom: 'Enregistrement_Cours_Architecture_VonNeumann.mp4',
-    classe: 'L1 Info B',
-    matiere: 'Architecture des ordinateurs',
-    taille: '145 MB',
-    dateDepot: 'Hier, 16:00',
-    downloads: 18,
-    format: 'video'
-  },
-  {
-    id: 'f-3',
-    nom: 'TP3_Correction_BaseDeDonnees_SQL.zip',
-    classe: 'L3 Info',
-    matiere: 'Base de Données',
-    taille: '4.8 MB',
-    dateDepot: '24 Juin 2026',
-    downloads: 35,
-    format: 'archive'
-  },
-  {
-    id: 'f-4',
-    nom: 'Syllabus_DevOps_CI_CD_2026.pdf',
-    classe: 'M1 GL',
-    matiere: 'DevOps',
-    taille: '1.1 MB',
-    dateDepot: '15 Juin 2026',
-    downloads: 50,
-    format: 'document'
-  }
-];
-
 export default function Ressource() {
   const { darkMode } = useTheme();
 
   // ─── États ──────────────────────────────────────────────
-  const [fichiers, setFichiers] = useState<FichierRessource[]>(INITIAL_FICHIERS);
+  const [fichiers, setFichiers] = useState<FichierRessource[]>([]);
+  const [quota, setQuota] = useState<{ utilise: string; max: string; pourcentage: number }>({ utilise: '0 MB', max: '1 GB', pourcentage: 0 });
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFormat, setActiveFormat] = useState<'tous' | 'document' | 'video' | 'archive'>('tous');
+  
+  const [loading, setLoading] = useState<boolean>(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
+
+  // ─── Charger les ressources et l'espace de stockage ───
+  const fetchRessources = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const [fichiersData, quotaData] = await Promise.all([
+        apiService.getRessources(),
+        apiService.getQuotaStockage()
+      ]);
+      
+      setFichiers(fichiersData || []);
+      if (quotaData) setQuota(quotaData);
+    } catch (err) {
+      console.error("Erreur lors de la récupération des ressources:", err);
+      setError("Impossible de charger la médiathèque. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRessources();
+  }, []);
 
   // ─── Filtrage & Recherche ───
   const filteredFichiers = useMemo(() => {
@@ -86,40 +72,59 @@ export default function Ressource() {
     });
   }, [fichiers, searchTerm, activeFormat]);
 
-  // ─── Actions ───
-  const handleDelete = (id: string) => {
-    if (confirm('Voulez-vous vraiment supprimer ce document de la plateforme ?')) {
+  // ─── Actions via l'API ───
+  const handleDelete = async (id: string) => {
+    if (!confirm('Voulez-vous vraiment supprimer ce document de la plateforme ?')) return;
+    
+    try {
+      setError(null);
+      await apiService.deleteRessource(id);
       setFichiers(prev => prev.filter(f => f.id !== id));
+      
+      // Optionnel : Recharger le quota après suppression
+      const quotaData = await apiService.getQuotaStockage();
+      if (quotaData) setQuota(quotaData);
+    } catch (err) {
+      console.error("Erreur lors de la suppression de la ressource:", err);
+      setError("Erreur lors de la suppression du fichier. Veuillez réessayer.");
     }
   };
 
-  // Simulation d'un upload de fichier
-  const handleSimulatedUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadReal = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    setIsUploading(true);
+    const formData = new FormData();
+    formData.append('file', file);
+    // Ajoutez ici d'autres données requises par votre API (ex: classe, matiere) si besoin
+    formData.append('classe', 'L1 Info A'); 
+    formData.append('matiere', 'Général');
 
-    setTimeout(() => {
-      setIsUploading(false);
-      setUploadSuccess(true);
+    try {
+      setIsUploading(true);
+      setError(null);
       
-      // Ajout du fichier simulé à la liste
-      const nouveauFichier: FichierRessource = {
-        id: `f-${Date.now()}`,
-        nom: file.name,
-        classe: 'L1 Info A', // Valeur par défaut pour l'exemple
-        matiere: 'Général',
-        taille: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
-        dateDepot: 'À l\'instant',
-        downloads: 0,
-        format: file.type.includes('video') ? 'video' : file.name.endsWith('.zip') || file.name.endsWith('.rar') ? 'archive' : 'document'
-      };
-
-      setFichiers(prev => [nouveauFichier, ...prev]);
+      const nouveauFichier = await apiService.uploadRessource(formData);
+      
+      setUploadSuccess(true);
+      if (nouveauFichier) {
+        setFichiers(prev => [nouveauFichier, ...prev]);
+      } else {
+        // Fallback sécurisé ou rechargement complet
+        fetchRessources();
+      }
+      
+      // Actualiser l'état du quota après l'ajout
+      const quotaData = await apiService.getQuotaStockage();
+      if (quotaData) setQuota(quotaData);
 
       setTimeout(() => setUploadSuccess(false), 3000);
-    }, 1500);
+    } catch (err) {
+      console.error("Erreur lors du téléversement du fichier:", err);
+      setError("Le téléversement a échoué. Vérifiez la taille ou le format du fichier.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Helper Icône de format
@@ -147,22 +152,30 @@ export default function Ressource() {
         </div>
       </div>
 
+      {/* ─── Global Error Feedback ─── */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 text-xs font-bold text-red-500 bg-red-500/10 rounded-xl border border-red-500/20">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* ─── Layout : Zone de Dépôt & Jauge de Stockage ─── */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         
-        {/* Zone de Téléversement Drag & Drop */}
+        {/* Zone de Téléversement Real / Drag & Drop */}
         <div className="md:col-span-2 p-5 rounded-2xl border border-dashed text-center flex flex-col justify-center items-center relative group" style={{ backgroundColor: cardBg, ...borderStyle }}>
           <input 
             type="file" 
             id="file-upload-input"
             className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
-            onChange={handleSimulatedUpload}
+            onChange={handleUploadReal}
             disabled={isUploading}
           />
           
           {isUploading ? (
             <div className="space-y-2 py-4">
-              <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto" />
+              <Loader2 className="animate-spin text-[var(--primary)] mx-auto" size={24} />
               <p className="text-xs font-bold opacity-75">Chiffrement et téléversement du document...</p>
             </div>
           ) : uploadSuccess ? (
@@ -193,11 +206,11 @@ export default function Ressource() {
 
           <div className="space-y-1.5 mt-4 md:mt-0">
             <div className="h-1.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden">
-              <div className="h-full bg-[var(--primary)] rounded-full" style={{ width: '15.3%' }} />
+              <div className="h-full bg-[var(--primary)] rounded-full transition-all duration-300" style={{ width: `${quota.pourcentage}%` }} />
             </div>
             <div className="flex justify-between text-[10px] font-mono opacity-65 font-bold">
-              <span>153.3 MB Utilisés</span>
-              <span>1 GB</span>
+              <span>{quota.utilise} Utilisés</span>
+              <span>{quota.max}</span>
             </div>
           </div>
         </div>
@@ -252,7 +265,16 @@ export default function Ressource() {
               </tr>
             </thead>
             <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
-              {filteredFichiers.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="p-12 text-center opacity-60 font-medium">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="animate-spin text-[var(--primary)]" size={16} />
+                      Chargement de la médiathèque...
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredFichiers.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="p-8 text-center opacity-50 font-medium">Aucun fichier ne correspond aux filtres appliqués.</td>
                 </tr>

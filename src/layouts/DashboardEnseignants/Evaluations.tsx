@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
 import { 
   Award, Save, Percent, Users, TrendingUp, 
-  TrendingDown, FileSpreadsheet, CheckCircle, AlertCircle 
+  TrendingDown, FileSpreadsheet, CheckCircle, AlertCircle, Loader2
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -21,28 +21,9 @@ interface ConfigurationSaisie {
   evaluation: string;
 }
 
-// ─── Données Simulées (Mock Data) ─────────────────────────
+// Les listes de structures fixes peuvent être conservées ou hydratées par l'API
 const CLASSES = ['L1 Info A', 'L1 Info B', 'L2 Info B', 'L3 Info', 'M1 GL'];
-const MATIERES_PAR_CLASSE: Record<string, string[]> = {
-  'L1 Info A': ['Algorithmique', 'Architecture des ordinateurs', 'Mathématiques Discrètes'],
-  'L3 Info': ['Base de Données Avançées', 'Développement Web', 'Sécurité Informatique'],
-  'M1 GL': ['Architecture SI', 'Gestion de Projet Agile', 'DevOps'],
-};
 const EVALUATIONS = ['Devoir 1', 'Devoir 2', 'Examen Terminal', 'Session Pratique (TP)'];
-
-const INITIAL_ETUDIANTS: Record<string, EtudiantNote[]> = {
-  'L1 Info A': [
-    { id: '1', matricule: 'ETU-2026-001', nom: 'RAZAFIMAHATRATRA', prenom: 'Andry', note: 14, absent: false },
-    { id: '2', matricule: 'ETU-2026-002', nom: 'RABENANAHARY', prenom: 'Sitraka', note: 8.5, absent: false },
-    { id: '3', matricule: 'ETU-2026-003', nom: 'RAKOTOMALALA', prenom: 'Feno', note: 12, absent: false },
-    { id: '4', matricule: 'ETU-2026-004', nom: 'RANDRIANARISOA', prenom: 'Mamy', note: '', absent: true },
-    { id: '5', matricule: 'ETU-2026-005', nom: 'RASOAMALALA', prenom: 'Lova', note: 16.5, absent: false },
-  ],
-  'L3 Info': [
-    { id: '6', matricule: 'ETU-2024-102', nom: 'ANDRIAMALALA', prenom: 'Tahina', note: 11, absent: false },
-    { id: '7', matricule: 'ETU-2024-105', nom: 'RAVELOJAONA', prenom: 'Hery', note: 15, absent: false },
-  ]
-};
 
 export default function Evaluations() {
   const { darkMode } = useTheme();
@@ -50,27 +31,79 @@ export default function Evaluations() {
   // États de configuration du filtrage
   const [config, setConfig] = useState<ConfigurationSaisie>({
     classe: 'L1 Info A',
-    matiere: 'Algorithmique',
-    evaluation: 'Devoir 1'
+    matiere: '',
+    evaluation: EVALUATIONS[0]
   });
 
-  // État de la liste des étudiants chargés pour la saisie
-  const [etudiants, setEtudiants] = useState<EtudiantNote[]>(INITIAL_ETUDIANTS['L1 Info A'] || []);
+  // États pour les données dynamiques, chargements et erreurs
+  const [matieres, setMatieres] = useState<string[]>([]);
+  const [etudiants, setEtudiants] = useState<EtudiantNote[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [submitting, setSubmitting] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
   const [isSaved, setIsSaved] = useState(false);
 
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
 
-  // Charger les étudiants lorsque la classe change
+  // 1. Charger les matières et étudiants dès que la classe change
+  useEffect(() => {
+    const fetchDataPourClasse = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        setIsSaved(false);
+
+        // Appels API simultanés pour récupérer les matières et les étudiants de la classe
+        const [matieresData, etudiantsData] = await Promise.all([
+          apiService.getMatieresParClasse(config.classe),
+          apiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation)
+        ]);
+
+        setMatieres(matieresData || []);
+        setEtudiants(etudiantsData || []);
+        
+        // Mettre à jour la matière sélectionnée par défaut si nécessaire
+        if (matieresData && matieresData.length > 0 && !matieresData.includes(config.matiere)) {
+          setConfig(prev => ({ ...prev, matiere: matieresData[0] }));
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement des données:", err);
+        setError("Impossible de charger les données de la classe. Veuillez réessayer.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDataPourClasse();
+  }, [config.classe]);
+
+  // 2. Recharger uniquement les étudiants si la matière ou l'évaluation change
+  useEffect(() => {
+    if (!config.matiere) return;
+
+    const fetchNotesEtudiants = async () => {
+      try {
+        setError(null);
+        setIsSaved(false);
+        const etudiantsData = await apiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation);
+        setEtudiants(etudiantsData || []);
+      } catch (err) {
+        console.error("Erreur lors du rechargement des notes:", err);
+        setError("Erreur lors de la mise à jour de la liste des notes.");
+      }
+    };
+
+    fetchNotesEtudiants();
+  }, [config.matiere, config.evaluation]);
+
+  // Gestion du changement de classe
   const handleClasseChange = (classe: string) => {
-    const matieres = MATIERES_PAR_CLASSE[classe] || ['Général'];
-    setConfig({
+    setConfig(prev => ({
+      ...prev,
       classe,
-      matiere: matieres[0],
-      evaluation: EVALUATIONS[0]
-    });
-    setEtudiants(INITIAL_ETUDIANTS[classe] || []);
-    setIsSaved(false);
+      matiere: '' // Réinitialisé temporairement en attendant le hook
+    }));
   };
 
   // Gestion de la modification de note
@@ -120,11 +153,23 @@ export default function Evaluations() {
     };
   }, [etudiants]);
 
-  // Simulation de la sauvegarde
-  const handleSave = (e: React.FormEvent) => {
+  // Envoi des données vers l'API lors de la sauvegarde
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaved(true);
-    setTimeout(() => setIsSaved(false), 4000); // Notification éphémère
+    try {
+      setSubmitting(true);
+      setError(null);
+      
+      await apiService.saveEtudiantsNotes(config.classe, config.matiere, config.evaluation, etudiants);
+      
+      setIsSaved(true);
+      setTimeout(() => setIsSaved(false), 4000);
+    } catch (err) {
+      console.error("Erreur lors de la sauvegarde des notes:", err);
+      setError("La sauvegarde du procès-verbal a échoué. Veuillez réessayer.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -146,6 +191,7 @@ export default function Evaluations() {
           <select 
             value={config.classe}
             onChange={(e) => handleClasseChange(e.target.value)}
+            disabled={submitting}
             className="w-full text-xs p-2.5 rounded-xl border bg-transparent font-medium focus:outline-hidden focus:border-[var(--primary)]"
             style={borderStyle}
           >
@@ -158,12 +204,14 @@ export default function Evaluations() {
           <select 
             value={config.matiere}
             onChange={(e) => setConfig({ ...config, matiere: e.target.value })}
-            className="w-full text-xs p-2.5 rounded-xl border bg-transparent font-medium focus:outline-hidden focus:border-[var(--primary)]"
+            disabled={loading || submitting}
+            className="w-full text-xs p-2.5 rounded-xl border bg-transparent font-medium focus:outline-hidden focus:border-[var(--primary)] disabled:opacity-50"
             style={borderStyle}
           >
-            {(MATIERES_PAR_CLASSE[config.classe] || ['Général']).map(m => (
+            {matieres.map(m => (
               <option key={m} value={m} className="dark:bg-[#121212]">{m}</option> 
             ))}
+            {matieres.length === 0 && <option value="">Aucune matière disponible</option>}
           </select>
         </div>
 
@@ -172,6 +220,7 @@ export default function Evaluations() {
           <select 
             value={config.evaluation}
             onChange={(e) => setConfig({ ...config, evaluation: e.target.value })}
+            disabled={submitting}
             className="w-full text-xs p-2.5 rounded-xl border bg-transparent font-medium focus:outline-hidden focus:border-[var(--primary)]"
             style={borderStyle}
           >
@@ -180,12 +229,20 @@ export default function Evaluations() {
         </div>
       </div>
 
+      {/* ─── Global Error Feedback ─── */}
+      {error && (
+        <div className="flex items-center gap-2 p-3 text-xs font-bold text-red-500 bg-red-500/10 rounded-xl border border-red-500/20">
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
+
       {/* ─── Statistiques Flash de la Saisie (KPIs) ─── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <div className="p-3.5 rounded-xl border flex items-center justify-between" style={{ backgroundColor: cardBg, ...borderStyle }}>
           <div>
             <span className="text-[10px] font-bold opacity-50 block uppercase tracking-wider">Moyenne</span>
-            <span className="text-base font-black tracking-tight">{stats.moyenne} <span className="text-[10px] font-normal opacity-50">/20</span></span>
+            <span className="text-base font-black tracking-tight">{loading ? '...' : stats.moyenne} <span className="text-[10px] font-normal opacity-50">/20</span></span>
           </div>
           <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 opacity-70"><Percent size={14} /></div>
         </div>
@@ -194,7 +251,7 @@ export default function Evaluations() {
           <div>
             <span className="text-[10px] font-bold opacity-50 block uppercase tracking-wider">Taux de Réussite</span>
             <span className={`text-base font-black tracking-tight ${stats.tauxReussite >= 50 ? 'text-emerald-500' : 'text-amber-500'}`}>
-              {stats.tauxReussite}%
+              {loading ? '...' : `${stats.tauxReussite}%`}
             </span>
           </div>
           <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 opacity-70">
@@ -206,8 +263,8 @@ export default function Evaluations() {
           <div>
             <span className="text-[10px] font-bold opacity-50 block uppercase tracking-wider">Note Max / Min</span>
             <span className="text-sm font-black tracking-tight flex gap-2">
-              <span className="text-emerald-500">↑{stats.max}</span>
-              <span className="text-amber-500">↓{stats.min}</span>
+              <span className="text-emerald-500">↑{loading ? '..' : stats.max}</span>
+              <span className="text-amber-500">↓{loading ? '..' : stats.min}</span>
             </span>
           </div>
           <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 opacity-70"><FileSpreadsheet size={14} /></div>
@@ -216,7 +273,7 @@ export default function Evaluations() {
         <div className="p-3.5 rounded-xl border flex items-center justify-between" style={{ backgroundColor: cardBg, ...borderStyle }}>
           <div>
             <span className="text-[10px] font-bold opacity-50 block uppercase tracking-wider">Élèves inscrits</span>
-            <span className="text-base font-black tracking-tight">{stats.effectif}</span>
+            <span className="text-base font-black tracking-tight">{loading ? '...' : stats.effectif}</span>
           </div>
           <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 opacity-70"><Users size={14} /></div>
         </div>
@@ -236,7 +293,16 @@ export default function Evaluations() {
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: 'var(--border)' }}>
-                {etudiants.length === 0 ? (
+                {loading ? (
+                  <tr>
+                    <td colSpan={4} className="p-12 text-center opacity-60 font-medium">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="animate-spin text-[var(--primary)]" size={16} />
+                        Récupération des dossiers étudiants...
+                      </div>
+                    </td>
+                  </tr>
+                ) : etudiants.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="p-8 text-center opacity-50 font-medium">Aucun étudiant inscrit dans cette classe.</td>
                   </tr>
@@ -254,6 +320,7 @@ export default function Evaluations() {
                         <button
                           type="button"
                           onClick={() => handleAbsentToggle(etudiant.id)}
+                          disabled={submitting}
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-extrabold tracking-wide uppercase border cursor-pointer transition ${
                             etudiant.absent 
                               ? 'bg-amber-500/10 text-amber-500 border-amber-500/30' 
@@ -271,7 +338,7 @@ export default function Evaluations() {
                             min="0"
                             max="20"
                             placeholder={etudiant.absent ? 'ABS' : '0.00'}
-                            disabled={etudiant.absent}
+                            disabled={etudiant.absent || submitting}
                             value={etudiant.note}
                             onChange={(e) => handleNoteChange(etudiant.id, e.target.value)}
                             className={`w-full font-mono font-bold text-center p-2 rounded-xl border focus:outline-hidden focus:border-[var(--primary)] ${
@@ -279,7 +346,6 @@ export default function Evaluations() {
                             } ${
                               etudiant.note !== '' && !etudiant.absent && etudiant.note < 10 ? 'border-amber-500/40 text-amber-500 focus:border-amber-500' : ''
                             }`}
-                            style={!etudiant.absent && etudiant.note >= 10 ? {} : undefined}
                           />
                         </div>
                       </td>
@@ -299,7 +365,7 @@ export default function Evaluations() {
                 <CheckCircle size={14} /> Notes sauvegardées avec succès pour {config.classe} ({config.evaluation}).
               </div>
             )}
-            {!isSaved && etudiants.some(e => e.note === '' && !e.absent) && (
+            {!isSaved && !loading && etudiants.some(e => e.note === '' && !e.absent) && (
               <div className="flex items-center gap-1.5 text-xs font-medium opacity-50">
                 <AlertCircle size={14} /> Certaines notes ne sont pas encore renseignées.
               </div>
@@ -308,11 +374,20 @@ export default function Evaluations() {
 
           <button
             type="submit"
-            disabled={etudiants.length === 0}
+            disabled={loading || submitting || etudiants.length === 0}
             className="w-full sm:w-auto px-5 py-2.5 bg-[var(--primary)] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
-            <Save size={15} />
-            Sauvegarder le Procès-Verbal
+            {submitting ? (
+              <>
+                <Loader2 className="animate-spin" size={15} />
+                Enregistrement...
+              </>
+            ) : (
+              <>
+                <Save size={15} />
+                Sauvegarder le Procès-Verbal
+              </>
+            )}
           </button>
         </div>
       </form>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import ApiService from '../../../services/ApiService';
 import { 
   Search, Plus, Pencil, Trash2, X, Save, 
-  UserPlus, Mail, Phone, BookOpen, CheckCircle, AlertTriangle 
+  UserPlus, Mail, Phone, CheckCircle, AlertTriangle, Loader2
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -16,25 +17,24 @@ interface Enseignant {
   matieres: string[];
 }
 
-const INITIAL_ENSEIGNANTS: Enseignant[] = [
-  { id: 1, nom: 'ANDRIAMALALA', prenom: 'Rija', email: 'rija.andria@etec.mg', telephone: '+261 34 88 777 11', statut: 'Permanent', matieres: ['Algorithmique Avancée', 'Architecture Java / Spring'] },
-  { id: 2, nom: 'RAZAFINDRAKOTO', prenom: 'Lova', email: 'lova.razaf@etec.mg', telephone: '+261 33 99 888 22', statut: 'Vacataire', matieres: ['Gestion de Projet & Agilité', 'Comptabilité'] },
-  { id: 3, nom: 'HERILALA', prenom: 'Sitraka', email: 'sitraka.heri@etec.mg', telephone: '+261 32 11 222 33', statut: 'Permanent', matieres: ['Développement Web (React/Next)'] },
-];
-
 const EMPTY_FORM = {
   nom: '', prenom: '', email: '', telephone: '', statut: 'Vacataire' as Enseignant['statut'], matieresRaw: ''
 };
 
 export default function AdminEnseignants() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Enseignant[]>(INITIAL_ENSEIGNANTS);
+  const [data, setData] = useState<Enseignant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
 
   // États pour le CRUD
   const [modalMode, setModalMode] = useState<'add' | 'edit' | null>(null);
   const [selected, setSelected] = useState<Enseignant | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -48,6 +48,25 @@ export default function AdminEnseignants() {
     backgroundColor: 'var(--card)',
     borderColor: 'var(--border)',
     color: 'var(--text)',
+  };
+
+  // ─── Chargement initial depuis l'API ────────────────────
+  useEffect(() => {
+    fetchEnseignants();
+  }, []);
+
+  const fetchEnseignants = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.enseignant.getAll();
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger la liste des enseignants.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ─── Filtrage ───────────────────────────────────────────
@@ -76,7 +95,7 @@ export default function AdminEnseignants() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.nom || !form.prenom || !form.email) {
       showToast('Veuillez remplir le nom, prénom et email.');
       return;
@@ -88,39 +107,55 @@ export default function AdminEnseignants() {
       .map(m => m.trim())
       .filter(m => m.length > 0);
 
-    if (modalMode === 'add') {
-      const newId = data.length > 0 ? Math.max(...data.map(e => e.id)) + 1 : 1;
-      const newProf: Enseignant = {
-        id: newId,
-        nom: form.nom.toUpperCase(),
-        prenom: form.prenom,
-        email: form.email,
-        telephone: form.telephone,
-        statut: form.statut,
-        matieres: matieresArray
-      };
-      setData([...data, newProf]);
-      showToast('Enseignant recruté avec succès');
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(e => e.id === selected.id ? {
-        ...e,
-        nom: form.nom.toUpperCase(),
-        prenom: form.prenom,
-        email: form.email,
-        telephone: form.telephone,
-        statut: form.statut,
-        matieres: matieresArray
-      } : e));
-      showToast('Dossier enseignant mis à jour');
+    const payload = {
+      nom: form.nom.toUpperCase(),
+      prenom: form.prenom,
+      email: form.email,
+      telephone: form.telephone,
+      statut: form.statut,
+      matieres: matieresArray
+    };
+
+    setIsSaving(true);
+    try {
+      if (modalMode === 'add') {
+        const res = await ApiService.enseignant.create(payload);
+        const newProf: Enseignant = res.data;
+        setData(prev => [...prev, newProf]);
+        showToast('Enseignant recruté avec succès');
+      } else if (modalMode === 'edit' && selected) {
+        const res = await ApiService.enseignant.update(selected.id, payload);
+        const updated: Enseignant = res.data ?? { ...selected, ...payload };
+        setData(prev => prev.map(e => e.id === selected.id ? updated : e));
+        showToast('Dossier enseignant mis à jour');
+      }
+      setModalMode(null);
+    } catch (err) {
+      console.error(err);
+      showToast("Échec de l'enregistrement, réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setModalMode(null);
   };
 
-  const handleDelete = () => {
-    if (deleteId !== null) {
-      setData(data.filter(e => e.id !== deleteId));
-      setDeleteId(null);
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+
+    const previous = data;
+    const idToDelete = deleteId;
+    setData(prev => prev.filter(e => e.id !== idToDelete));
+    setDeleteId(null);
+    setIsDeleting(true);
+
+    try {
+      await ApiService.enseignant.delete(idToDelete);
       showToast('Enseignant retiré du système');
+    } catch (err) {
+      console.error(err);
+      setData(previous); // rollback
+      showToast("La suppression a échoué, réessaie.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -132,6 +167,32 @@ export default function AdminEnseignants() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des enseignants...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchEnseignants}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -280,7 +341,9 @@ export default function AdminEnseignants() {
             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
+              <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: 'var(--primary)' }}>
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Enregistrer
+              </button>
             </div>
           </div>
         </div>
@@ -299,7 +362,9 @@ export default function AdminEnseignants() {
             </div>
             <div className="flex gap-3 justify-center text-xs">
               <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold">Confirmer la rupture</button>
+              <button onClick={handleDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl text-white bg-red-500 font-bold flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                {isDeleting ? <Loader2 size={13} className="animate-spin" /> : null} Confirmer la rupture
+              </button>
             </div>
           </div>
         </div>

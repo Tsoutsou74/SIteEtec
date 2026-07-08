@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import ApiService from '../../../services/ApiService';
 import {
   Search, Plus, Eye, Pencil, Trash2, X, Save,
-  ChevronLeft, ChevronRight, Filter, Download,
+  ChevronLeft, ChevronRight, Download,
   User, Mail, Phone, MapPin, GraduationCap, Calendar,
-  CheckCircle, AlertCircle, Clock,
+  CheckCircle, AlertCircle, Loader2, AlertTriangle,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -26,18 +27,6 @@ interface Etudiant {
   annee: string;
   moyenne: number;
 }
-
-// ─── Données initiales ────────────────────────────────────
-const INITIAL: Etudiant[] = [
-  { id: 1,  matricule: 'ETU-2024-0001', nom: 'RAKOTO',    prenom: 'Andry',    email: 'andry.rakoto@etec.mg',    telephone: '+261 34 12 345 67', adresse: 'Faravohitra, Fianarantsoa', dateNaissance: '2003-05-14', filiere: 'Génie Logiciel',   niveau: 'L3', statut: 'Actif',    annee: '2026–2027', moyenne: 16.2 },
-  { id: 2,  matricule: 'ETU-2024-0002', nom: 'RAIVO',     prenom: 'Miora',    email: 'miora.raivo@etec.mg',     telephone: '+261 33 98 765 43', adresse: 'Tsianolondroa, Fianarantsoa', dateNaissance: '2004-02-20', filiere: 'Administration',  niveau: 'L2', statut: 'Actif',    annee: '2026–2027', moyenne: 14.8 },
-  { id: 3,  matricule: 'ETU-2024-0003', nom: 'RASOA',     prenom: 'Haja',     email: 'haja.rasoa@etec.mg',      telephone: '+261 34 55 123 89', adresse: 'Ambositra',                  dateNaissance: '2003-11-08', filiere: 'BTP',             niveau: 'L3', statut: 'Actif',    annee: '2026–2027', moyenne: 15.5 },
-  { id: 4,  matricule: 'ETU-2024-0004', nom: 'RABE',      prenom: 'Feno',     email: 'feno.rabe@etec.mg',       telephone: '+261 32 77 654 32', adresse: 'Ihosy',                      dateNaissance: '2002-07-30', filiere: 'Électromécanique', niveau: 'L3', statut: 'Suspendu', annee: '2026–2027', moyenne: 10.1 },
-  { id: 5,  matricule: 'ETU-2024-0005', nom: 'ANDRIANA',  prenom: 'Lova',     email: 'lova.andriana@etec.mg',   telephone: '+261 34 44 321 09', adresse: 'Faravohitra, Fianarantsoa', dateNaissance: '2004-03-15', filiere: 'Administration',  niveau: 'L1', statut: 'Actif',    annee: '2026–2027', moyenne: 13.7 },
-  { id: 6,  matricule: 'ETU-2023-0042', nom: 'RANDRIA',   prenom: 'Nomena',   email: 'nomena.randria@etec.mg',  telephone: '+261 33 11 234 56', adresse: 'Ambalavao',                  dateNaissance: '2001-09-22', filiere: 'Génie Logiciel',   niveau: 'M1', statut: 'Actif',    annee: '2026–2027', moyenne: 17.3 },
-  { id: 7,  matricule: 'ETU-2022-0018', nom: 'RATSIMA',   prenom: 'Zo',       email: 'zo.ratsima@etec.mg',      telephone: '+261 34 88 456 78', adresse: 'Fianarantsoa Centre',        dateNaissance: '2000-12-05', filiere: 'BTP',             niveau: 'M2', statut: 'Diplômé',  annee: '2025–2026', moyenne: 18.1 },
-  { id: 8,  matricule: 'ETU-2024-0008', nom: 'RAKOTON',   prenom: 'Sitraka',  email: 'sitraka.rakoton@etec.mg', telephone: '+261 32 22 789 01', adresse: 'Ambohimahasoa',              dateNaissance: '2003-06-18', filiere: 'Électromécanique', niveau: 'L2', statut: 'Actif',    annee: '2026–2027', moyenne: 14.0 },
-];
 
 const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
 const NIVEAUX  = ['L1', 'L2', 'L3', 'M1', 'M2'];
@@ -62,7 +51,10 @@ const PAGE_SIZE = 5;
 export default function AdminEtudiants() {
   const { darkMode } = useTheme();
 
-  const [data, setData]             = useState<Etudiant[]>(INITIAL);
+  const [data, setData]             = useState<Etudiant[]>([]);
+  const [isLoading, setIsLoading]   = useState(true);
+  const [loadError, setLoadError]   = useState<string | null>(null);
+
   const [search, setSearch]         = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreStatut, setFiltreStatut]   = useState('');
@@ -72,7 +64,9 @@ export default function AdminEtudiants() {
   const [modalMode, setModalMode]   = useState<'view' | 'add' | 'edit' | null>(null);
   const [selected, setSelected]     = useState<Etudiant | null>(null);
   const [deleteId, setDeleteId]     = useState<number | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [form, setForm]             = useState<Omit<Etudiant, 'id'>>(EMPTY);
+  const [isSaving, setIsSaving]     = useState(false);
   const [saved, setSaved]           = useState(false);
 
   const inputStyle = {
@@ -85,6 +79,25 @@ export default function AdminEtudiants() {
     backgroundColor: 'var(--card)',
     borderColor: 'var(--border)',
     color: 'var(--text)',
+  };
+
+  // ── Chargement initial depuis l'API ────────────────────
+  useEffect(() => {
+    fetchEtudiants();
+  }, []);
+
+  const fetchEtudiants = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.etudiant.getAll();
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger la liste des étudiants.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ── Filtrage + pagination ─────────────────────────────
@@ -121,24 +134,72 @@ export default function AdminEtudiants() {
     setModalMode('view');
   };
 
-  const handleSave = () => {
-    if (modalMode === 'add') {
-      const newId = Math.max(...data.map(e => e.id)) + 1;
-      const newMatricule = `ETU-${new Date().getFullYear()}-${String(newId).padStart(4, '0')}`;
-      setData([...data, { id: newId, ...form, matricule: newMatricule }]);
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(e => e.id === selected.id ? { ...e, ...form } : e));
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (modalMode === 'add') {
+        // ⚠ Le matricule et l'id sont désormais générés côté backend.
+        // On envoie le formulaire tel quel (sans matricule bricolé côté client).
+        const res = await ApiService.etudiant.create(form);
+        const newEtudiant: Etudiant = res.data;
+        setData(prev => [...prev, newEtudiant]);
+      } else if (modalMode === 'edit' && selected) {
+        const res = await ApiService.etudiant.update(selected.id, form);
+        const updated: Etudiant = res.data ?? { ...selected, ...form };
+        setData(prev => prev.map(e => e.id === selected.id ? updated : e));
+      }
+      setModalMode(null);
+      showToast();
+    } catch (err) {
+      console.error(err);
+      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setModalMode(null);
-    showToast();
   };
 
-  const handleDelete = () => {
-    if (deleteId !== null) {
-      setData(data.filter(e => e.id !== deleteId));
-      setDeleteId(null);
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+
+    const previous = data;
+    const idToDelete = deleteId;
+    setData(prev => prev.filter(e => e.id !== idToDelete));
+    setDeleteId(null);
+    setIsDeleting(true);
+
+    try {
+      await ApiService.etudiant.delete(idToDelete);
       showToast();
+    } catch (err) {
+      console.error(err);
+      setData(previous); // rollback
+      alert("La suppression a échoué, réessaie.");
+    } finally {
+      setIsDeleting(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    if (filtered.length === 0) {
+      alert("Aucun étudiant à exporter avec les filtres actuels.");
+      return;
+    }
+    const headers = ['Matricule', 'Nom', 'Prénom', 'Email', 'Téléphone', 'Filière', 'Niveau', 'Statut', 'Moyenne', 'Année'];
+    const rows = filtered.map(e => [
+      e.matricule, e.nom, e.prenom, e.email, e.telephone, e.filiere, e.niveau, e.statut, e.moyenne, e.annee
+    ]);
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([`\uFEFF${csvContent}`], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `etudiants_etec_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const showToast = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
@@ -228,6 +289,32 @@ export default function AdminEtudiants() {
     </div>
   );
 
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des étudiants...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchEtudiants}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
 
@@ -247,6 +334,7 @@ export default function AdminEtudiants() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={handleExportCSV}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold border transition hover:opacity-70 cursor-pointer"
             style={{ borderColor: 'var(--border)', color: 'var(--text)' }}
           >
@@ -492,10 +580,10 @@ export default function AdminEtudiants() {
                 style={{ borderColor: 'var(--border)' }}>
                 Annuler
               </button>
-              <button onClick={handleSave}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90"
+              <button onClick={handleSave} disabled={isSaving}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{ backgroundColor: 'var(--primary)' }}>
-                <Save size={13} />
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 {modalMode === 'add' ? 'Enregistrer' : 'Mettre à jour'}
               </button>
             </div>
@@ -520,8 +608,9 @@ export default function AdminEtudiants() {
                 style={{ borderColor: 'var(--border)' }}>
                 Annuler
               </button>
-              <button onClick={handleDelete}
-                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-red-500 cursor-pointer hover:opacity-90">
+              <button onClick={handleDelete} disabled={isDeleting}
+                className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-red-500 cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 justify-center">
+                {isDeleting ? <Loader2 size={13} className="animate-spin" /> : null}
                 Supprimer
               </button>
             </div>

@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   FileText, Plus, Search, MoreVertical, Edit2, 
-  Trash2, X, Check, User, Quote, Image as ImageIcon, 
-  Calendar, Eye, CheckCircle, AlertCircle
+  Trash2, X, Check, Quote, Image as ImageIcon, 
+  Calendar, Eye, CheckCircle, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface PresidentMessage {
@@ -18,38 +19,18 @@ interface PresidentMessage {
   isActive: boolean;  // Un seul message peut être actif à la fois sur la vitrine
 }
 
-// ─── Données Initiales ──────────────────────────────────────────────
-const INITIAL_MESSAGES: PresidentMessage[] = [
-  {
-    id: 1,
-    authorName: 'Dr. Fanilo Rakoto',
-    authorTitle: 'Président Directeur Général de l’E-TEC',
-    quote: 'L’excellence académique au cœur du développement technologique de Madagascar.',
-    content: 'Bienvenue à tous sur la plateforme officielle de l’E-TEC. Depuis notre création à Antananarivo, notre mission reste inchangée : former des cadres et des ingénieurs visionnaires, pragmatiques et immédiatement opérationnels sur le marché mondial. À travers nos parcours innovants en Informatique, IA et BTP, nous bâtissons l’avenir de notre nation.',
-    imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=400',
-    dateUpdated: '2026-07-02',
-    isActive: true
-  },
-  {
-    id: 2,
-    authorName: 'Dr. Fanilo Rakoto',
-    authorTitle: 'Président Fondateur',
-    quote: 'Rejoindre l’E-TEC, c’est choisir de devenir un actor majeur du monde de demain.',
-    content: 'Message d’archive pour la rentrée solennelle précédente. Nous mettons l’accent sur l’apprentissage pratique et l’intégration professionnelle directe.',
-    imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?q=80&w=400',
-    dateUpdated: '2025-10-15',
-    isActive: false
-  }
-];
-
 export default function AdminMotsduPresidents() {
-  const [messages, setMessages] = useState<PresidentMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<PresidentMessage[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [activeMenu, setActiveMenu] = useState<number | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState<PresidentMessage | null>(null);
 
   // ─── State pour le Formulaire (Ajout / Édition) ────────────────────
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [editingMessage, setEditingMessage] = useState<PresidentMessage | null>(null);
   const [formData, setFormData] = useState({
     authorName: '',
@@ -59,6 +40,25 @@ export default function AdminMotsduPresidents() {
     imageUrl: '',
     isActive: false
   });
+
+  // ─── Chargement initial depuis l'API ────────────────────────────────
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.mots.getAll();
+      setMessages(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger les messages du président.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // ─── Gestion de l'image locale (Ordinateur) ───────────────────────
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -109,58 +109,119 @@ export default function AdminMotsduPresidents() {
     setIsModalOpen(true);
   };
 
-  const handleToggleActive = (id: number) => {
-    setMessages(prev => prev.map(m => ({
-      ...m,
-      isActive: m.id === id ? true : false
-    })));
+  // ⚠ Un seul message actif à la fois : mise à jour optimiste locale +
+  // appel API pour persister. Idéalement, le backend devrait exposer un
+  // endpoint dédié (ex: PATCH /api/mots/{id}/activate) qui désactive les
+  // autres dans la même transaction, plutôt que plusieurs PUT séparés
+  // envoyés depuis le frontend (risque d'incohérence si l'un échoue).
+  const handleToggleActive = async (id: number) => {
+    const previous = messages;
+    const target = messages.find(m => m.id === id);
+    if (!target) return;
+
+    setMessages(prev => prev.map(m => ({ ...m, isActive: m.id === id })));
+
+    try {
+      await Promise.all(
+        previous
+          .filter(m => m.isActive || m.id === id)
+          .map(m => ApiService.mots.update(m.id, { ...m, isActive: m.id === id }))
+      );
+    } catch (err) {
+      console.error(err);
+      setMessages(previous); // rollback
+      alert("Le changement de message actif a échoué, réessaie.");
+    }
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     const target = messages.find(m => m.id === id);
     if (target?.isActive) {
       alert("Impossible de supprimer le message actuellement actif en vitrine. Activez-en un autre d'abord.");
       return;
     }
-    if (confirm('Voulez-vous vraiment supprimer cet éditorial de vos archives ?')) {
-      setMessages(prev => prev.filter(m => m.id !== id));
-      setActiveMenu(null);
+    if (!confirm('Voulez-vous vraiment supprimer cet éditorial de vos archives ?')) return;
+
+    const previous = messages;
+    setMessages(prev => prev.filter(m => m.id !== id));
+    setActiveMenu(null);
+
+    try {
+      await ApiService.mots.delete(id);
+    } catch (err) {
+      console.error(err);
+      setMessages(previous); // rollback
+      alert("La suppression a échoué, réessaie.");
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.authorName || !formData.quote || !formData.content || !formData.imageUrl) {
       alert("Veuillez remplir tous les champs et choisir une photo officielle.");
       return;
     }
 
-    const today = new Date().toISOString().split('T')[0];
+    setIsSaving(true);
+    try {
+      if (editingMessage) {
+        const res = await ApiService.mots.update(editingMessage.id, formData);
+        const updatedMsg: PresidentMessage = res.data ?? { ...editingMessage, ...formData };
 
-    if (editingMessage) {
-      setMessages(prev => {
-        const updated = prev.map(m => m.id === editingMessage.id ? { ...m, ...formData, dateUpdated: today } : m);
-        if (formData.isActive) {
-          return updated.map(m => m.id === editingMessage.id ? m : { ...m, isActive: false });
-        }
-        return updated;
-      });
-    } else {
-      const newMsg: PresidentMessage = {
-        id: Date.now(),
-        ...formData,
-        dateUpdated: today
-      };
-      setMessages(prev => {
-        const nextList = [...prev, newMsg];
-        if (formData.isActive) {
-          return nextList.map(m => m.id === newMsg.id ? m : { ...m, isActive: false });
-        }
-        return nextList;
-      });
+        setMessages(prev => {
+          const updated = prev.map(m => m.id === editingMessage.id ? updatedMsg : m);
+          if (formData.isActive) {
+            // désactive les autres localement (le backend devrait faire pareil)
+            return updated.map(m => m.id === editingMessage.id ? m : { ...m, isActive: false });
+          }
+          return updated;
+        });
+      } else {
+        const res = await ApiService.mots.create(formData);
+        const newMsg: PresidentMessage = res.data;
+
+        setMessages(prev => {
+          const nextList = [...prev, newMsg];
+          if (formData.isActive) {
+            return nextList.map(m => m.id === newMsg.id ? m : { ...m, isActive: false });
+          }
+          return nextList;
+        });
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error(err);
+      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setIsModalOpen(false);
   };
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des messages...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchMessages}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -423,10 +484,11 @@ export default function AdminMotsduPresidents() {
                 </button>
                 <button 
                   type="submit" 
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer"
+                  disabled={isSaving}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-1.5 shadow-lg hover:opacity-90 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  <Check size={14} />
+                  {isSaving ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
                   {editingMessage ? 'Enregistrer' : 'Publier'}
                 </button>
               </div>

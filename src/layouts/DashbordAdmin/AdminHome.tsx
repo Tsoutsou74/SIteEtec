@@ -1,50 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { apiService } from '../../services/ApiService'; // Ajuste le chemin selon ton projet
 import { Users, UserCheck, BookOpen, ClipboardList } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from 'recharts';
-
-const inscriptionsData = [
-  { mois: 'Jan', etudiants: 820,  enseignants: 12 },
-  { mois: 'Fév', etudiants: 950,  enseignants: 8  },
-  { mois: 'Mar', etudiants: 1100, enseignants: 15 },
-  { mois: 'Avr', etudiants: 980,  enseignants: 6  },
-  { mois: 'Mai', etudiants: 1250, enseignants: 18 },
-  { mois: 'Juin',etudiants: 1480, enseignants: 22 },
-  { mois: 'Juil',etudiants: 1200, enseignants: 10 },
-  { mois: 'Août',etudiants: 900,  enseignants: 5  },
-  { mois: 'Sep', etudiants: 1600, enseignants: 30 },
-  { mois: 'Oct', etudiants: 1750, enseignants: 20 },
-  { mois: 'Nov', etudiants: 1400, enseignants: 14 },
-  { mois: 'Déc', etudiants: 1100, enseignants: 9  },
-];
-
-const filiereData = [
-  { name: 'Génie Logiciel', value: 3820, color: '#3b82f6' },
-  { name: 'Administration',  value: 2940, color: '#22c55e' },
-  { name: 'BTP',             value: 2100, color: '#f59e0b' },
-  { name: 'Électroméca.',    value: 1680, color: '#8b5cf6' },
-];
-
-const tauxReussiteData = [
-  { filiere: 'Info',  s1: 78, s2: 82 },
-  { filiere: 'Admin', s1: 85, s2: 88 },
-  { filiere: 'BTP',   s1: 72, s2: 76 },
-  { filiere: 'Elec',  s1: 80, s2: 84 },
-];
-
-const insertionData = [
-  { annee: '2021', taux: 88 },
-  { annee: '2022', taux: 91 },
-  { annee: '2023', taux: 94 },
-  { annee: '2024', taux: 96 },
-  { annee: '2025', taux: 97 },
-  { annee: '2026', taux: 98 },
-];
 
 function CustomTooltip({ active, payload, label, darkMode }: any) {
   if (!active || !payload?.length) return null;
@@ -97,6 +60,57 @@ export default function AdminHome() {
   const { darkMode } = useTheme();
   const navigate = useNavigate();
 
+  // ─── UNIQUEMENT LES ÉTATS LIÉS A L'API ───────────────────────────
+  const [stats, setStats] = useState({ etudiants: '0', enseignants: '0', formations: '0', dossiers: '0' });
+  const [recentsInscriptions, setRecentsInscriptions] = useState<any[]>([]);
+  
+  // États pour les graphiques (à remplir si ton API fournit ces statistiques globales)
+  const [inscriptionsData, setInscriptionsData] = useState<any[]>([]);
+  const [filiereData, setFiliereData] = useState<any[]>([]);
+  const [insertionData, setInsertionData] = useState<any[]>([]);
+  const [tauxReussiteData, setTauxReussiteData] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Appels directs de tes endpoints getAll()
+        const [resEtudiants, resEnseignants, resFiliers, resDemandes] = await Promise.all([
+          apiService.etudiant.getAll().catch(() => ({ data: [] })),
+          apiService.enseignant.getAll().catch(() => ({ data: [] })),
+          apiService.filiers.getAll().catch(() => ({ data: [] })),
+          apiService.contacts.getAll().catch(() => ({ data: [] })),
+        ]);
+
+        // Mise à jour dynamique des compteurs flash
+        setStats({
+          etudiants: resEtudiants?.data ? resEtudiants.data.length.toLocaleString() : '0',
+          enseignants: resEnseignants?.data ? resEnseignants.data.length.toLocaleString() : '0',
+          formations: resFiliers?.data ? resFiliers.data.length.toLocaleString() : '0',
+          dossiers: resDemandes?.data ? resDemandes.data.length.toLocaleString() : '0',
+        });
+
+        // Mapping direct des derniers inscrits depuis l'API
+        if (resEtudiants?.data && resEtudiants.data.length > 0) {
+          const transformes = resEtudiants.data.slice(-5).reverse().map((e: any) => ({
+            nom: `${e.nom || ''} ${e.prenom || ''}`.trim() || 'Sans nom',
+            filiere: e.filiere || 'Génie Logiciel',
+            date: e.dateInscription || new Date().toLocaleDateString('fr-FR'),
+            statut: e.statut || 'En attente',
+            color: e.statut === 'Refusé' ? '#ef4444' : e.statut === 'Validé' ? '#22c55e' : '#f59e0b'
+          }));
+          setRecentsInscriptions(transformes);
+        }
+
+        // Optionnel : Si ton apiService possède un endpoint dédié aux statistiques graphiques, tu les injectes ici.
+
+      } catch (error) {
+        console.error("Erreur lors du chargement des données API", error);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
   return (
     <>
       <div>
@@ -106,27 +120,23 @@ export default function AdminHome() {
         </p>
       </div>
 
-      {/* Stats — cliquables pour naviguer */}
+      {/* Cartes de Statistiques dynamiques */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Users size={18} />}         label="Étudiants inscrits"  value="12 048" delta="+8% ce mois"  color="#3b82f6" onClick={() => navigate('/admin/etudiants')} />
-        <StatCard icon={<UserCheck size={18} />}     label="Enseignants actifs"   value="512"    delta="+2 nouveaux"  color="#22c55e" onClick={() => navigate('/admin/Enseignant/AdmineEnseignants')} />
-        <StatCard icon={<BookOpen size={18} />}      label="Formations actives"   value="24"     delta="4 filières"   color="#f59e0b" onClick={() => navigate('/admin/Formations/Filiers')} />
-        <StatCard icon={<ClipboardList size={18} />} label="Dossiers en attente"  value="37"     delta="Urgent"       color="#ef4444" onClick={() => navigate('/admin/Notes&Resultats')} />
+        <StatCard icon={<Users size={18} />}         label="Étudiants inscrits"  value={stats.etudiants} delta="Flux API"  color="#3b82f6" onClick={() => navigate('/admin/etudiants')} />
+        <StatCard icon={<UserCheck size={18} />}     label="Enseignants actifs"   value={stats.enseignants} delta="Flux API"  color="#22c55e" onClick={() => navigate('/admin/Enseignant/AdmineEnseignants')} />
+        <StatCard icon={<BookOpen size={18} />}      label="Formations actives"   value={stats.formations} delta="Flux API"  color="#f59e0b" onClick={() => navigate('/admin/Formations/Filiers')} />
+        <StatCard icon={<ClipboardList size={18} />} label="Dossiers en attente"  value={stats.dossiers} delta="Flux API"  color="#ef4444" onClick={() => navigate('/admin/Notes&Resultats')} />
       </div>
 
-      {/* Charts row 1 */}
+      {/* Rangée des graphiques reliés aux states de l'API */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <ChartCard title="Inscriptions mensuelles" subtitle="Étudiants et enseignants — 2026">
+        <ChartCard title="Inscriptions mensuelles" subtitle="Données synchronisées">
           <ResponsiveContainer width="100%" height={220}>
             <AreaChart data={inscriptionsData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="gradEtu" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
                   <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradEns" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%"  stopColor="#22c55e" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#ffffff12' : '#00000010'} />
@@ -135,16 +145,15 @@ export default function AdminHome() {
               <Tooltip content={<CustomTooltip darkMode={darkMode} />} />
               <Legend iconSize={8} wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
               <Area type="monotone" dataKey="etudiants" name="Étudiants" stroke="#3b82f6" fill="url(#gradEtu)" strokeWidth={2} dot={false} />
-              <Area type="monotone" dataKey="enseignants" name="Enseignants" stroke="#22c55e" fill="url(#gradEns)" strokeWidth={2} dot={false} />
             </AreaChart>
           </ResponsiveContainer>
         </ChartCard>
 
-        <ChartCard title="Répartition par filière" subtitle="Total étudiants inscrits">
+        <ChartCard title="Répartition par filière" subtitle="Total étudiants par section">
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
               <Pie data={filiereData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                {filiereData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                {filiereData.map((entry, i) => <Cell key={i} fill={entry.color || '#3b82f6'} />)}
               </Pie>
               <Tooltip content={<CustomTooltip darkMode={darkMode} />} />
             </PieChart>
@@ -160,7 +169,7 @@ export default function AdminHome() {
           </div>
         </ChartCard>
 
-        <ChartCard title="Taux d'insertion professionnelle" subtitle="Évolution 2021–2026 (%)">
+        <ChartCard title="Taux d'insertion professionnelle" subtitle="Évolution globale (%)">
           <ResponsiveContainer width="100%" height={220}>
             <LineChart data={insertionData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#ffffff12' : '#00000010'} />
@@ -174,7 +183,7 @@ export default function AdminHome() {
         </ChartCard>
       </div>
 
-      {/* Charts row 2 */}
+      {/* Rangée 2 — Taux de réussite et Inscriptions récentes de l'API */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <ChartCard title="Taux de réussite par filière" subtitle="S1 vs S2 (%)">
           <ResponsiveContainer width="100%" height={200}>
@@ -190,7 +199,7 @@ export default function AdminHome() {
           </ResponsiveContainer>
         </ChartCard>
 
-        {/* Tableau inscriptions récentes */}
+        {/* Tableau inscriptions récentes STRICTEMENT relié à l'API */}
         <div className="lg:col-span-2 rounded-2xl border overflow-hidden"
           style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
           <div className="flex items-center justify-between px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
@@ -211,27 +220,29 @@ export default function AdminHome() {
                 </tr>
               </thead>
               <tbody>
-                {[
-                  { nom: 'RAKOTO Andry',  filiere: 'Génie Logiciel',   date: '28 Juin 2026', statut: 'Validé',     color: '#22c55e' },
-                  { nom: 'RAIVO Miora',   filiere: 'Administration',   date: '27 Juin 2026', statut: 'En attente', color: '#f59e0b' },
-                  { nom: 'RASOA Haja',    filiere: 'BTP',              date: '27 Juin 2026', statut: 'Validé',     color: '#22c55e' },
-                  { nom: 'RABE Feno',     filiere: 'Électromécanique', date: '26 Juin 2026', statut: 'Refusé',     color: '#ef4444' },
-                  { nom: 'ANDRIANA Lova', filiere: 'Administration',   date: '25 Juin 2026', statut: 'En attente', color: '#f59e0b' },
-                ].map((row, i) => (
-                  <tr key={i} className="border-b transition hover:opacity-75 cursor-pointer"
-                    style={{ borderColor: 'var(--border)' }}
-                    onClick={() => navigate('/admin/etudiants')}>
-                    <td className="px-5 py-3 font-semibold">{row.nom}</td>
-                    <td className="px-5 py-3 opacity-65">{row.filiere}</td>
-                    <td className="px-5 py-3 opacity-55">{row.date}</td>
-                    <td className="px-5 py-3">
-                      <span className="px-2 py-1 rounded-full text-[10px] font-black"
-                        style={{ backgroundColor: row.color + '18', color: row.color }}>
-                        {row.statut}
-                      </span>
+                {recentsInscriptions.length > 0 ? (
+                  recentsInscriptions.map((row, i) => (
+                    <tr key={i} className="border-b transition hover:opacity-75 cursor-pointer"
+                      style={{ borderColor: 'var(--border)' }}
+                      onClick={() => navigate('/admin/etudiants')}>
+                      <td className="px-5 py-3 font-semibold">{row.nom}</td>
+                      <td className="px-5 py-3 opacity-65">{row.filiere}</td>
+                      <td className="px-5 py-3 opacity-55">{row.date}</td>
+                      <td className="px-5 py-3">
+                        <span className="px-2 py-1 rounded-full text-[10px] font-black"
+                          style={{ backgroundColor: row.color + '18', color: row.color }}>
+                          {row.statut}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center py-8 opacity-45">
+                      Aucune inscription récente trouvée sur l'API.
                     </td>
                   </tr>
-                ))}
+                )}
               </tbody>
             </table>
           </div>

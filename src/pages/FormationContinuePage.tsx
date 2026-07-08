@@ -1,23 +1,40 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Award, BriefcaseBusiness, CheckCircle, Clock, Target, Users } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import ApiService from '../services/ApiService';
 
-const modules = [
+interface FormationContinue {
+  id?: string | number;
+  code?: string;
+  titre?: string;
+  title?: string;
+  domaine?: string;
+  volumeHoraire?: string;
+  duration?: string;
+  tarifEntreprise?: string;
+  typePublic?: string;
+  audience?: string;
+  description?: string;
+  statut?: string;
+  skills?: string[];
+}
+
+const FALLBACK_MODULES: FormationContinue[] = [
   {
-    title: 'Management et leadership',
-    duration: '24 a 40 heures',
+    titre: 'Management et leadership',
+    volumeHoraire: '24 a 40 heures',
     audience: 'Managers, responsables et chefs d equipe',
     skills: ['Pilotage d equipe', 'Gestion de conflit', 'Communication professionnelle'],
   },
   {
-    title: 'Informatique professionnelle',
-    duration: '30 a 60 heures',
+    titre: 'Informatique professionnelle',
+    volumeHoraire: '30 a 60 heures',
     audience: 'Techniciens, developpeurs et agents administratifs',
     skills: ['Bureautique avancee', 'Developpement web', 'Bases de donnees'],
   },
   {
-    title: 'BTP et outils techniques',
-    duration: '40 a 80 heures',
+    titre: 'BTP et outils techniques',
+    volumeHoraire: '40 a 80 heures',
     audience: 'Techniciens BTP, conducteurs de travaux',
     skills: ['AutoCAD', 'Lecture de plans', 'Suivi de chantier'],
   },
@@ -25,6 +42,33 @@ const modules = [
 
 export default function FormationContinuePage() {
   const { darkMode } = useTheme();
+  const [modules, setModules] = useState<FormationContinue[]>(FALLBACK_MODULES);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFormations = async () => {
+      try {
+        const response = await ApiService.formationContinue.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setModules(data);
+        }
+      } catch {
+        if (isMounted) {
+          setModules(FALLBACK_MODULES);
+        }
+      }
+    };
+
+    loadFormations();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.34)' : 'rgba(255,255,255,0.72)',
     borderColor: 'var(--border)',
@@ -66,13 +110,19 @@ export default function FormationContinuePage() {
         <div className="space-y-5">
           <h2 className="text-2xl font-black tracking-tight">Modules disponibles</h2>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            {modules.map((module) => (
-              <article key={module.title} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
-                <h3 className="text-lg font-black">{module.title}</h3>
-                <p className="text-xs font-bold uppercase tracking-wide text-green-500 mt-2">{module.duration}</p>
-                <p className="text-sm opacity-65 mt-4">{module.audience}</p>
+            {modules.map((module, index) => {
+              const title = module.titre || module.title || 'Formation continue';
+              const duration = module.volumeHoraire || module.duration || module.tarifEntreprise || 'Duree a preciser';
+              const audience = module.typePublic || module.audience || module.domaine || '';
+              const skills = module.skills || [module.description, module.statut].filter(Boolean);
+
+              return (
+              <article key={module.id || `${title}-${index}`} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
+                <h3 className="text-lg font-black">{title}</h3>
+                <p className="text-xs font-bold uppercase tracking-wide text-green-500 mt-2">{duration}</p>
+                <p className="text-sm opacity-65 mt-4">{audience}</p>
                 <ul className="mt-5 space-y-2">
-                  {module.skills.map((skill) => (
+                  {skills.map((skill) => (
                     <li key={skill} className="flex items-center gap-2 text-xs opacity-75">
                       <CheckCircle size={14} className="text-green-500 shrink-0" />
                       {skill}
@@ -80,7 +130,8 @@ export default function FormationContinuePage() {
                   ))}
                 </ul>
               </article>
-            ))}
+            );
+            })}
           </div>
         </div>
 

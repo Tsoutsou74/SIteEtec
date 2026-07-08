@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Landmark, Code, HardHat, Cpu, ArrowRight, GraduationCap } from 'lucide-react';
+import ApiService from '../services/ApiService';
 
 interface FilierCardProps {
   icon: React.ReactNode;
@@ -8,6 +9,15 @@ interface FilierCardProps {
   description: string;
   options: string[];
   duration: string;
+}
+
+interface FiliereApi {
+  id?: number;
+  code?: string;
+  nom?: string;
+  responsable?: string;
+  description?: string;
+  nombreEtudiants?: number;
 }
 
 function FilierCard({ icon, title, description, options, duration }: FilierCardProps) {
@@ -77,6 +87,66 @@ function FilierCard({ icon, title, description, options, duration }: FilierCardP
 }
 
 export default function FiliersPage() {
+  const [filiers, setFiliers] = useState<FiliereApi[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadFiliers = async () => {
+      try {
+        const response = await ApiService.filiers.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data)) {
+          setFiliers(data);
+        }
+      } catch {
+        if (isMounted) {
+          setFiliers([]);
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadFiliers();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const cards = filiers.length > 0 ? filiers : [
+    { code: 'GL', nom: 'Génie Logiciel', responsable: 'Chef de mention', description: 'Développement d’applications web, mobiles et architectures cloud.' },
+    { code: 'ADM', nom: 'Administration et Gestion', responsable: 'Chef de mention', description: 'Gestion des entreprises, comptabilité et management stratégique.' },
+    { code: 'BTP', nom: 'Bâtiment et Travaux Publics', responsable: 'Chef de mention', description: 'Infrastructures, génie civil et résistance des matériaux.' },
+    { code: 'EM', nom: 'Électromécanique', responsable: 'Chef de mention', description: 'Systèmes automatisés, maintenance industrielle et électricité.' },
+  ];
+
+  const groupedCards = cards.map((filiere) => {
+    const iconMap: Record<string, React.ReactNode> = {
+      GL: <Code size={24} />,
+      ADM: <Landmark size={24} />,
+      BTP: <HardHat size={24} />,
+      EM: <Cpu size={24} />,
+    };
+
+    return {
+      icon: iconMap[filiere.code || ''] || <GraduationCap size={24} />,
+      title: filiere.nom || 'Filière',
+      description: filiere.description || '',
+      options: [
+        filiere.responsable ? `Responsable: ${filiere.responsable}` : 'Responsable à préciser',
+        filiere.nombreEtudiants !== undefined ? `${filiere.nombreEtudiants} inscrits` : 'Effectif à préciser',
+      ],
+      duration: filiere.code || 'Détails',
+      id: filiere.id || filiere.code || filiere.nom || Math.random().toString(),
+    };
+  });
+
   return (
     <div className="w-full px-0 sm:px-4 md:px-8 lg:px-12 py-10 md:py-16 animate-fade-in">
 
@@ -101,38 +171,16 @@ export default function FiliersPage() {
           - mobile : 1 colonne (cartes empilées, descriptions lisibles)
           - md+    : 2 colonnes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5 md:gap-8">
-
-        <FilierCard
-          icon={<Landmark size={24} />}
-          title="Administration et Gestion"
-          description="Formez-vous aux outils modernes de pilotage d'entreprise, de management d'équipe et d'analyse financière pour devenir les leaders économiques de demain."
-          options={["Gestion des Entreprises", "Ressources Humaines", "Marketing & Commerce", "Comptabilité et Finance"]}
-          duration="Licence (3 ans) / Master (5 ans)"
-        />
-
-        <FilierCard
-          icon={<Code size={24} />}
-          title="Génie Logiciel et Administration Réseaux"
-          description="Devenez un expert des technologies numériques : de l'architecture de systèmes informatiques complexes au développement d'applications cloud et mobiles sécurisées."
-          options={["Développement Full-Stack", "Architecture Réseaux & Cloud", "Cybersécurité", "Administration Systèmes"]}
-          duration="Licence (3 ans) / Master (5 ans)"
-        />
-
-        <FilierCard
-          icon={<HardHat size={24} />}
-          title="Bâtiment et Travaux Publics"
-          description="Maîtrisez l'ensemble du cycle de vie des infrastructures : conception, étude des structures, planification éco-responsable et conduite de chantiers d'envergure."
-          options={["Génie Civil & Structures", "Conduite de Travaux", "Topographie & Dessin BTP", "Infrastructures Durables"]}
-          duration="Licence Pro (3 ans)"
-        />
-
-        <FilierCard
-          icon={<Cpu size={24} />}
-          title="Électromécanique et Industriels"
-          description="Associez les compétences électriques, mécaniques et informatiques pour concevoir, automatiser, optimiser et maintenir les systèmes de production industriels modernes."
-          options={["Automatismes Industriels", "Maintenance Électromécanique", "Robotique & Systèmes Intégrés", "Génie Énergétique"]}
-          duration="Licence Pro (3 ans)"
-        />
+        {!loading && groupedCards.map((item) => (
+          <FilierCard
+            key={String(item.id)}
+            icon={item.icon}
+            title={item.title}
+            description={item.description}
+            options={item.options}
+            duration={item.duration}
+          />
+        ))}
 
       </div>
     </div>

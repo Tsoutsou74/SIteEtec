@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { Calendar, User, ArrowRight, Newspaper } from 'lucide-react';
+import ApiService from '../services/ApiService';
 
 interface ArticleProps {
   image: string;
@@ -9,6 +11,47 @@ interface ArticleProps {
   author: string;
   title: string;
   excerpt: string;
+}
+
+interface ActualiteApi {
+  id?: number;
+  titre?: string;
+  categorie?: string;
+  datePublication?: string;
+  contenu?: string;
+  imageUrl?: string;
+  statut?: string;
+  important?: boolean;
+}
+
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=600&q=80';
+
+function formatDate(date?: string) {
+  if (!date) return '';
+
+  const parsedDate = new Date(date);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    return date;
+  }
+
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsedDate);
+}
+
+function toArticle(actualite: ActualiteApi): ArticleProps {
+  return {
+    image: actualite.imageUrl || FALLBACK_IMAGE,
+    category: actualite.categorie || 'Actualité',
+    date: formatDate(actualite.datePublication),
+    author: 'ETEC University',
+    title: actualite.titre || 'Actualité',
+    excerpt: actualite.contenu || '',
+  };
 }
 
 function NewsCard({ image, category, date, author, title, excerpt }: ArticleProps) {
@@ -71,9 +114,10 @@ function NewsCard({ image, category, date, author, title, excerpt }: ArticleProp
 }
 
 export default function NewsPage() {
-  const ARTICLES: ArticleProps[] = [
+  const navigate = useNavigate();
+  const FALLBACK_ARTICLES: ArticleProps[] = [
     {
-      image: "https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?auto=format&fit=crop&w=600&q=80",
+      image: FALLBACK_IMAGE,
       category: "Innovation",
       date: "10 Juin 2026",
       author: "Labo Tech",
@@ -97,6 +141,32 @@ export default function NewsPage() {
       excerpt: "Les dossiers de candidature pour nos quatre filières majeures (BTP, Gestion, Électromécanique, Informatique) sont dès à présent disponibles en ligne."
     }
   ];
+  const [articles, setArticles] = useState<ArticleProps[]>(FALLBACK_ARTICLES);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadNews = async () => {
+      try {
+        const response = await ApiService.actualites.getAll();
+        const data = response.data;
+
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setArticles(data.map(toArticle));
+        }
+      } catch {
+        if (isMounted) {
+          setArticles(FALLBACK_ARTICLES);
+        }
+      }
+    };
+
+    loadNews();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
   
 
   return (
@@ -123,7 +193,7 @@ export default function NewsPage() {
           - sm      : 2 colonnes
           - lg      : 3 colonnes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 md:gap-8">
-        {ARTICLES.map((article, index) => (
+        {articles.map((article, index) => (
           <NewsCard key={index} {...article} />
         ))}
       </div>

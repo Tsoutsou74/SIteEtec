@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   Award, CheckCircle2, XCircle, ShieldCheck, 
-  ChevronDown, ChevronUp, FileText, Info 
+  ChevronDown, ChevronUp, FileText, Info, Loader2 
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -24,79 +25,85 @@ interface UniteEnseignement {
   matieres: MatiereResultat[];
 }
 
-// ─── Données Simulées (Délibérations de Fin de Semestre) ──
-const COMPTE_RENDU_RESULTATS = {
-  semestre: 'Semestre 1 - L3 Génie Logiciel',
-  anneeUniversitaire: '2025 - 2026',
-  moyenneGenerale: 15.68,
-  totalCreditsAcquis: 30,
-  totalCreditsSemestre: 30,
-  statutFinal: 'Admis (Semestre Validé)',
-  mention: 'Bien',
-  decisionJury: 'Session Principale - Décision validée par le président du jury.',
-  ues: [
-    {
-      id: 'ue-1',
-      codeUE: 'UE-INF31',
-      nomUE: 'Sciences de l\'Ingénieur & Code',
-      creditsUE: 12,
-      moyenneUE: 16.15,
-      valide: true,
-      matieres: [
-        { code: 'INF301', nom: 'Algorithmique Avancée & Complexité', note: 16.20, credit: 4, valide: true },
-        { code: 'INF304', nom: 'Développement Web Full-Stack', note: 18.60, credit: 5, valide: true },
-        { code: 'INF302', nom: 'Architecture des Systèmes & Réseaux', note: 14.00, credit: 3, valide: true },
-      ]
-    },
-    {
-      id: 'ue-2',
-      codeUE: 'UE-INF32',
-      nomUE: 'Données & Logique',
-      creditsUE: 5,
-      moyenneUE: 17.20,
-      valide: true,
-      matieres: [
-        { code: 'INF303', nom: 'Bases de Données Relationnelles', note: 17.20, credit: 5, valide: true },
-      ]
-    },
-    {
-      id: 'ue-3',
-      codeUE: 'UE-GEN31',
-      nomUE: 'Formations Transversales',
-      creditsUE: 4,
-      moyenneUE: 14.50,
-      valide: true,
-      matieres: [
-        { code: 'ANG301', nom: 'Anglais Technique', note: 15.00, credit: 2, valide: true },
-        { code: 'MNG301', nom: 'Gestion d\'Entreprise & Projets', note: 14.00, credit: 2, valide: true },
-      ]
-    },
-    {
-      id: 'ue-4',
-      codeUE: 'UE-MTH31',
-      nomUE: 'Outils Scientifiques',
-      creditsUE: 9,
-      moyenneUE: 12.60,
-      valide: true,
-      matieres: [
-        { code: 'MTH301', nom: 'Mathématiques pour l\'Ingénieur', note: 12.60, credit: 5, valide: true },
-        { code: 'MTH302', nom: 'Probabilités & Statistiques', note: 12.60, credit: 4, valide: true },
-      ]
-    }
-  ] as UniteEnseignement[]
-};
+interface DeliberationData {
+  semestre: string;
+  anneeUniversitaire: string;
+  moyenneGenerale: number;
+  totalCreditsAcquis: number;
+  totalCreditsSemestre: number;
+  statutFinal: string;
+  mention: string;
+  decisionJury: string;
+  ues: UniteEnseignement[];
+}
 
 export default function Resultats() {
   const { darkMode } = useTheme();
-  const [expandedUE, setExpandedUE] = useState<Record<string, boolean>>({ 'ue-1': true });
+  
+  // ─── États Dynamiques ───────────────────────────────────
+  const [deliberation, setDeliberation] = useState<DeliberationData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [expandedUE, setExpandedUE] = useState<Record<string, boolean>>({});
 
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
+
+  // ─── Récupération des Résultats via l'API ────────────────
+  useEffect(() => {
+    const fetchResultatsData = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      };
+
+      try {
+        if (ApiService.etudiant?.getResultats) {
+          const res = await ApiService.etudiant.getResultats(config);
+          if (res && res.data) {
+            setDeliberation(res.data);
+            // Ouvrir par défaut la première UE de la liste s'il y en a une
+            if (res.data.ues && res.data.ues.length > 0) {
+              setExpandedUE({ [res.data.ues[0].id]: true });
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des notes et délibérations :", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchResultatsData();
+  }, []);
 
   // Basculer l'affichage des matières d'une UE
   const toggleUE = (id: string) => {
     setExpandedUE(prev => ({ ...prev, [id]: !prev[id] }));
   };
+
+  // Écran de chargement principal
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-40 gap-3 opacity-60 text-xs">
+        <Loader2 size={26} className="animate-spin text-[var(--primary)]" />
+        <p className="font-bold">Calcul et récupération de votre relevé de notes officiel...</p>
+      </div>
+    );
+  }
+
+  // Cas où aucune délibération n'est encore publiée
+  if (!deliberation) {
+    return (
+      <div className="max-w-4xl rounded-2xl border p-12 text-center opacity-50 text-xs font-medium" style={borderStyle}>
+        Aucun résultat officiel n'a été publié par le jury pour le moment.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-4xl pb-12">
@@ -132,9 +139,9 @@ export default function Resultats() {
           <span className="text-[10px] font-bold uppercase tracking-wider opacity-45">Moyenne du Semestre</span>
           <div className="mt-4">
             <h2 className="text-3xl font-black tracking-tight text-[var(--primary)]">
-              {COMPTE_RENDU_RESULTATS.moyenneGenerale.toFixed(2)} <span className="text-xs opacity-40 font-medium">/20</span>
+              {deliberation.moyenneGenerale.toFixed(2)} <span className="text-xs opacity-40 font-medium">/20</span>
             </h2>
-            <p className="text-xs font-bold opacity-75 mt-1">Mention : {COMPTE_RENDU_RESULTATS.mention}</p>
+            <p className="text-xs font-bold opacity-75 mt-1">Mention : {deliberation.mention}</p>
           </div>
         </div>
 
@@ -143,7 +150,7 @@ export default function Resultats() {
           <span className="text-[10px] font-bold uppercase tracking-wider opacity-45">Crédits Capitalisés</span>
           <div className="mt-4">
             <h2 className="text-3xl font-black tracking-tight">
-              {COMPTE_RENDU_RESULTATS.totalCreditsAcquis} <span className="text-xs opacity-40 font-medium">/ {COMPTE_RENDU_RESULTATS.totalCreditsSemestre} ECTS</span>
+              {deliberation.totalCreditsAcquis} <span className="text-xs opacity-40 font-medium">/ {deliberation.totalCreditsSemestre} ECTS</span>
             </h2>
             <p className="text-xs font-bold text-emerald-500 mt-1">Progression académique complète</p>
           </div>
@@ -154,10 +161,10 @@ export default function Resultats() {
           <span className="text-[10px] font-bold uppercase tracking-wider opacity-45">Résultat du Jury</span>
           <div className="mt-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black uppercase bg-emerald-500/10 text-emerald-500 border border-emerald-500/10">
-              <ShieldCheck size={14} /> ADMIS
+              <ShieldCheck size={14} /> {deliberation.statutFinal.includes('Admis') ? 'ADMIS' : 'AJOURNÉ'}
             </div>
             <p className="text-[10px] opacity-50 font-medium mt-2 leading-snug">
-              {COMPTE_RENDU_RESULTATS.decisionJury}
+              {deliberation.decisionJury}
             </p>
           </div>
         </div>
@@ -167,7 +174,7 @@ export default function Resultats() {
       <div className="px-4 py-3 rounded-xl border bg-black/[0.01] dark:bg-white/[0.01] flex items-center gap-2.5 text-xs font-medium" style={borderStyle}>
         <Info size={14} className="text-[var(--primary)] shrink-0" />
         <span className="opacity-70">
-          Résultats clôturés pour l'année <strong>{COMPTE_RENDU_RESULTATS.anneeUniversitaire}</strong> · {COMPTE_RENDU_RESULTATS.semestre}
+          Résultats clôturés pour l'année <strong>{deliberation.anneeUniversitaire}</strong> · {deliberation.semestre}
         </span>
       </div>
 
@@ -175,7 +182,7 @@ export default function Resultats() {
       <div className="space-y-3.5">
         <h3 className="text-xs font-black uppercase tracking-wider opacity-60">Détails des Unités d'Enseignement</h3>
 
-        {COMPTE_RENDU_RESULTATS.ues.map((ue) => {
+        {deliberation.ues.map((ue) => {
           const isExpanded = !!expandedUE[ue.id];
           return (
             <div 
@@ -213,14 +220,14 @@ export default function Resultats() {
                 </div>
               </div>
 
-              {/* Sous-tableau des Matières associées (ECU) */}
+              {/* Sous-tableau des Matières associées */}
               {isExpanded && (
                 <div className="border-t bg-black/[0.01] dark:bg-white/[0.01]" style={borderStyle}>
                   <table className="w-full text-left text-[11px] border-collapse">
                     <thead>
                       <tr className="border-b text-[9px] uppercase tracking-wider opacity-45 font-black" style={{ borderColor: 'var(--border)' }}>
                         <th className="p-3 pl-6 w-24">Code</th>
-                        <th className="p-3">Matières constitutifs</th>
+                        <th className="p-3">Matières constitutives</th>
                         <th className="p-3 text-center w-20">Crédits</th>
                         <th className="p-3 text-center w-24">Note Jury</th>
                         <th className="p-3 text-right pr-6 w-24">Résultat</th>

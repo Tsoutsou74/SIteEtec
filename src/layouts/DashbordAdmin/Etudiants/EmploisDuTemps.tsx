@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
+import ApiService from '../../../services/ApiService';
 import {
-  Search, Plus, Eye, Pencil, Trash2, X, Save,
-  Calendar, Clock, BookOpen, MapPin, User, CheckCircle
+  Plus, Pencil, Trash2, X, Save,
+  Clock, MapPin, User, CheckCircle, Loader2, AlertTriangle
 } from 'lucide-react';
 
 type Filiere = 'Génie Logiciel' | 'Administration' | 'BTP' | 'Électromécanique';
@@ -17,25 +18,26 @@ interface CoursEtudiant {
   niveau: string;
   jour: string;
   heureDebut: string;
+  heureFin: string;
   matiere: string;
   enseignant: string;
   salle: string;
   annee: string;
 }
 
-const INITIAL_COURS: CoursEtudiant[] = [
-  { id: 1, filiere: 'Génie Logiciel', niveau: 'L3', jour: 'Lundi', heureDebut: '08:00', matiere: 'Développement Full-Stack', enseignant: 'M. RAKOTO', salle: 'Salle Lab 4', annee: '2026–2027' },
-  { id: 2, filiere: 'Génie Logiciel', niveau: 'L3', jour: 'Mercredi', heureDebut: '14:00', matiere: 'Architecture Microservices', enseignant: 'Mme RASOA', salle: 'Amphi A', annee: '2026–2027' },
-];
-
 const EMPTY_FORM = {
   filiere: 'Génie Logiciel' as Filiere, niveau: 'L1', jour: 'Lundi',
-  heureDebut: '08:00', matiere: '', enseignant: '', salle: '', annee: '2026–2027'
+  heureDebut: '08:00', heureFin: '10:00', matiere: '', enseignant: '', salle: '', annee: '2026–2027'
 };
 
 export default function AdminEmploisDuTempsEtudiants() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<CoursEtudiant[]>(INITIAL_COURS);
+  const [data, setData] = useState<CoursEtudiant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   const [filtreFiliere, setFiltreFiliere] = useState<Filiere>('Génie Logiciel');
   const [filtreNiveau, setFiltreNiveau] = useState<string>('L3');
 
@@ -57,6 +59,25 @@ export default function AdminEmploisDuTempsEtudiants() {
     color: 'var(--text)',
   };
 
+  // ── Chargement initial depuis l'API ────────────────────
+  useEffect(() => {
+    fetchCours();
+  }, []);
+
+  const fetchCours = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.emploiDuTemps.getAll();
+      setData(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger l'emploi du temps.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const currentSlots = data.filter(e => e.filiere === filtreFiliere && e.niveau === filtreNiveau);
 
   const openAdd = (jour: string, heure: string) => {
@@ -71,27 +92,77 @@ export default function AdminEmploisDuTempsEtudiants() {
     setModalMode('edit');
   };
 
-  const handleSave = () => {
-    if (modalMode === 'add') {
-      const newId = data.length > 0 ? Math.max(...data.map(e => e.id)) + 1 : 1;
-      setData([...data, { id: newId, ...form }]);
-    } else if (modalMode === 'edit' && selected) {
-      setData(data.map(e => e.id === selected.id ? { ...e, ...form } : e));
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      if (modalMode === 'add') {
+        const res = await ApiService.emploiDuTemps.create(form);
+        const newCours: CoursEtudiant = res.data;
+        setData(prev => [...prev, newCours]);
+      } else if (modalMode === 'edit' && selected) {
+        const res = await ApiService.emploiDuTemps.update(selected.id, form);
+        const updated: CoursEtudiant = res.data ?? { ...selected, ...form };
+        setData(prev => prev.map(e => e.id === selected.id ? updated : e));
+      }
+      setModalMode(null);
+      showToast();
+    } catch (err) {
+      console.error(err);
+      alert("L'enregistrement a échoué, réessaie.");
+    } finally {
+      setIsSaving(false);
     }
-    setModalMode(null);
-    showToast();
   };
 
-  const handleDelete = () => {
-    if (deleteId !== null) {
-      setData(data.filter(e => e.id !== deleteId));
-      setDeleteId(null);
+  const handleDelete = async () => {
+    if (deleteId === null) return;
+
+    const previous = data;
+    const idToDelete = deleteId;
+    setData(prev => prev.filter(e => e.id !== idToDelete));
+    setDeleteId(null);
+    setIsDeleting(true);
+
+    try {
+      await ApiService.emploiDuTemps.delete(idToDelete);
       showToast();
+    } catch (err) {
+      console.error(err);
+      setData(previous); // rollback
+      alert("La suppression a échoué, réessaie.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   const showToast = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // ─── États de chargement / erreur ────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement de l'emploi du temps...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchCours}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-5">
@@ -140,6 +211,7 @@ export default function AdminEmploisDuTempsEtudiants() {
                           <div>
                             <p className="font-black leading-tight line-clamp-2">{cours.matiere}</p>
                             <p className="opacity-75 mt-0.5 flex items-center gap-0.5"><User size={10} /> {cours.enseignant}</p>
+                            <p className="opacity-60 mt-0.5 flex items-center gap-0.5 font-mono text-[10px]"><Clock size={10} /> jusqu'à {cours.heureFin}</p>
                           </div>
                           <div className="flex items-center justify-between mt-2 pt-1 border-t border-blue-500/10">
                             <span className="font-mono opacity-90 flex items-center gap-0.5"><MapPin size={10} /> {cours.salle}</span>
@@ -190,10 +262,23 @@ export default function AdminEmploisDuTempsEtudiants() {
                   <input name="annee" value={form.annee} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
                 </div>
               </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Heure de début</label>
+                  <input type="time" name="heureDebut" value={form.heureDebut} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none font-mono" style={inputStyle} />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Heure de fin</label>
+                  <input type="time" name="heureFin" value={form.heureFin} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none font-mono" style={inputStyle} />
+                </div>
+              </div>
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Enregistrer</button>
+              <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white disabled:opacity-50 disabled:cursor-not-allowed" style={{ backgroundColor: 'var(--primary)' }}>
+                {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />} Enregistrer
+              </button>
             </div>
           </div>
         </div>
@@ -210,7 +295,9 @@ export default function AdminEmploisDuTempsEtudiants() {
             </div>
             <div className="flex gap-3 justify-center text-xs">
               <button onClick={() => setDeleteId(null)} className="px-4 py-2 rounded-xl border" style={{ borderColor: 'var(--border)' }}>Annuler</button>
-              <button onClick={handleDelete} className="px-4 py-2 rounded-xl text-white bg-red-500">Retirer</button>
+              <button onClick={handleDelete} disabled={isDeleting} className="px-4 py-2 rounded-xl text-white bg-red-500 flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed">
+                {isDeleting ? <Loader2 size={13} className="animate-spin" /> : null} Retirer
+              </button>
             </div>
           </div>
         </div>

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import {
   Search, Award, CheckCircle, AlertTriangle, FileText,
-  Filter, Download, RefreshCw, ChevronRight, GraduationCap
+  Download, GraduationCap, Loader2
 } from 'lucide-react';
 
 // ── Types pour les notes et résultats ─────────────────────────
@@ -18,59 +19,16 @@ interface ModuleResultat {
   etudiantsInscrits: number;
 }
 
-const INITIAL_MODULES: ModuleResultat[] = [
-  {
-    id: '1',
-    code: 'INF-301',
-    nom: 'Architecture des applications Spring Boot',
-    classe: 'M1 Génie Logiciel',
-    enseignant: 'Dr. Rakoto',
-    moyenneClasse: 14.2,
-    tauxReussite: 92,
-    statut: 'Délibéré',
-    etudiantsInscrits: 28
-  },
-  {
-    id: '2',
-    code: 'MGT-402',
-    nom: 'Gestion financière & Trading Quantitatif',
-    classe: 'M2 Management',
-    enseignant: 'Mme Razafy',
-    moyenneClasse: 11.5,
-    tauxReussite: 85,
-    statut: 'Saisi',
-    etudiantsInscrits: 22
-  },
-  {
-    id: '3',
-    code: 'INF-102',
-    nom: 'Algorithmique et Structures de Données',
-    classe: 'L1 Informatique',
-    enseignant: 'M. Randria',
-    moyenneClasse: 8.8, // En dessous du seuil de validation (10/20)
-    tauxReussite: 48,
-    statut: 'Saisi',
-    etudiantsInscrits: 45
-  },
-  {
-    id: '4',
-    code: 'WEB-201',
-    nom: 'Développement Frontend avec React & Vite',
-    classe: 'L2 Génie Logiciel',
-    enseignant: 'M. Andria',
-    moyenneClasse: 0,
-    tauxReussite: 0,
-    statut: 'En attente',
-    etudiantsInscrits: 32
-  }
-];
-
 export default function NotesResultats() {
   const { darkMode } = useTheme();
-  const [modules, setModules] = useState<ModuleResultat[]>(INITIAL_MODULES);
+  const [modules, setModules] = useState<ModuleResultat[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const [search, setSearch] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [deliberatingId, setDeliberatingId] = useState<string | null>(null);
 
   const inputStyle = {
     backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
@@ -84,6 +42,25 @@ export default function NotesResultats() {
     color: 'var(--text)',
   };
 
+  // ── Chargement initial depuis l'API ────────────────────────
+  useEffect(() => {
+    fetchModules();
+  }, []);
+
+  const fetchModules = async () => {
+    setIsLoading(true);
+    setLoadError(null);
+    try {
+      const res = await ApiService.notes.getAll();
+      setModules(res.data);
+    } catch (err) {
+      console.error(err);
+      setLoadError("Impossible de charger les notes et résultats.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // ── Filtrage ────────────────────────────────────────────
   const filteredModules = modules.filter(m => {
     const q = search.toLowerCase();
@@ -93,14 +70,24 @@ export default function NotesResultats() {
   });
 
   // ── Actions ─────────────────────────────────────────────
-  const handleDeliberer = (id: string) => {
-    setModules(modules.map(m => {
-      if (m.id === id) {
-        showToast(`Module ${m.code} officiellement délibéré et verrouillé`);
-        return { ...m, statut: 'Délibéré' };
-      }
-      return m;
-    }));
+  const handleDeliberer = async (id: string) => {
+    const previous = modules;
+    const target = modules.find(m => m.id === id);
+    if (!target) return;
+
+    setDeliberatingId(id);
+    setModules(prev => prev.map(m => m.id === id ? { ...m, statut: 'Délibéré' } : m));
+
+    try {
+      await ApiService.notes.update(id, { ...target, statut: 'Délibéré' });
+      showToast(`Module ${target.code} officiellement délibéré et verrouillé`);
+    } catch (err) {
+      console.error(err);
+      setModules(previous); // rollback
+      showToast("Échec de la délibération, réessaie.");
+    } finally {
+      setDeliberatingId(null);
+    }
   };
 
   const showToast = (msg: string) => {
@@ -116,6 +103,32 @@ export default function NotesResultats() {
     };
     return <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase border ${styles[statut]}`}>{statut}</span>;
   };
+
+  // ── États de chargement / erreur ────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24 gap-2 opacity-60">
+        <Loader2 size={18} className="animate-spin" />
+        <span className="text-xs font-bold">Chargement des notes & résultats...</span>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center border border-dashed rounded-2xl opacity-70" style={{ borderColor: 'var(--border)' }}>
+        <AlertTriangle size={32} className="mx-auto mb-2 opacity-50" />
+        <p className="text-xs font-bold mb-3">{loadError}</p>
+        <button
+          onClick={fetchModules}
+          className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-lg hover:opacity-90 cursor-pointer"
+          style={{ backgroundColor: 'var(--primary)' }}
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,8 +187,8 @@ export default function NotesResultats() {
 
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs opacity-60">
                   <span className="flex items-center gap-1 font-bold text-blue-500"><GraduationCap size={13} /> {m.classe}</span>
-                  <span>• Enseignant : **{m.enseignant}**</span>
-                  <span>• **{m.etudiantsInscrits}** étudiants</span>
+                  <span>• Enseignant : <strong>{m.enseignant}</strong></span>
+                  <span>• <strong>{m.etudiantsInscrits}</strong> étudiants</span>
                 </div>
               </div>
 
@@ -215,8 +228,14 @@ export default function NotesResultats() {
               {/* Actions Administrateur */}
               <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0" style={{ borderColor: 'var(--border)' }}>
                 {m.statut === 'Saisi' && (
-                  <button onClick={() => handleDeliberer(m.id)} className="px-3 py-2 rounded-xl text-[11px] font-bold text-white transition hover:opacity-90 flex items-center gap-1" style={{ backgroundColor: 'var(--primary)' }}>
-                    <Award size={13} /> Délibérer
+                  <button
+                    onClick={() => handleDeliberer(m.id)}
+                    disabled={deliberatingId === m.id}
+                    className="px-3 py-2 rounded-xl text-[11px] font-bold text-white transition hover:opacity-90 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{ backgroundColor: 'var(--primary)' }}
+                  >
+                    {deliberatingId === m.id ? <Loader2 size={13} className="animate-spin" /> : <Award size={13} />}
+                    Délibérer
                   </button>
                 )}
                 {m.statut === 'Délibéré' && (

@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import {
+import ApiService from '../../services/ApiService';
+import { 
   Bell, ClipboardList, Megaphone,
-  FileText, Check, Trash2, ShieldAlert, Clock
+  FileText, Check, Trash2, ShieldAlert, Clock, Loader2 
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -15,63 +16,99 @@ interface NotificationEtudiant {
   lu: boolean;
 }
 
-// ─── Données simulées ─────────────────────────────────────
-const INITIAL_NOTIFICATIONS: NotificationEtudiant[] = [
-  {
-    id: 'notif-1',
-    titre: 'Changement de salle : Algorithmique Avancée',
-    description: 'Le cours du lundi 6 juillet avec M. ANDRIAMALALA se déroulera exceptionnellement en Salle Amphi B au lieu de la salle A101.',
-    type: 'Urgent',
-    date: 'Il y a 10 min',
-    lu: false,
-  },
-  {
-    id: 'notif-2',
-    titre: 'Nouvelle note disponible',
-    description: 'Votre note de Contrôle Continu pour le module "Développement Web Full-Stack" a été publiée par M. RANDRIANARISOA.',
-    type: 'Notes',
-    date: 'Il y a 2 heures',
-    lu: false,
-  },
-  {
-    id: 'notif-3',
-    titre: 'Dépôt de support pédagogique',
-    description: "Mme. RAKOTOMALALA a ajouté le fichier \"TD1_Arbres_Binaires_Recherche.pdf\" dans l'espace de cours Bases de Données.",
-    type: 'Cours',
-    date: 'Hier, à 14:30',
-    lu: true,
-  },
-  {
-    id: 'notif-4',
-    titre: 'Ouverture des inscriptions aux stages',
-    description: 'Le portail de dépôt des conventions de stage pour les Master 1 et L3 est désormais ouvert. Date limite : 31 Juillet.',
-    type: 'Administration',
-    date: 'Le 28 Juin',
-    lu: true,
-  },
-];
-
 export default function NotificationsEtudiant() {
   const { darkMode } = useTheme();
 
-  const [notifications, setNotifications] = useState<NotificationEtudiant[]>(INITIAL_NOTIFICATIONS);
-  const [activeFilter, setActiveFilter]   = useState<string>('Tous');
+  // ─── États Dynamiques ───────────────────────────────────
+  const [notifications, setNotifications] = useState<NotificationEtudiant[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<string>('Tous');
 
-  const cardBg      = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
+  const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
-  const filtres     = ['Tous', 'Urgent', 'Notes', 'Cours', 'Administration'];
+  const filtres = ['Tous', 'Urgent', 'Notes', 'Cours', 'Administration'];
 
-  const marquerCommeLu = (id: string) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, lu: true } : n));
-
-  const toutMarquerCommeLu = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, lu: true })));
-
-  const supprimerNotification = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setNotifications(prev => prev.filter(n => n.id !== id));
+  // Configuration de base pour les requêtes HTTP
+  const getRequestConfig = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      }
+    };
   };
 
+  // ─── Récupération des Notifications via l'API ───────────
+  useEffect(() => {
+    const fetchNotificationsData = async () => {
+      setIsLoading(true);
+      try {
+        if (ApiService.etudiant?.getNotifications) {
+          const res = await ApiService.etudiant.getNotifications(getRequestConfig());
+          if (res && res.data) {
+            setNotifications(res.data);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors de la récupération des notifications :", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchNotificationsData();
+  }, []);
+
+  // ─── Actions de mutation (API + State Local) ────────────
+  const marquerCommeLu = async (id: string) => {
+    // Éviter l'appel API inutile si la notification est déjà lue
+    const target = notifications.find(n => n.id === id);
+    if (!target || target.lu) return;
+
+    // Mise à jour locale immédiate (optimiste)
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, lu: true } : n));
+
+    try {
+      if (ApiService.etudiant?.marquerNotificationLu) {
+        await ApiService.etudiant.marquerNotificationLu(id, getRequestConfig());
+      }
+    } catch (err) {
+      console.error(`Erreur lors du marquage comme lu de la notification ${id} :`, err);
+    }
+  };
+
+  const toutMarquerCommeLu = async () => {
+    if (notifications.every(n => n.lu)) return;
+
+    // Mise à jour locale immédiate (optimiste)
+    setNotifications(prev => prev.map(n => ({ ...n, lu: true })));
+
+    try {
+      if (ApiService.etudiant?.toutMarquerNotificationsLu) {
+        await ApiService.etudiant.toutMarquerNotificationsLu(getRequestConfig());
+      }
+    } catch (err) {
+      console.error("Erreur lors du marquage global des notifications :", err);
+    }
+  };
+
+  const supprimerNotification = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Évite de déclencher le marquerCommeLu sur la bulle parente
+
+    // Mise à jour locale immédiate
+    setNotifications(prev => prev.filter(n => n.id !== id));
+
+    try {
+      if (ApiService.etudiant?.supprimerNotification) {
+        await ApiService.etudiant.supprimerNotification(id, getRequestConfig());
+      }
+    } catch (err) {
+      console.error(`Erreur lors de la suppression de la notification ${id} :`, err);
+    }
+  };
+
+  // ─── Mémos et Filtres ───────────────────────────────────
   const nbNonLues = useMemo(() => notifications.filter(n => !n.lu).length, [notifications]);
 
   const filteredNotifications = useMemo(() => {
@@ -79,7 +116,6 @@ export default function NotificationsEtudiant() {
     return notifications.filter(n => n.type === activeFilter);
   }, [notifications, activeFilter]);
 
-  // FIX : Megaphone (sans accent, p minuscule) — le bon nom dans lucide-react
   const getTypeBadge = (type: string) => {
     switch (type) {
       case 'Urgent':
@@ -127,7 +163,7 @@ export default function NotificationsEtudiant() {
       </div>
 
       {/* Filtres */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
         {filtres.map(f => {
           const isActive = activeFilter === f;
           return (
@@ -148,70 +184,76 @@ export default function NotificationsEtudiant() {
         })}
       </div>
 
-      {/* Liste */}
-      <div className="space-y-3">
-        {filteredNotifications.length === 0 ? (
-          <div className="p-12 text-center border border-dashed rounded-2xl opacity-40 text-xs font-medium"
-            style={borderStyle}>
-            Aucune notification dans cette catégorie.
-          </div>
-        ) : (
-          filteredNotifications.map(notif => {
-            const meta = getTypeBadge(notif.type);
-            return (
-              <div
-                key={notif.id}
-                onClick={() => marquerCommeLu(notif.id)}
-                className={`p-4 rounded-2xl border flex items-start justify-between gap-4 transition duration-200 ${
-                  !notif.lu ? 'cursor-pointer border-l-4' : 'opacity-70'
-                }`}
-                style={{
-                  backgroundColor: cardBg,
-                  borderColor: 'var(--border)',
-                  borderLeftColor: !notif.lu ? 'var(--primary)' : 'var(--border)',
-                }}
-              >
-                <div className="flex items-start gap-3 min-w-0">
-                  <div className="p-2 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
-                    style={{ backgroundColor: meta.bg, color: meta.color }}>
-                    {meta.icon}
-                  </div>
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className={`text-xs tracking-tight ${!notif.lu ? 'font-black' : 'font-bold'}`}>
-                        {notif.titre}
-                      </h3>
-                      {!notif.lu && (
-                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--primary)' }} />
-                      )}
-                    </div>
-                    <p className="text-[11px] opacity-60 leading-relaxed font-medium">
-                      {notif.description}
-                    </p>
-                    <div className="flex items-center gap-1 text-[10px] opacity-40 font-semibold pt-1">
-                      <Clock size={11} />
-                      <span>{notif.date}</span>
-                      <span>·</span>
-                      <span className="uppercase tracking-wider text-[9px]" style={{ color: meta.color }}>
-                        {notif.type}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={e => supprimerNotification(notif.id, e)}
-                  className="p-1.5 rounded-lg opacity-30 hover:opacity-100 hover:text-rose-500 transition cursor-pointer shrink-0"
-                  title="Supprimer"
+      {/* Zone principale de contenu */}
+      {isLoading ? (
+        <div className="flex flex-col items-center justify-center py-32 gap-3 opacity-60 text-xs">
+          <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
+          <p className="font-bold">Synchronisation de vos alertes en temps réel...</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filteredNotifications.length === 0 ? (
+            <div className="p-12 text-center border border-dashed rounded-2xl opacity-40 text-xs font-medium" style={borderStyle}>
+              Aucune notification dans cette catégorie.
+            </div>
+          ) : (
+            filteredNotifications.map(notif => {
+              const meta = getTypeBadge(notif.type);
+              return (
+                <div
+                  key={notif.id}
+                  onClick={() => marquerCommeLu(notif.id)}
+                  className={`p-4 rounded-2xl border flex items-start justify-between gap-4 transition duration-200 ${
+                    !notif.lu ? 'cursor-pointer border-l-4' : 'opacity-60'
+                  }`}
+                  style={{
+                    backgroundColor: cardBg,
+                    borderColor: 'var(--border)',
+                    borderLeftColor: !notif.lu ? 'var(--primary)' : 'var(--border)',
+                  }}
                 >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            );
-          })
-        )}
-      </div>
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="p-2 rounded-xl shrink-0 flex items-center justify-center mt-0.5"
+                      style={{ backgroundColor: meta.bg, color: meta.color }}>
+                      {meta.icon}
+                    </div>
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className={`text-xs tracking-tight ${!notif.lu ? 'font-black' : 'font-bold'}`}>
+                          {notif.titre}
+                        </h3>
+                        {!notif.lu && (
+                          <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: 'var(--primary)' }} />
+                        )}
+                      </div>
+                      <p className="text-[11px] opacity-60 leading-relaxed font-medium">
+                        {notif.description}
+                      </p>
+                      <div className="flex items-center gap-1 text-[10px] opacity-40 font-semibold pt-1">
+                        <Clock size={11} />
+                        <span>{notif.date}</span>
+                        <span>·</span>
+                        <span className="uppercase tracking-wider text-[9px]" style={{ color: meta.color }}>
+                          {notif.type}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={e => supprimerNotification(notif.id, e)}
+                    className="p-1.5 rounded-lg opacity-30 hover:opacity-100 hover:text-rose-500 transition cursor-pointer shrink-0"
+                    title="Supprimer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   Calendar, Clock, MapPin, User, 
-  Layers, Grid, List, ChevronRight 
+  Grid, List, Loader2 
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────
@@ -22,48 +23,52 @@ interface JourEmploi {
   seances: SeanceCours[];
 }
 
-// ─── Données Simulées (Semestre L3 / L1) ──────────────────
-const SEMAINE_EDT: JourEmploi[] = [
-  {
-    jour: 'Lundi',
-    seances: [
-      { id: 's-1', matiere: 'Algorithmique Avancée', enseignant: 'M. ANDRIAMALALA Tahina', salle: 'A101', heureDebut: '08:00', heureFin: '10:00', type: 'Cours', color: '#22c55e' },
-      { id: 's-2', matiere: 'Bases de Données Rel.', enseignant: 'Mme. RAKOTOMALALA Feno', salle: 'Labo1', heureDebut: '10:15', heureFin: '12:15', type: 'TP', color: '#3b82f6' }
-    ]
-  },
-  {
-    jour: 'Mardi',
-    seances: [
-      { id: 's-3', matiere: 'Architecture & Réseaux', enseignant: 'Dr. RAZAFIMAHATRATRA A.', salle: 'B204', heureDebut: '08:00', heureFin: '10:00', type: 'Cours', color: '#22c55e' },
-      { id: 's-4', matiere: 'Architecture & Réseaux', enseignant: 'Dr. RAZAFIMAHATRATRA A.', salle: 'Labo1', heureDebut: '10:15', heureFin: '12:15', type: 'TD', color: '#f59e0b' }
-    ]
-  },
-  {
-    jour: 'Mercredi',
-    seances: [
-      { id: 's-5', matiere: 'Développement Web Full-Stack', enseignant: 'M. RANDRIANARISOA Mamy', salle: 'Labo2', heureDebut: '14:00', heureFin: '17:00', type: 'TP', color: '#3b82f6' }
-    ]
-  },
-  {
-    jour: 'Jeudi',
-    seances: [
-      { id: 's-6', matiere: 'Mathématiques de l\'Ingénieur', enseignant: 'Mme. RAKOTOMALALA Feno', salle: 'A203', heureDebut: '08:00', heureFin: '11:00', type: 'Cours', color: '#22c55e' }
-    ]
-  },
-  {
-    jour: 'Vendredi',
-    seances: [
-      { id: 's-7', matiere: 'Anglais Technique', enseignant: 'Mme. RASOAMALALA Lova', salle: 'B102', heureDebut: '10:15', heureFin: '12:15', type: 'TD', color: '#f59e0b' }
-    ]
-  }
-];
-
 export default function EmploiDuTemps() {
   const { darkMode } = useTheme();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [semaineEdt, setSemaineEdt] = useState<JourEmploi[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
+
+  // ─── Récupération de l'emploi du temps depuis l'API ───────
+  useEffect(() => {
+    const fetchEdtData = async () => {
+      setIsLoading(true);
+      const token = localStorage.getItem('token');
+      const config = {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      };
+
+      try {
+        if (ApiService.etudiant?.getEmploiDuTemps) {
+          const res = await ApiService.etudiant.getEmploiDuTemps(config);
+          if (res && res.data) {
+            setSemaineEdt(res.data);
+          }
+        }
+      } catch (err) {
+        console.error("Erreur lors du chargement de l'emploi du temps :", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchEdtData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-32 gap-3 opacity-60 text-xs">
+        <Loader2 size={24} className="animate-spin text-[var(--primary)]" />
+        <p className="font-bold">Chargement de votre emploi du temps...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-6xl pb-12">
@@ -100,7 +105,7 @@ export default function EmploiDuTemps() {
       {/* ─── VUE 1 : GRILLE HEBDOMADAIRE (Bento Grid) ─── */}
       {viewMode === 'grid' && (
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-start">
-          {SEMAINE_EDT.map((semaine, index) => (
+          {semaineEdt.map((semaine, index) => (
             <div 
               key={index} 
               className="rounded-2xl border flex flex-col overflow-hidden min-h-[320px]" 
@@ -113,7 +118,7 @@ export default function EmploiDuTemps() {
 
               {/* Séances du jour */}
               <div className="p-3 flex-1 flex flex-col gap-2.5">
-                {semaine.seances.length === 0 ? (
+                {(!semaine.seances || semaine.seances.length === 0) ? (
                   <div className="flex-1 flex items-center justify-center text-[10px] font-medium opacity-30 border border-dashed rounded-xl p-4">
                     Aucun cours
                   </div>
@@ -132,7 +137,7 @@ export default function EmploiDuTemps() {
                         <div className="flex items-center justify-between gap-1">
                           <span 
                             className="px-1.5 py-0.5 rounded-md text-[8px] font-black uppercase tracking-wider"
-                            style={{ backgroundColor: seance.color + '15', color: seance.color }}
+                            style={{ backgroundColor: (seance.color || 'var(--primary)') + '15', color: seance.color || 'var(--primary)' }}
                           >
                             {seance.type}
                           </span>
@@ -152,7 +157,7 @@ export default function EmploiDuTemps() {
                       <div className="space-y-1 pt-1 border-t border-dashed" style={{ borderColor: 'var(--border)' }}>
                         <div className="flex items-center gap-1 text-[9px] opacity-40 font-medium truncate">
                           <User size={10} />
-                          <span>{seance.enseignant.split(' ').pop()}</span>
+                          <span>{seance.enseignant ? seance.enseignant.split(' ').pop() : 'N/A'}</span>
                         </div>
                         <div className="flex items-center gap-1 text-[9px] font-bold text-[var(--primary)]">
                           <MapPin size={10} />
@@ -168,10 +173,10 @@ export default function EmploiDuTemps() {
         </div>
       )}
 
-      {/* ─── VUE 2 : LISTE COMPACTE FILTRÉE ─── */}
+      {/* ─── VUE 2 : LISTE COMPACTE ─── */}
       {viewMode === 'list' && (
         <div className="space-y-4">
-          {SEMAINE_EDT.map((semaine, index) => (
+          {semaineEdt.map((semaine, index) => (
             <div 
               key={index} 
               className="rounded-2xl border overflow-hidden" 
@@ -182,7 +187,7 @@ export default function EmploiDuTemps() {
               </div>
 
               <div className="divide-y" style={borderStyle}>
-                {semaine.seances.length === 0 ? (
+                {(!semaine.seances || semaine.seances.length === 0) ? (
                   <div className="p-4 text-center text-xs opacity-40 font-medium">Aucun cours planifié pour ce jour.</div>
                 ) : (
                   semaine.seances.map((seance) => (
@@ -211,7 +216,7 @@ export default function EmploiDuTemps() {
                         </div>
                         <span 
                           className="px-2.5 py-1 rounded-full text-[9px] font-black uppercase tracking-wider"
-                          style={{ backgroundColor: seance.color + '15', color: seance.color }}
+                          style={{ backgroundColor: (seance.color || 'var(--primary)') + '15', color: seance.color || 'var(--primary)' }}
                         >
                           {seance.type}
                         </span>

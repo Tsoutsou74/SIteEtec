@@ -227,10 +227,10 @@ Vérifier que `spring.application.name` dans chaque backend correspond exactemen
 ## 📋 Checklist
 
 - [x] **1–13** : Corriger tous les chemins API (frontend ou backend selon décision)
-- [ ] **14** : Ajouter toutes les routes Gateway manquantes
-- [ ] **15** : Corriger le slash manquant dans `SecurityConfig.java`
-- [ ] **16** : Implémenter `@ControllerAdvice` global dans le backend
-- [ ] **17** : Ajouter ErrorBoundary React
-- [ ] **18** : Nettoyer les stubs services
+- [x] **14** : Ajouter toutes les routes Gateway manquantes
+- [x] **15** : Corriger le slash manquant dans `SecurityConfig.java`
+- [x] **16** : Implémenter `@ControllerAdvice` global dans le backend
+- [x] **17** : Ajouter ErrorBoundary React
+- [x] **18** : Nettoyer les stubs services
 - [ ] **19** : Vérifier les noms Eureka
 - [ ] Tester après chaque correction — vérifier que les erreurs 400/405/500 disparaissent

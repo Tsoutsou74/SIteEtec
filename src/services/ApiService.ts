@@ -129,13 +129,13 @@ const ApiService = {
 
     admin: {
 
-        getAll: () => api.get('/api/admin'),
+        getAll: () => api.get('/api/admins'),
 
-        create: (data) => api.post('/api/admin', data),
+        create: (data) => api.post('/api/admins', data),
 
-        update: (id, data) => api.put(`/api/admin/${id}`, data),
+        update: (id, data) => api.put(`/api/admins/${id}`, data),
 
-        delete: (id) => api.delete(`/api/admin/${id}`),
+        delete: (id) => api.delete(`/api/admins/${id}`),
     },
 
     // =========================
@@ -144,15 +144,15 @@ const ApiService = {
 
     etudiant: {
 
-        getAll: () => api.get('/api/etudiant'),
+        getAll: () => api.get('/api/etudiants'),
 
-        getById: (id) => api.get(`/api/etudiant/${id}`),
+        getById: (id) => api.get(`/api/etudiants/${id}`),
 
-        create: (data) => api.post('/api/etudiant', data),
+        create: (data) => api.post('/api/etudiants', data),
 
-        update: (id, data) => api.put(`/api/etudiant/${id}`, data),
+        update: (id, data) => api.put(`/api/etudiants/${id}`, data),
 
-        delete: (id) => api.delete(`/api/etudiant/${id}`),
+        delete: (id) => api.delete(`/api/etudiants/${id}`),
     },
 
     // =========================
@@ -161,15 +161,15 @@ const ApiService = {
 
     enseignant: {
 
-        getAll: () => api.get('/api/enseignant'),
+        getAll: () => api.get('/api/enseignants'),
 
-        getById: (id) => api.get(`/api/enseignant/${id}`),
+        getById: (id) => api.get(`/api/enseignants/${id}`),
 
-        create: (data) => api.post('/api/enseignant', data),
+        create: (data) => api.post('/api/enseignants', data),
 
-        update: (id, data) => api.put(`/api/enseignant/${id}`, data),
+        update: (id, data) => api.put(`/api/enseignants/${id}`, data),
 
-        delete: (id) => api.delete(`/api/enseignant/${id}`),
+        delete: (id) => api.delete(`/api/enseignants/${id}`),
     },
 
     // =========================
@@ -179,13 +179,13 @@ const ApiService = {
 
     ressources: {
 
-        getAll: () => api.get('/api/ressours'),
+        getAll: () => api.get('/api/ressources'),
 
-        create: (data) => api.post('/api/ressours', data),
+        create: (data) => api.post('/api/ressources', data),
 
-        update: (id, data) => api.put(`/api/ressours/${id}`, data),
+        update: (id, data) => api.put(`/api/ressources/${id}`, data),
 
-        delete: (id) => api.delete(`/api/ressours/${id}`),
+        delete: (id) => api.delete(`/api/ressources/${id}`),
     },
 
     cours: {
@@ -210,15 +210,15 @@ const ApiService = {
         delete: (id) => api.delete(`/api/chapitres/${id}`),
     },
 
-    domains: {
+    domaines: {
 
-        getAll: () => api.get('/api/domains'),
+        getAll: () => api.get('/api/domaines'),
 
-        create: (data) => api.post('/api/domains', data),
+        create: (data) => api.post('/api/domaines', data),
 
-        update: (id, data) => api.put(`/api/domains/${id}`, data),
+        update: (id, data) => api.put(`/api/domaines/${id}`, data),
 
-        delete: (id) => api.delete(`/api/domains/${id}`),
+        delete: (id) => api.delete(`/api/domaines/${id}`),
     },
 
     // =========================
@@ -296,18 +296,18 @@ const ApiService = {
     },
 
     // =========================
-    // FILIERS
+    // FILIERES
     // =========================
 
-    filiers: {
+    filieres: {
 
-        getAll: () => api.get('/api/filiers'),
+        getAll: () => api.get('/api/filieres'),
 
-        create: (data) => api.post('/api/filiers', data),
+        create: (data) => api.post('/api/filieres', data),
 
-        update: (id, data) => api.put(`/api/filiers/${id}`, data),
+        update: (id, data) => api.put(`/api/filieres/${id}`, data),
 
-        delete: (id) => api.delete(`/api/filiers/${id}`),
+        delete: (id) => api.delete(`/api/filieres/${id}`),
     },
 
     // =========================

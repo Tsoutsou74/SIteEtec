@@ -1,1 +1,1 @@
-useTranslation.ts
+﻿export { useTranslation } from 'react-i18next';

@@ -4,7 +4,7 @@ import {
   Search, Plus, Pencil, Trash2, X, Save,
   BookOpen, Layers, Users, CheckCircle, GraduationCap
 } from 'lucide-react';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 interface Filiere {
   id: number;
@@ -48,7 +48,7 @@ export default function Filieres() {
   const fetchFilieres = async () => {
     setLoading(true);
     try {
-      const response = await apiService.filieres.getAll();
+      const response = await ApiService.filieres.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: Number(item.id),
@@ -100,12 +100,12 @@ export default function Filieres() {
 
     try {
       if (modalMode === 'add') {
-        const response = await apiService.filieres.create(form);
+        const response = await ApiService.filieres.create(form);
         const newId = response?.data?.id ? Number(response.data.id) : (data.length > 0 ? Math.max(...data.map(f => f.id)) + 1 : 1);
         setData([...data, { id: newId, ...form }]);
         showToast('Filière ajoutée avec succès');
       } else if (modalMode === 'edit' && selected) {
-        await apiService.filieres.update(selected.id, form);
+        await ApiService.filieres.update(selected.id, form);
         setData(data.map(f => f.id === selected.id ? { ...f, ...form } : f));
         showToast('Filière mise à jour');
       }
@@ -119,7 +119,7 @@ export default function Filieres() {
   const handleDelete = async () => {
     if (deleteId !== null) {
       try {
-        await apiService.filieres.delete(deleteId);
+        await ApiService.filieres.delete(deleteId);
         setData(data.filter(f => f.id !== deleteId));
         setDeleteId(null);
         showToast('Filière supprimée');

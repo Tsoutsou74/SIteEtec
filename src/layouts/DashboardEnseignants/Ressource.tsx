@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   FolderOpen, FileText, Video, Archive, Search, 
   UploadCloud, Trash2, Download, HardDrive, 
@@ -43,8 +44,8 @@ export default function Ressource() {
       setError(null);
       
       const [fichiersData, quotaData] = await Promise.all([
-        apiService.getRessources(),
-        apiService.getQuotaStockage()
+        ApiService.getRessources(),
+        ApiService.getQuotaStockage()
       ]);
       
       setFichiers(fichiersData || []);
@@ -78,11 +79,11 @@ export default function Ressource() {
     
     try {
       setError(null);
-      await apiService.deleteRessource(id);
+      await ApiService.deleteRessource(id);
       setFichiers(prev => prev.filter(f => f.id !== id));
       
       // Optionnel : Recharger le quota après suppression
-      const quotaData = await apiService.getQuotaStockage();
+      const quotaData = await ApiService.getQuotaStockage();
       if (quotaData) setQuota(quotaData);
     } catch (err) {
       console.error("Erreur lors de la suppression de la ressource:", err);
@@ -104,7 +105,7 @@ export default function Ressource() {
       setIsUploading(true);
       setError(null);
       
-      const nouveauFichier = await apiService.uploadRessource(formData);
+      const nouveauFichier = await ApiService.uploadRessource(formData);
       
       setUploadSuccess(true);
       if (nouveauFichier) {
@@ -115,7 +116,7 @@ export default function Ressource() {
       }
       
       // Actualiser l'état du quota après l'ajout
-      const quotaData = await apiService.getQuotaStockage();
+      const quotaData = await ApiService.getQuotaStockage();
       if (quotaData) setQuota(quotaData);
 
       setTimeout(() => setUploadSuccess(false), 3000);

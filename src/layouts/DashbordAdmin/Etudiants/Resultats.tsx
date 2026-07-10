@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 import { 
   Search, Award, BookOpen, ChevronLeft, ChevronRight, 
   FileText, Download, CheckCircle2, XCircle, AlertTriangle 
@@ -66,8 +66,8 @@ export default function Resultats() {
   const fetchResultats = async () => {
     setLoading(true);
     try {
-      // Modifie apiService.note si ton endpoint s'appelle autrement (ex: apiService.resultat)
-      const response = await apiService.note.getAll();
+      // Endpoint canonique: apiService.notes
+      const response = await ApiService.notes.getAll();
       if (response && response.data) {
         // Uniformisation et mapping des données reçues du backend
         const mappedData = response.data.map((item: any) => ({

@@ -4,7 +4,7 @@ import {
   Search, Plus, Pencil, Trash2, X, Save,
   Calendar, CheckCircle, AlertCircle, Laptop, GraduationCap, Clock
 } from 'lucide-react';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon l'emplacement de ton ApiService
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon l'emplacement de ton ApiService
 
 // ── Types Révisés avec TypeFormation ──────────────────────
 export type TypeFormation = 'Initiale' | 'Continue' | 'En ligne';
@@ -61,7 +61,7 @@ export default function Programmes() {
   const fetchProgrammes = async () => {
     setLoading(true);
     try {
-      const response = await apiService.programmes.getAll();
+      const response = await ApiService.formationInitiale.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: Number(item.id),
@@ -118,12 +118,12 @@ export default function Programmes() {
 
     try {
       if (modalMode === 'add') {
-        const response = await apiService.programmes.create(form);
+        const response = await ApiService.formationInitiale.create(form);
         const newId = response?.data?.id ? Number(response.data.id) : (data.length > 0 ? Math.max(...data.map(p => p.id)) + 1 : 1);
         setData([...data, { id: newId, ...form }]);
         showToast('Nouveau programme académique créé');
       } else if (modalMode === 'edit' && selected) {
-        await apiService.programmes.update(selected.id, form);
+        await ApiService.formationInitiale.update(selected.id, form);
         setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
         showToast('Maquette pédagogique mise à jour');
       }
@@ -137,7 +137,7 @@ export default function Programmes() {
   const handleDelete = async () => {
     if (deleteId !== null) {
       try {
-        await apiService.programmes.delete(deleteId);
+        await ApiService.formationInitiale.delete(deleteId);
         setData(data.filter(p => p.id !== deleteId));
         setDeleteId(null);
         showToast('Programme supprimé définitivement');

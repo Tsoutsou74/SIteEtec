@@ -4,7 +4,7 @@ import {
   Video, FileText, Link, CheckCircle, X, Users 
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── INTERFACES ──────────────────────────────────────────
 interface FormationEnLigne {
@@ -32,7 +32,7 @@ export default function EnLigne() {
   const fetchFormations = async () => {
     setLoading(true);
     try {
-      const response = await apiService.formationsEnLigne.getAll();
+      const response = await ApiService.formationEnLigne.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: String(item.id),
@@ -76,11 +76,11 @@ export default function EnLigne() {
     try {
       if (currentEL.id) {
         // Modification API
-        await apiService.formationsEnLigne.update(currentEL.id, currentEL);
+        await ApiService.formationEnLigne.update(currentEL.id, currentEL);
         setFormations(prev => prev.map(f => f.id === currentEL.id ? (currentEL as FormationEnLigne) : f));
       } else {
         // Création API
-        const response = await apiService.formationsEnLigne.create(currentEL);
+        const response = await ApiService.formationEnLigne.create(currentEL);
         const newEL: FormationEnLigne = {
           ...(currentEL as Omit<FormationEnLigne, 'id'>),
           id: response?.data?.id ? String(response.data.id) : Date.now().toString(),
@@ -97,7 +97,7 @@ export default function EnLigne() {
   const handleDelete = async (id: string) => {
     if (window.confirm("Voulez-vous vraiment supprimer ce cours en ligne ?")) {
       try {
-        await apiService.formationsEnLigne.delete(id);
+        await ApiService.formationEnLigne.delete(id);
         setFormations(prev => prev.filter(f => f.id !== id));
       } catch (error) {
         console.error("Erreur lors de la suppression du cours en ligne :", error);

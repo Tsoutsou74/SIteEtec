@@ -4,7 +4,7 @@ import {
   User, Mail, Phone, MapPin, Calendar, GraduationCap, 
   FileText, ShieldCheck, ArrowRight, ArrowLeft, Check, Upload, AlertCircle
 } from 'lucide-react';
-import apiService from '../../../services/api';
+import ApiService from '../../../services/ApiService';
 
 export default function InscriptionEtudiants() {
   const { darkMode } = useTheme();
@@ -59,11 +59,7 @@ export default function InscriptionEtudiants() {
     });
 
     try {
-      await apiService.inscriptions.create(payload, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      await ApiService.etudiant.create(payload);
     } catch (error) {
       const message =
         error && typeof error === 'object' && 'message' in error

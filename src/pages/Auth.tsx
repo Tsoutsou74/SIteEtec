@@ -8,7 +8,7 @@ import {
   EyeOff,
   ArrowRight,
 } from "lucide-react";
-import apiService from "../services/api";
+import { ApiService, TokenStorage } from "../services/api";
 
 type Role = "etudiant" | "enseignant";
 type StudentFormationType = "initiale" | "continue" | "enligne";
@@ -43,21 +43,36 @@ export default function Auth() {
 
     try {
       if (isLogin) {
-        await apiService.login({
-          role,
-          username: form.nom,
+        const auth = await ApiService.auth.login({
+          email: form.email,
           password: form.password,
         });
-        if (role === "etudiant") {
+
+        TokenStorage.setTokens(auth.token);
+        localStorage.setItem("token", auth.token);
+        localStorage.setItem("etec_user_id", String(auth.userId ?? ""));
+        localStorage.setItem("userId", String(auth.userId ?? ""));
+        localStorage.setItem("etec_user_role", String(auth.role ?? ""));
+        localStorage.setItem("role", String(auth.role ?? ""));
+
+        const normalizedRole = String(auth.role || role).toLowerCase();
+        if (normalizedRole.includes("etudiant")) {
           localStorage.setItem(STUDENT_FORMATION_STORAGE_KEY, formationType);
         }
-        navigate(role === "enseignant" ? "/enseignants" : "/etudiants");
+
+        if (normalizedRole.includes("enseign")) {
+          navigate("/enseignants");
+        } else if (normalizedRole.includes("admin")) {
+          navigate("/admin");
+        } else {
+          navigate("/etudiants");
+        }
         return;
       }
 
-      await apiService.register({
-        role,
-        nom: form.nom,
+      await ApiService.auth.register({
+        role: role.toUpperCase(),
+        username: form.nom,
         prenom: form.prenom,
         email: form.email,
         password: form.password,
@@ -153,15 +168,15 @@ export default function Auth() {
             {isLogin && (
               <div className="space-y-1">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                  <User size={10} /> Nom d'utilisateur
+                  <User size={10} /> Adresse e-mail
                 </label>
                 <input
-                  type="text"
-                  name="nom"
+                  type="email"
+                  name="email"
                   required
-                  value={form.nom}
+                  value={form.email}
                   onChange={handleChange}
-                  placeholder="Votre Nom"
+                  placeholder="vous@exemple.com"
                   className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none transition-colors"
                   style={inputStyle}
                 />

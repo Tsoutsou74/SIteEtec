@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { ChevronDown, Menu, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
+import { useT } from '../../config/I18nProvider';
 
 const ANNEE_SCOLAIRE = {
   debut: { mois: 6, jour: 1 },
@@ -25,36 +26,19 @@ function isPeriodeScolaireActive(): boolean {
   return apresDebut && avantFin;
 }
 
-const NAV_LINKS = [
-  { label: 'Accueil', path: '/' },
-  {
-    label: 'Universite',
-    submenu: [
-      { label: 'Historique', icon: 'H', path: '/historiques' },
-      { label: 'Mot du President', icon: 'P', path: '/motduPresidents' },
-      { label: 'Organigramme', icon: 'O', path: '/organigrammes' },
-    ],
-  },
-  {
-    label: 'Formations',
-    submenu: [
-      { label: 'Formation initiale', icon: 'FI', path: '/formationInitiale' },
-      { label: 'Formation continue', icon: 'FC', path: '/formationContinue' },
-      { label: 'Formations en ligne', icon: 'EL', path: '/formationsEnligne' },
-    ],
-  },
-  { label: 'Admissions', path: '/admission' },
-  { label: 'Actualites', path: '/actualites' },
-  { label: 'Contact', path: '/contact' },
-] as const;
+type NavLink =
+  | { id: string; label: string; path: string }
+  | { id: string; label: string; submenu: Array<{ id: string; label: string; icon: string; path: string }> };
 
-interface NavItemProps {
-  link: (typeof NAV_LINKS)[number];
+function NavItem({
+  link,
+  darkMode,
+  onNavigate,
+}: {
+  link: NavLink;
   darkMode: boolean;
   onNavigate: (path?: string) => void;
-}
-
-function NavItem({ link, darkMode, onNavigate }: NavItemProps) {
+}) {
   const [open, setOpen] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,27 +67,15 @@ function NavItem({ link, darkMode, onNavigate }: NavItemProps) {
   }
 
   return (
-    <li
-      className="relative cursor-pointer"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <span
-        className={`flex items-center gap-1 transition ${
-          open ? (darkMode ? 'text-white' : 'text-black') : 'opacity-75 hover:opacity-100'
-        }`}
-      >
+    <li className="relative cursor-pointer" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
+      <span className={`flex items-center gap-1 transition ${open ? (darkMode ? 'text-white' : 'text-black') : 'opacity-75 hover:opacity-100'}`}>
         {link.label}
-        <ChevronDown
-          size={11}
-          className="transition-transform duration-200"
-          style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
-        />
+        <ChevronDown size={11} className="transition-transform duration-200" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </span>
 
       {open && (
         <div
-          className="absolute top-full left-1/2 z-[300] mt-3 min-w-[230px] -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl"
+          className="absolute left-1/2 top-full z-[300] mt-3 min-w-[230px] -translate-x-1/2 overflow-hidden rounded-2xl border shadow-2xl"
           style={{
             backgroundColor: darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)',
             borderColor: 'var(--border)',
@@ -114,7 +86,7 @@ function NavItem({ link, darkMode, onNavigate }: NavItemProps) {
         >
           <ul className="py-2">
             {link.submenu.map((item) => (
-              <li key={item.path}>
+              <li key={item.id}>
                 <button
                   onClick={() => {
                     onNavigate(item.path);
@@ -139,6 +111,7 @@ function NavItem({ link, darkMode, onNavigate }: NavItemProps) {
 
 export default function Navbar() {
   const { darkMode } = useTheme();
+  const { t } = useT();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileExpanded, setMobileExpanded] = useState<string | null>(null);
@@ -147,6 +120,31 @@ export default function Navbar() {
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchBoxRef = useRef<HTMLDivElement>(null);
   const [connexionVisible] = useState(isPeriodeScolaireActive());
+
+  const navLinks = useMemo<NavLink[]>(() => [
+    { id: 'home', label: t('navbar', 'home'), path: '/' },
+    {
+      id: 'university',
+      label: t('navbar', 'university'),
+      submenu: [
+        { id: 'history', label: t('navbar', 'history'), icon: 'H', path: '/historiques' },
+        { id: 'president', label: t('navbar', 'president'), icon: 'P', path: '/motduPresidents' },
+        { id: 'organigram', label: t('navbar', 'organigram'), icon: 'O', path: '/organigrammes' },
+      ],
+    },
+    {
+      id: 'training',
+      label: t('navbar', 'training'),
+      submenu: [
+        { id: 'initialTraining', label: t('navbar', 'initialTraining'), icon: 'FI', path: '/formationInitiale' },
+        { id: 'continuingTraining', label: t('navbar', 'continuingTraining'), icon: 'FC', path: '/formationContinue' },
+        { id: 'onlineTraining', label: t('navbar', 'onlineTraining'), icon: 'EL', path: '/formationsEnligne' },
+      ],
+    },
+    { id: 'admission', label: t('navbar', 'admission'), path: '/admission' },
+    { id: 'news', label: t('navbar', 'news'), path: '/actualites' },
+    { id: 'contact', label: t('navbar', 'contact'), path: '/contact' },
+  ], [t]);
 
   const bgColor = darkMode ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.35)';
   const mobileBg = darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)';
@@ -223,8 +221,8 @@ export default function Navbar() {
 
         {!searchOpen && (
           <ul className="hidden items-center gap-6 text-[11px] font-bold uppercase tracking-wider lg:flex xl:gap-8">
-            {NAV_LINKS.map((link) => (
-              <NavItem key={link.label} link={link} darkMode={darkMode} onNavigate={handleNavigation} />
+            {navLinks.map((link) => (
+              <NavItem key={link.id} link={link} darkMode={darkMode} onNavigate={handleNavigation} />
             ))}
           </ul>
         )}
@@ -246,7 +244,7 @@ export default function Navbar() {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Rechercher sur E-TEC..."
+                  placeholder={t('navbar', 'searchPlaceholder')}
                   className="min-w-0 flex-1 bg-transparent text-xs outline-none"
                   style={{ color: 'var(--text)' }}
                 />
@@ -257,7 +255,7 @@ export default function Navbar() {
                     setSearchQuery('');
                   }}
                   className="shrink-0 cursor-pointer opacity-50 transition hover:opacity-90"
-                  aria-label="Fermer la recherche"
+                  aria-label={t('navbar', 'closeMenu')}
                 >
                   <X size={14} />
                 </button>
@@ -266,7 +264,7 @@ export default function Navbar() {
               <button
                 onClick={() => setSearchOpen(true)}
                 className="cursor-pointer p-1 opacity-70 transition hover:opacity-100"
-                aria-label="Ouvrir la recherche"
+                aria-label={t('navbar', 'searchPlaceholder')}
               >
                 <Search size={15} />
               </button>
@@ -283,7 +281,7 @@ export default function Navbar() {
                 color: 'var(--text)',
               }}
             >
-              Connexion
+              {t('navbar', 'login')}
             </button>
           )}
 
@@ -296,7 +294,7 @@ export default function Navbar() {
                 color: 'var(--text)',
               }}
               onClick={() => setMenuOpen(!menuOpen)}
-              aria-label="Ouvrir le menu"
+              aria-label={menuOpen ? t('navbar', 'closeMenu') : t('navbar', 'openMenu')}
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -310,14 +308,14 @@ export default function Navbar() {
           style={{ backgroundColor: mobileBg, borderColor: 'var(--border)', color: 'var(--text)' }}
         >
           <ul className="flex flex-col px-6 py-2">
-            {NAV_LINKS.map((link) => (
-              <li key={link.label}>
+            {navLinks.map((link) => (
+              <li key={link.id}>
                 <div
                   className="flex cursor-pointer items-center justify-between border-b py-3 text-sm font-bold uppercase tracking-wider opacity-75 transition"
                   style={{ borderColor: 'var(--border)' }}
                   onClick={() => {
                     if ('submenu' in link) {
-                      setMobileExpanded(mobileExpanded === link.label ? null : link.label);
+                      setMobileExpanded(mobileExpanded === link.id ? null : link.id);
                     } else {
                       handleNavigation(link.path);
                     }
@@ -325,19 +323,15 @@ export default function Navbar() {
                 >
                   <span>{link.label}</span>
                   {'submenu' in link && (
-                    <ChevronDown
-                      size={14}
-                      className="transition-transform duration-200"
-                      style={{ transform: mobileExpanded === link.label ? 'rotate(180deg)' : 'rotate(0deg)' }}
-                    />
+                    <ChevronDown size={14} className="transition-transform duration-200" style={{ transform: mobileExpanded === link.id ? 'rotate(180deg)' : 'rotate(0deg)' }} />
                   )}
                 </div>
 
-                {'submenu' in link && mobileExpanded === link.label && (
+                {'submenu' in link && mobileExpanded === link.id && (
                   <ul className="space-y-0.5 py-1 pl-4">
                     {link.submenu.map((sub) => (
                       <li
-                        key={sub.path}
+                        key={sub.id}
                         className="flex cursor-pointer items-center gap-3 py-2.5 text-xs font-semibold tracking-wide opacity-80 transition hover:opacity-100"
                         onClick={() => handleNavigation(sub.path)}
                       >
@@ -363,7 +357,7 @@ export default function Navbar() {
                     color: 'var(--text)',
                   }}
                 >
-                  Connexion
+                  {t('navbar', 'login')}
                 </button>
               </li>
             )}

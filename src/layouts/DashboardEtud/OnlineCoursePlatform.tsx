@@ -1,21 +1,21 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import ApiService from '../../services/ApiService';
 import {
   ArrowLeft,
   BookOpen,
   CheckCircle2,
-  ClipboardCheck,
   Download,
+  ExternalLink,
   FileText,
-  HelpCircle,
-  PlayCircle,
-  Send,
-  Video,
   Loader2,
+  PlayCircle,
+  Video,
 } from 'lucide-react';
 
 type ActivityStatus = 'A faire' | 'En cours' | 'Termine';
+type LessonStatus = 'Termine' | 'En cours' | 'Bloque';
+type StudentFormationType = 'initiale' | 'continue' | 'enligne';
 
 type Activity = {
   id: string;
@@ -30,7 +30,7 @@ type Lesson = {
   id: string;
   title: string;
   duration: string;
-  status: 'Termine' | 'En cours' | 'Bloque';
+  status: LessonStatus;
 };
 
 type Resource = {
@@ -50,90 +50,145 @@ type OnlineCourse = {
   resources: Resource[];
 };
 
-type StudentFormationType = 'initiale' | 'continue' | 'enligne';
-
-const statusStyles: Record<ActivityStatus, string> = {
-  'A faire': 'bg-amber-500/10 text-amber-600',
-  'En cours': 'bg-blue-500/10 text-blue-600',
-  Termine: 'bg-emerald-500/10 text-emerald-600',
-};
+const DEMO_COURSES: OnlineCourse[] = [
+  {
+    id: 'm-3',
+    code: 'INF303',
+    title: 'Bases de Donnees Relationnelles',
+    teacher: 'Mme. RAKOTOMALALA Feno',
+    progress: 90,
+    currentLesson: 'Normalisation 3NF / BCNF',
+    lessons: [
+      { id: 'l1', title: 'Introduction aux modeles relationnels', duration: '18 min', status: 'Termine' },
+      { id: 'l2', title: 'Dependances fonctionnelles', duration: '24 min', status: 'Termine' },
+      { id: 'l3', title: 'Normalisation 3NF / BCNF', duration: '31 min', status: 'En cours' },
+      { id: 'l4', title: 'Transactions et indexation', duration: '28 min', status: 'Bloque' },
+    ],
+    activities: [
+      {
+        id: 'a1',
+        type: 'devoir',
+        title: 'Projet BDD - schema relationnel',
+        dueDate: '12 juillet 2026',
+        status: 'Termine',
+        description: 'Deposer le modele relationnel, les contraintes et le script SQL.',
+      },
+      {
+        id: 'a2',
+        type: 'quiz',
+        title: 'Quiz normalisation 3NF / BCNF',
+        dueDate: 'Disponible',
+        status: 'A faire',
+        description: '10 questions pour verifier les formes normales et les dependances.',
+      },
+    ],
+    resources: [
+      { name: 'Ch02_Normalisation_3NF_BCNF.pdf', size: '1.2 MB' },
+      { name: 'Projet_BDD_Sujet_2026.pdf', size: '620 KB' },
+      { name: 'Dataset_exercice_sql.zip', size: '940 KB' },
+    ],
+  },
+  {
+    id: 'm-4',
+    code: 'INF304',
+    title: 'Developpement Web Full-Stack (React / Node)',
+    teacher: 'M. RANDRIANARISOA Mamy',
+    progress: 45,
+    currentLesson: 'Hooks React et consommation API',
+    lessons: [
+      { id: 'l1', title: 'Architecture Vite et React', duration: '22 min', status: 'Termine' },
+      { id: 'l2', title: 'Hooks React et consommation API', duration: '36 min', status: 'En cours' },
+      { id: 'l3', title: 'Routes protegees et dashboard', duration: '41 min', status: 'Bloque' },
+      { id: 'l4', title: 'Integration Node et Express', duration: '34 min', status: 'Bloque' },
+    ],
+    activities: [
+      {
+        id: 'a1',
+        type: 'devoir',
+        title: 'Mini-projet dashboard React',
+        dueDate: '18 juillet 2026',
+        status: 'En cours',
+        description: 'Construire une interface dashboard avec composants reutilisables.',
+      },
+      {
+        id: 'a2',
+        type: 'quiz',
+        title: 'Quiz hooks React et API REST',
+        dueDate: 'Disponible',
+        status: 'A faire',
+        description: 'Questions rapides sur useState, useMemo, fetch et methodes HTTP.',
+      },
+    ],
+    resources: [
+      { name: 'Syllabus_Vite_TypeScript.pdf', size: '950 KB' },
+      { name: 'Boilerplate_React_Tailwind.zip', size: '1.1 MB' },
+      { name: 'Correction_fetch_hooks.pdf', size: '730 KB' },
+    ],
+  },
+];
 
 const isStudentFormationType = (value: string | null): value is StudentFormationType =>
   value === 'initiale' || value === 'continue' || value === 'enligne';
 
 const getConnectedFormationType = (): StudentFormationType | null => {
   if (typeof window === 'undefined') return null;
-
   for (let index = 0; index < window.localStorage.length; index += 1) {
     const key = window.localStorage.key(index);
     if (!key) continue;
-
     const value = window.localStorage.getItem(key);
     if (isStudentFormationType(value)) return value;
   }
-
   return null;
 };
 
 export default function OnlineCoursePlatform() {
   const { courseId } = useParams();
   const [connectedFormationType] = useState<StudentFormationType | null>(() => getConnectedFormationType());
-  
-  // ─── États Dynamiques ───────────────────────────────────
-  const [course, setCourse] = useState<OnlineCourse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedLessonId, setSelectedLessonId] = useState<string>('');
+  const [course, setCourse] = useState<OnlineCourse | null>(null);
+  const [selectedLessonId, setSelectedLessonId] = useState('');
 
-  // ─── Récupération du Cours ──────────────────────────────
   useEffect(() => {
-    const fetchCourseDetails = async () => {
-      if (!courseId || connectedFormationType !== 'enligne') {
-        setIsLoading(false);
-        return;
-      }
-
+    const fetchCourse = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      };
-
       try {
+        if (connectedFormationType !== 'enligne') {
+          setCourse(null);
+          return;
+        }
+
         if (ApiService.etudiant?.getCourseDetails) {
-          const res = await ApiService.etudiant.getCourseDetails(courseId, config);
-          if (res && res.data) {
+          const res = await ApiService.etudiant.getCourseDetails(courseId ?? 'm-3');
+          if (res?.data) {
             setCourse(res.data);
-            // Définir la leçon active par défaut
-            const activeLesson = res.data.lessons.find((l: Lesson) => l.status === 'En cours') ?? res.data.lessons[0];
-            if (activeLesson) {
-              setSelectedLessonId(activeLesson.id);
-            }
+            setSelectedLessonId(
+              res.data.lessons.find((lesson: Lesson) => lesson.status === 'En cours')?.id ?? res.data.lessons[0]?.id ?? ''
+            );
+            return;
           }
         }
-      } catch (err) {
-        console.error("Erreur lors du chargement des détails du cours en ligne :", err);
+
+        const fallback = DEMO_COURSES.find((item) => item.id === courseId) ?? DEMO_COURSES[0];
+        setCourse(fallback);
+        setSelectedLessonId(fallback.lessons.find((lesson) => lesson.status === 'En cours')?.id ?? fallback.lessons[0]?.id ?? '');
+      } catch (error) {
+        console.error('Erreur lors du chargement du cours en ligne :', error);
+        const fallback = DEMO_COURSES.find((item) => item.id === courseId) ?? DEMO_COURSES[0];
+        setCourse(fallback);
+        setSelectedLessonId(fallback.lessons.find((lesson) => lesson.status === 'En cours')?.id ?? fallback.lessons[0]?.id ?? '');
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchCourseDetails();
-  }, [courseId, connectedFormationType]);
+    fetchCourse();
+  }, [connectedFormationType, courseId]);
 
-  // Leçon sélectionnée via useMemo
-  const selectedLesson = useMemo(() => {
+  const activeLesson = useMemo(() => {
     if (!course) return null;
-    return course.lessons.find((lesson) => lesson.id === selectedLessonId) ?? course.lessons[0];
+    return course.lessons.find((lesson) => lesson.id === selectedLessonId) ?? course.lessons[0] ?? null;
   }, [course, selectedLessonId]);
 
-  // Listes d'activités filtrées
-  const devoirs = useMemo(() => course?.activities.filter((act) => act.type === 'devoir') ?? [], [course]);
-  const quiz = useMemo(() => course?.activities.filter((act) => act.type === 'quiz') ?? [], [course]);
-
-  // Écran de chargement principal
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-40 gap-3 opacity-60 text-xs">
@@ -143,177 +198,177 @@ export default function OnlineCoursePlatform() {
     );
   }
 
-  // Vérification d'accès ou cours introuvable
   if (connectedFormationType !== 'enligne' || !course) {
     return (
       <div className="max-w-3xl space-y-4 pb-12">
-        <Link
-          to="/etudiants/cours"
-          className="inline-flex items-center gap-2 text-xs font-black opacity-70 transition hover:opacity-100"
-        >
+        <Link to="/etudiants/cours" className="inline-flex items-center gap-2 text-xs font-black opacity-70 hover:opacity-100">
           <ArrowLeft size={14} /> Retour aux formations
         </Link>
         <div className="rounded-2xl border p-8 text-center" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
           <BookOpen className="mx-auto text-emerald-600" size={32} />
           <h1 className="mt-4 text-lg font-black">Cours en ligne indisponible</h1>
           <p className="mt-2 text-xs opacity-55">
-            Les quiz et la plateforme e-learning sont réservés exclusivement aux formations en ligne.
+            Les quiz et la plateforme e-learning sont reserves aux formations en ligne.
           </p>
         </div>
       </div>
     );
   }
 
+  const typeColor = (status: string) => {
+    if (status === 'Termine') return '#22c55e';
+    if (status === 'En cours') return '#3b82f6';
+    return '#f59e0b';
+  };
+
   return (
     <div className="max-w-7xl space-y-6 pb-12">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-3">
-          <Link
-            to="/etudiants/cours"
-            className="inline-flex items-center gap-2 text-xs font-black opacity-70 transition hover:opacity-100"
-          >
-            <ArrowLeft size={14} /> Retour aux formations
-          </Link>
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-wider text-emerald-600">{course.code}</p>
-            <h1 className="mt-1 textxl font-black tracking-tight md:text-2xl">{course.title}</h1>
-            <p className="mt-1 text-xs opacity-55">Plateforme e-learning créée pour cette formation en ligne.</p>
-          </div>
+        <div>
+          <h1 className="text-xl md:text-2xl font-black tracking-tight flex items-center gap-2">
+            <BookOpen className="text-[var(--primary)]" size={24} />
+            {course.title}
+          </h1>
+          <p className="text-xs opacity-45 mt-0.5">
+            {course.code} · {course.teacher}
+          </p>
         </div>
 
-        <div className="grid grid-cols-3 gap-2 text-xs">
-          <div className="rounded-xl border px-3 py-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <p className="font-black">{course.progress}%</p>
-            <p className="text-[10px] opacity-50">Progression</p>
-          </div>
-          <div className="rounded-xl border px-3 py-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <p className="font-black">{devoirs.length}</p>
-            <p className="text-[10px] opacity-50">Devoirs</p>
-          </div>
-          <div className="rounded-xl border px-3 py-2" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <p className="font-black">{quiz.length}</p>
-            <p className="text-[10px] opacity-50">Quiz</p>
-          </div>
-        </div>
+        <Link
+          to="/etudiants/cours"
+          className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-bold"
+          style={{ borderColor: 'var(--border)' }}
+        >
+          <ArrowLeft size={14} /> Retour
+        </Link>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.4fr_0.8fr]">
-        <section className="space-y-4">
-          <div className="overflow-hidden rounded-2xl border" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <div className="flex aspect-video min-h-[260px] items-center justify-center bg-neutral-950 text-white">
-              {selectedLesson && (
-                <div className="text-center">
-                  <PlayCircle className="mx-auto text-emerald-500" size={56} />
-                  <p className="mt-4 text-lg font-black">{selectedLesson.title}</p>
-                  <p className="mt-1 text-xs opacity-60">Cours vidéo - {selectedLesson.duration}</p>
-                </div>
-              )}
-            </div>
-            <div className="flex flex-col gap-3 border-t p-4 md:flex-row md:items-center md:justify-between" style={{ borderColor: 'var(--border)' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_0.9fr] gap-5">
+        <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <p className="text-xs font-black">Leçon actuelle</p>
-                <p className="text-xs opacity-55">{course.currentLesson} - {course.teacher}</p>
+                <div className="text-[10px] uppercase font-black tracking-wider opacity-45">Progression</div>
+                <div className="mt-1 text-sm font-black">{course.progress}% acheve</div>
               </div>
-              <button className="inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-2 text-xs font-black text-white cursor-pointer">
-                Continuer <Video size={14} />
+              <span className="inline-flex items-center gap-1.5 text-[10px] font-black px-2 py-1 rounded-full" style={{ backgroundColor: 'rgba(34,197,94,0.1)', color: '#22c55e' }}>
+                <CheckCircle2 size={12} /> {activeLesson?.status ?? 'En cours'}
+              </span>
+            </div>
+            <div className="mt-3 h-2 rounded-full bg-black/5 dark:bg-white/5 overflow-hidden">
+              <div className="h-full rounded-full bg-[var(--primary)]" style={{ width: `${course.progress}%` }} />
+            </div>
+            <div className="mt-3 text-xs opacity-55">
+              Lecon actuelle: <span className="font-bold">{course.currentLesson}</span>
+            </div>
+          </div>
+
+          <div className="p-5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <a
+                href={`https://example.com/course/${course.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-2 rounded-xl border px-3 py-3 text-xs font-bold"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <ExternalLink size={14} /> Ouvrir la plateforme
+              </a>
+              <button
+                type="button"
+                onClick={() => alert(`Telechargement des ressources du cours ${course.code}`)}
+                className="flex items-center gap-2 rounded-xl border px-3 py-3 text-xs font-bold"
+                style={{ borderColor: 'var(--border)' }}
+              >
+                <Download size={14} /> Télécharger les ressources
               </button>
             </div>
-          </div>
 
-          <div className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <div className="mb-4 flex items-center gap-2">
-              <BookOpen size={16} className="text-emerald-600" />
-              <h2 className="text-sm font-black">Programme du cours</h2>
-            </div>
-            <div className="grid gap-2">
-              {course.lessons.map((lesson) => (
-                <button
-                  key={lesson.id}
-                  type="button"
-                  disabled={lesson.status === 'Bloque'}
-                  onClick={() => setSelectedLessonId(lesson.id)}
-                  className="flex items-center justify-between rounded-xl border px-4 py-3 text-left text-xs transition disabled:cursor-not-allowed disabled:opacity-45 cursor-pointer"
-                  style={{
-                    borderColor: selectedLessonId === lesson.id ? 'var(--primary)' : 'var(--border)',
-                    backgroundColor: selectedLessonId === lesson.id ? 'rgba(16, 185, 129, 0.08)' : 'transparent',
-                  }}
-                >
-                  <span className="font-bold">{lesson.title}</span>
-                  <span className="opacity-55">{lesson.duration} - {lesson.status}</span>
-                </button>
-              ))}
+            <div>
+              <div className="flex items-center gap-2 text-xs font-black mb-3">
+                <PlayCircle size={14} className="text-[var(--primary)]" />
+                Lecons
+              </div>
+              <div className="space-y-2">
+                {course.lessons.map((lesson) => {
+                  const active = lesson.id === activeLesson?.id;
+                  return (
+                    <button
+                      key={lesson.id}
+                      onClick={() => setSelectedLessonId(lesson.id)}
+                      className="w-full rounded-xl border p-4 text-left flex items-center justify-between gap-4"
+                      style={{
+                        borderColor: 'var(--border)',
+                        backgroundColor: active ? 'rgba(34,197,94,0.06)' : 'transparent',
+                      }}
+                    >
+                      <div className="min-w-0">
+                        <div className="text-xs font-bold truncate">{lesson.title}</div>
+                        <div className="text-[11px] opacity-50 mt-0.5">{lesson.duration}</div>
+                      </div>
+                      <span className="text-[10px] font-black px-2 py-1 rounded-full" style={{ backgroundColor: `${typeColor(lesson.status)}18`, color: typeColor(lesson.status) }}>
+                        {lesson.status}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
-        </section>
+        </div>
 
-        <aside className="space-y-4">
-          <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <div className="mb-4 flex items-center gap-2">
-              <ClipboardCheck size={16} className="text-emerald-600" />
-              <h2 className="text-sm font-black">Devoirs</h2>
+        <div className="space-y-4">
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-2 text-sm font-black tracking-tight">
+                <FileText size={14} className="text-[var(--primary)]" />
+                Activites
+              </div>
             </div>
-            <div className="space-y-3">
-              {devoirs.map((activity) => (
-                <div key={activity.id} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs font-black">{activity.title}</p>
-                      <p className="mt-1 text-[10px] opacity-55">{activity.description}</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-black ${statusStyles[activity.status]}`}>
-                      {activity.status}
-                    </span>
+            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {course.activities.map((activity) => (
+                <div key={activity.id} className="px-5 py-4 flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold">{activity.title}</div>
+                    <div className="text-[11px] opacity-55 mt-1">{activity.description}</div>
+                    <div className="text-[10px] opacity-45 mt-1">{activity.dueDate}</div>
                   </div>
-                  <p className="mt-3 text-[10px] font-bold opacity-50">Échéance : {activity.dueDate}</p>
-                  <label className="mt-3 flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2 text-[10px] font-black hover:border-emerald-500">
-                    <Send size={12} /> Déposer un fichier
-                    <input type="file" className="hidden" />
-                  </label>
+                  <span className="text-[10px] font-black px-2 py-1 rounded-full" style={{ backgroundColor: `${typeColor(activity.status)}18`, color: typeColor(activity.status) }}>
+                    {activity.status}
+                  </span>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
 
-          <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <div className="mb-4 flex items-center gap-2">
-              <HelpCircle size={16} className="text-indigo-500" />
-              <h2 className="text-sm font-black">Quiz</h2>
+          <div className="rounded-2xl border overflow-hidden" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+            <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--border)' }}>
+              <div className="flex items-center gap-2 text-sm font-black tracking-tight">
+                <Video size={14} className="text-[var(--primary)]" />
+                Ressources
+              </div>
             </div>
-            <div className="space-y-3">
-              {quiz.map((activity) => (
-                <div key={activity.id} className="rounded-xl border p-3" style={{ borderColor: 'var(--border)' }}>
-                  <p className="text-xs font-black">{activity.title}</p>
-                  <p className="mt-1 text-[10px] opacity-55">{activity.description}</p>
-                  <button className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 py-2 text-[10px] font-black text-white cursor-pointer">
-                    Commencer le quiz <CheckCircle2 size={12} />
+            <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+              {course.resources.map((resource, index) => (
+                <div key={index} className="px-5 py-4 flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="text-xs font-bold truncate">{resource.name}</div>
+                    <div className="text-[11px] opacity-55 mt-1">{resource.size}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => alert(`Telechargement: ${resource.name}`)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black border"
+                    style={{ borderColor: 'var(--border)' }}
+                  >
+                    <Download size={12} />
+                    Telecharger
                   </button>
                 </div>
               ))}
             </div>
-          </section>
-
-          <section className="rounded-2xl border p-4" style={{ borderColor: 'var(--border)', backgroundColor: 'var(--card)' }}>
-            <div className="mb-4 flex items-center gap-2">
-              <FileText size={16} className="text-blue-500" />
-              <h2 className="text-sm font-black">Ressources</h2>
-            </div>
-            <div className="space-y-2">
-              {course.resources.map((resource) => (
-                <button
-                  key={resource.name}
-                  type="button"
-                  className="flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-xs cursor-pointer"
-                  style={{ borderColor: 'var(--border)' }}
-                >
-                  <span className="truncate font-bold">{resource.name}</span>
-                  <span className="inline-flex items-center gap-1 text-[10px] opacity-55">
-                    {resource.size} <Download size={12} />
-                  </span>
-                </button>
-              ))}
-            </div>
-          </section>
-        </aside>
+          </div>
+        </div>
       </div>
     </div>
   );

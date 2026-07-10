@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+import { ApiService } from '../../services/ApiService';
 import {
   Search, Plus, Pencil, Trash2, X, Save,
-  Calendar, CheckCircle, AlertCircle, Image, Tag, Eye, Loader2, Upload
+  Calendar, CheckCircle, AlertCircle, Image, Loader2, Upload
 } from 'lucide-react';
 
 // ── Types ─────────────────────────────────────────────────
@@ -28,7 +28,8 @@ const EMPTY_FORM = {
   categorie: 'Événement' as CategorieActualite,
   datePublication: new Date().toISOString().split('T')[0],
   contenu: '',
-  imageUrl: '', // Initialisé vide pour accueillir le Base64 ou l'image par défaut
+  imageUrl: '', 
+  imageFile: null as File | null,
   statut: 'Brouillon' as Actualite['statut'],
   important: false
 };
@@ -46,17 +47,6 @@ export default function Actualites() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
-
-  // ── Configuration des En-têtes (Headers) ──────────────────
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    };
-  };
 
   const inputStyle = {
     backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
@@ -78,18 +68,27 @@ export default function Actualites() {
   const fetchActualites = async () => {
     setIsLoading(true);
     try {
-      const res = await ApiService.actualites.getAll(getRequestConfig());
-      if (res && res.data) {
-        const mappedData = res.data.map((item: any) => ({
-          id: Number(item.id),
-          titre: item.titre || item.title || '',
-          categorie: (item.categorie || 'Événement') as CategorieActualite,
-          datePublication: item.datePublication || item.date || new Date().toISOString().split('T')[0],
-          contenu: item.contenu || item.content || '',
-          imageUrl: item.imageUrl || item.image || '',
-          statut: (item.statut || 'Brouillon') as Actualite['statut'],
-          important: !!item.important
-        }));
+      // On utilise getPage() de ton ApiService car ton backend renvoie un objet paginé (Spring Data Page)
+      const res = await ApiService.actualites.getPage();
+      
+      if (res && res.content) {
+        const mappedData = res.content.map((item: any) => {
+          let catFormatee: CategorieActualite = 'Événement';
+          if (item.categorie === 'FLASH_INFO') catFormatee = 'Flash Info';
+          if (item.categorie === 'PEDAGOGIE') catFormatee = 'Pédagogie';
+          if (item.categorie === 'VIE8ETUDIANT') catFormatee = 'Vie Étudiante';
+
+          return {
+            id: Number(item.id),
+            titre: item.titre || item.title || '',
+            categorie: catFormatee,
+            datePublication: item.datePublication || item.date || new Date().toISOString().split('T')[0],
+            contenu: item.description || item.contenu || item.content || '', 
+            imageUrl: item.image || item.imageUrl || '',                    
+            statut: item.statut === 'PUBLIE' ? 'Publié' : item.statut === 'ARCHIVE' ? 'Archivé' : 'Brouillon',
+            important: !!item.important
+          };
+        });
         setData(mappedData);
       }
     } catch (err) {
@@ -115,26 +114,46 @@ export default function Actualites() {
 
   const openEdit = (act: Actualite) => {
     const { id, ...rest } = act;
-    setForm(rest);
+    setForm({ ...rest, imageFile: null });
     setSelected(act);
     setModalMode('edit');
   };
 
   const handleSave = async () => {
     if (!form.titre || !form.contenu) {
-      showToast('Veuillez renseigner le titre et le contenu de l\'article.');
+      showToast("Veuillez renseigner le titre et le contenu de l'article.");
       return;
     }
 
+    const mappingCategories: Record<CategorieActualite, string> = {
+      'Événement': 'EVENEMENT',
+      'Flash Info': 'FLASH_INFO',
+      'Pédagogie': 'PEDAGOGIE',
+      'Vie Étudiante': 'VIE8ETUDIANT'
+    };
+
+    const mappingStatuts = {
+      'Publié': 'PUBLIE',
+      'Brouillon': 'BROUILLON',
+      'Archivé': 'ARCHIVE'
+    };
+
+    const payloadBackend = {
+      titre: form.titre,
+      description: form.contenu, 
+      categorie: mappingCategories[form.categorie],
+      status: mappingStatuts[form.statut],
+      important: form.important
+    };
+
     try {
-      const config = getRequestConfig();
       if (modalMode === 'add') {
-        const res = await ApiService.actualites.create(form, config);
-        const newId = res?.data?.id ? Number(res.data.id) : Date.now();
+        const res = await ApiService.actualites.create({ ...payloadBackend, file: form.imageFile });
+        const newId = res?.id ? Number(res.id) : Date.now();
         setData([{ id: newId, ...form }, ...data]);
         showToast('Actualité créée avec succès');
       } else if (modalMode === 'edit' && selected) {
-        await ApiService.actualites.update(selected.id, form, config);
+        await ApiService.actualites.update(selected.id, { ...payloadBackend, file: form.imageFile });
         setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
         showToast('Actualité mise à jour');
       }
@@ -153,7 +172,7 @@ export default function Actualites() {
       setDeleteId(null);
 
       try {
-        await ApiService.actualites.delete(idToDelete, getRequestConfig());
+        await ApiService.actualites.remove(idToDelete); // Utilise .remove() configuré dans ton createCrudService
         showToast('Article supprimé définitivement');
       } catch (err) {
         console.error("Erreur de suppression:", err);
@@ -173,15 +192,11 @@ export default function Actualites() {
     setForm({ ...form, [name]: value });
   };
 
-  // Convertit le fichier de l'ordinateur en chaîne de caractères utilisable par l'image
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setForm({ ...form, imageUrl: reader.result as string });
-      };
-      reader.readAsDataURL(file);
+      const previewUrl = URL.createObjectURL(file);
+      setForm({ ...form, imageUrl: previewUrl, imageFile: file });
     }
   };
 
@@ -239,7 +254,7 @@ export default function Actualites() {
             className="flex-1 bg-transparent outline-none text-xs" style={{ color: 'var(--text)' }}
           />
         </div>
-        
+         
         <div className="w-full md:w-56">
           <select value={filtreCategorie} onChange={e => setFiltreCategorie(e.target.value)}
             className="w-full px-3 py-2.5 rounded-xl border text-xs cursor-pointer appearance-none" style={inputStyle}>
@@ -263,7 +278,7 @@ export default function Actualites() {
           ) : (
             filtered.map(act => (
               <div key={act.id} className="rounded-2xl border overflow-hidden flex flex-col justify-between animate-in fade-in zoom-in-95 duration-150 relative" style={cardStyle}>
-                
+                 
                 {act.important && (
                   <span className="absolute top-3 left-3 z-10 px-2 py-0.5 text-[9px] font-black tracking-wider text-white bg-red-500 rounded-md uppercase shadow-lg">
                     🚨 Crucial
@@ -293,7 +308,7 @@ export default function Actualites() {
                     <h3 className="font-black text-xs md:text-sm tracking-tight leading-snug line-clamp-2" title={act.titre}>
                       {act.titre}
                     </h3>
-                    
+                     
                     <p className="text-[11px] opacity-60 line-clamp-3 leading-relaxed">
                       {act.contenu}
                     </p>
@@ -328,7 +343,7 @@ export default function Actualites() {
               <h2 className="text-sm font-black">{modalMode === 'add' ? '📣 Rédiger une Actualité' : '✏️ Éditer la publication'}</h2>
               <button onClick={() => setModalMode(null)} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
             </div>
-            
+             
             <div className="p-6 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
               <div className="space-y-1.5">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Titre de l'actualité</label>
@@ -350,12 +365,11 @@ export default function Actualites() {
                 </div>
               </div>
 
-              {/* Champ d'importation de fichier depuis l'ordinateur */}
               <div className="space-y-2">
                 <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
                   <Upload size={12} /> Illustration de l'article (Fichier local)
                 </label>
-                
+                 
                 <div className="relative flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl cursor-pointer hover:bg-black/5 dark:hover:bg-white/5 transition" style={{ borderColor: 'var(--border)' }}>
                   <input 
                     type="file" 
@@ -394,7 +408,7 @@ export default function Actualites() {
                 <textarea name="contenu" value={form.contenu} onChange={handleChange} rows={4} placeholder="Saisissez les détails complets de l'information..." className="w-full px-3 py-2.5 rounded-xl border focus:outline-none resize-none leading-relaxed" style={inputStyle} />
               </div>
             </div>
-            
+             
             <div className="px-6 py-4 border-t flex justify-end gap-2" style={{ borderColor: 'var(--border)' }}>
               <button onClick={() => setModalMode(null)} className="px-4 py-2 rounded-xl font-bold border cursor-pointer" style={{ borderColor: 'var(--border)' }}>Annuler</button>
               <button onClick={handleSave} className="flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }}><Save size={13} /> Mettre en ligne</button>

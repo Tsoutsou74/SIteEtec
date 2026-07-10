@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   Award, Save, Percent, Users, TrendingUp, 
   TrendingDown, FileSpreadsheet, CheckCircle, AlertCircle, Loader2
@@ -56,8 +57,8 @@ export default function Evaluations() {
 
         // Appels API simultanés pour récupérer les matières et les étudiants de la classe
         const [matieresData, etudiantsData] = await Promise.all([
-          apiService.getMatieresParClasse(config.classe),
-          apiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation)
+          ApiService.getMatieresParClasse(config.classe),
+          ApiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation)
         ]);
 
         setMatieres(matieresData || []);
@@ -86,7 +87,7 @@ export default function Evaluations() {
       try {
         setError(null);
         setIsSaved(false);
-        const etudiantsData = await apiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation);
+        const etudiantsData = await ApiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation);
         setEtudiants(etudiantsData || []);
       } catch (err) {
         console.error("Erreur lors du rechargement des notes:", err);
@@ -160,7 +161,7 @@ export default function Evaluations() {
       setSubmitting(true);
       setError(null);
       
-      await apiService.saveEtudiantsNotes(config.classe, config.matiere, config.evaluation, etudiants);
+      await ApiService.saveEtudiantsNotes(config.classe, config.matiere, config.evaluation, etudiants);
       
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 4000);

@@ -1,10 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_GATEWAY_URL || 'http://localhost:8080',
-    headers: {
-        'Content-Type': 'application/json'
-    }
+  baseURL: import.meta.env.VITE_API_GATEWAY_URL || "http://localhost:8080",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // =========================
@@ -12,18 +12,17 @@ const api = axios.create({
 // =========================
 
 api.interceptors.request.use(
-    (config) => {
+  (config) => {
+    const token = localStorage.getItem("token");
 
-        const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
 
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
+    return config;
+  },
 
-        return config;
-    },
-
-    (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
 // =========================
@@ -31,25 +30,23 @@ api.interceptors.request.use(
 // =========================
 
 api.interceptors.response.use(
+  (response) => response,
 
-    (response) => response,
-
-    (error) => {
-
-        if (error.response?.status === 401) {
-            localStorage.removeItem('user');
-            localStorage.removeItem('role');
-            localStorage.removeItem('token');
-            localStorage.removeItem('isConnected');
-            window.location.href = '/auth';
-        }
-
-        if (error.response?.status === 403) {
-            console.error('Accès refusé (403) :', error.config?.url);
-        }
-
-        return Promise.reject(error);
+  (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem("user");
+      localStorage.removeItem("role");
+      localStorage.removeItem("token");
+      localStorage.removeItem("isConnected");
+      window.location.href = "/auth";
     }
+
+    if (error.response?.status === 403) {
+      console.error("Accès refusé (403) :", error.config?.url);
+    }
+
+    return Promise.reject(error);
+  },
 );
 
 // =========================
@@ -57,490 +54,455 @@ api.interceptors.response.use(
 // =========================
 
 const ApiService = {
+  // =========================
+  // AUTH (public : /auth/**)
+  // =========================
 
-    // =========================
-    // AUTH (public : /auth/**)
-    // =========================
+  auth: {
+    // LOGIN
+    login: async (credentials) => {
+      const response = await api.post("/auth/login", credentials);
+      const user = response.data;
 
-    auth: {
+      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("role", user.role);
+      localStorage.setItem("token", user.token);
+      localStorage.setItem("isConnected", "true");
 
-        // LOGIN
-        login: async (credentials) => {
-            const response = await api.post('/auth/login', credentials);
-            const user = response.data;
-
-            localStorage.setItem('user', JSON.stringify(user));
-            localStorage.setItem('role', user.role);
-            localStorage.setItem('token', user.token);
-            localStorage.setItem('isConnected', 'true');
-
-            return user;
-        },
-
-        // REGISTER
-        register: (userData) =>
-            api.post('/auth/register', userData),
-
-        // LOGOUT
-        logout: () => {
-            localStorage.removeItem('user');
-            localStorage.removeItem('role');
-            localStorage.removeItem('token');
-            localStorage.removeItem('isConnected');
-        },
-
-        // GET USER
-        getCurrentUser: () => {
-            return JSON.parse(localStorage.getItem('user'));
-        },
-
-        // GET ROLE
-        getRole: () => {
-            return localStorage.getItem('role');
-        },
-
-        // CHECK ADMIN
-        isAdmin: () => {
-            return localStorage.getItem('role') === 'ROLE_ADMIN';
-        },
-
-        // CHECK ETUDIANT
-        isEtudiant: () => {
-            return localStorage.getItem('role') === 'ROLE_ETUDIANT';
-        },
-
-        // CHECK ENSEIGNANT
-        isEnseignant: () => {
-            return localStorage.getItem('role') === 'ROLE_ENSEIGNANT';
-        },
-
-        // UPDATE PROFILE
-        updateProfile: (id, data) =>
-            api.put(`/auth/users/${id}`, data),
-
-        // RESET PASSWORD
-        updatePassword: (data) =>
-            api.post('/auth/reset-password', data)
+      return user;
     },
 
-    // =========================
-    // ADMIN (hasRole ADMIN)
-    // =========================
+    // REGISTER
+    register: (userData) => api.post("/auth/register", userData),
 
-    admin: {
-
-        getAll: () => api.get('/api/admins'),
-
-        create: (data) => api.post('/api/admins', data),
-
-        update: (id, data) => api.put(`/api/admins/${id}`, data),
-
-        delete: (id) => api.delete(`/api/admins/${id}`),
+    // LOGOUT
+    logout: () => {
+      localStorage.removeItem("user");
+      localStorage.removeItem("role");
+      localStorage.removeItem("token");
+      localStorage.removeItem("isConnected");
     },
 
-    // =========================
-    // ETUDIANT (hasRole ETUDIANT)
-    // =========================
-
-    etudiant: {
-
-        getAll: () => api.get('/api/etudiants'),
-
-        getById: (id) => api.get(`/api/etudiants/${id}`),
-
-        create: (data) => api.post('/api/etudiants', data),
-
-        update: (id, data) => api.put(`/api/etudiants/${id}`, data),
-
-        delete: (id) => api.delete(`/api/etudiants/${id}`),
+    // GET USER
+    getCurrentUser: () => {
+      return JSON.parse(localStorage.getItem("user"));
     },
 
-    // =========================
-    // ENSEIGNANT (hasRole ENSEIGNANT)
-    // =========================
-
-    enseignant: {
-
-        getAll: () => api.get('/api/enseignants'),
-
-        getById: (id) => api.get(`/api/enseignants/${id}`),
-
-        create: (data) => api.post('/api/enseignants', data),
-
-        update: (id, data) => api.put(`/api/enseignants/${id}`, data),
-
-        delete: (id) => api.delete(`/api/enseignants/${id}`),
+    // GET ROLE
+    getRole: () => {
+      return localStorage.getItem("role");
     },
 
-    // =========================
-    // RESSOURCES / COURS / CHAPITRES / DOMAINS
-    // (hasRole "Etudiant" côté gateway - vérifie la casse, voir note plus bas)
-    // =========================
-
-    ressources: {
-
-        getAll: () => api.get('/api/ressources'),
-
-        create: (data) => api.post('/api/ressources', data),
-
-        update: (id, data) => api.put(`/api/ressources/${id}`, data),
-
-        delete: (id) => api.delete(`/api/ressources/${id}`),
+    // CHECK ADMIN
+    isAdmin: () => {
+      return localStorage.getItem("role") === "ROLE_ADMIN";
     },
 
-    cours: {
-
-        getAll: () => api.get('/api/cours'),
-
-        create: (data) => api.post('/api/cours', data),
-
-        update: (id, data) => api.put(`/api/cours/${id}`, data),
-
-        delete: (id) => api.delete(`/api/cours/${id}`),
+    // CHECK ETUDIANT
+    isEtudiant: () => {
+      return localStorage.getItem("role") === "ROLE_ETUDIANT";
     },
 
-    chapitres: {
-
-        getAll: () => api.get('/api/chapitres'),
-
-        create: (data) => api.post('/api/chapitres', data),
-
-        update: (id, data) => api.put(`/api/chapitres/${id}`, data),
-
-        delete: (id) => api.delete(`/api/chapitres/${id}`),
+    // CHECK ENSEIGNANT
+    isEnseignant: () => {
+      return localStorage.getItem("role") === "ROLE_ENSEIGNANT";
     },
 
-    domaines: {
+    // UPDATE PROFILE
+    updateProfile: (id, data) => api.put(`/auth/users/${id}`, data),
 
-        getAll: () => api.get('/api/domaines'),
+    // RESET PASSWORD
+    updatePassword: (data) => api.post("/auth/reset-password", data),
+  },
 
-        create: (data) => api.post('/api/domaines', data),
+  // =========================
+  // ADMIN (hasRole ADMIN)
+  // =========================
 
-        update: (id, data) => api.put(`/api/domaines/${id}`, data),
+  admin: {
+    getAll: () => api.get("/api/admins"),
 
-        delete: (id) => api.delete(`/api/domaines/${id}`),
-    },
+    create: (data) => api.post("/api/admins", data),
 
-    // =========================
-    // ACTUALITES / ENCADREURS (public)
-    // =========================
+    update: (id, data) => api.put(`/api/admins/${id}`, data),
 
-    actualites: {
+    delete: (id) => api.delete(`/api/admins/${id}`),
+  },
 
-        getAll: () => api.get('/api/actualites'),
+  // =========================
+  // ETUDIANT (hasRole ETUDIANT)
+  // =========================
 
-        create: (data) => api.post('/api/actualites', data),
+  etudiant: {
+    getAll: () => api.get("/api/etudiants"),
 
-        update: (id, data) => api.put(`/api/actualites/${id}`, data),
+    getById: (id) => api.get(`/api/etudiants/${id}`),
 
-        delete: (id) => api.delete(`/api/actualites/${id}`),
-    },
+    create: (data) => api.post("/api/etudiants", data),
 
-    contacts: {
+    update: (id, data) => api.put(`/api/etudiants/${id}`, data),
 
-        create: (data) => api.post('/api/contacts', data),
+    delete: (id) => api.delete(`/api/etudiants/${id}`),
+  },
 
-        getAll: () => api.get('/api/contacts'),
-    },
+  // =========================
+  // ENSEIGNANT (hasRole ENSEIGNANT)
+  // =========================
 
-    encadreurs: {
+  enseignant: {
+    getAll: () => api.get("/api/enseignants"),
 
-        getAll: () => api.get('/api/encadreurs'),
+    getById: (id) => api.get(`/api/enseignants/${id}`),
 
-        create: (data) => api.post('/api/encadreurs', data),
+    create: (data) => api.post("/api/enseignants", data),
 
-        update: (id, data) => api.put(`/api/encadreurs/${id}`, data),
+    update: (id, data) => api.put(`/api/enseignants/${id}`, data),
 
-        delete: (id) => api.delete(`/api/encadreurs/${id}`),
-    },
+    delete: (id) => api.delete(`/api/enseignants/${id}`),
+  },
 
-    // =========================
-    // EMAILS (public - corrige le "/" manquant côté gateway, voir note)
-    // =========================
+  // =========================
+  // RESSOURCES / COURS / CHAPITRES / DOMAINS
+  // (hasRole "Etudiant" côté gateway - vérifie la casse, voir note plus bas)
+  // =========================
 
-    emails: {
+  ressources: {
+    getAll: () => api.get("/api/ressources"),
 
-        getAll: () => api.get('/api/emails'),
+    create: (data) => api.post("/api/ressources", data),
 
-        send: (data) => api.post('/api/emails', data),
-    },
+    update: (id, data) => api.put(`/api/ressources/${id}`, data),
 
-    // =========================
-    // EMPLOI DU TEMPS
-    // =========================
+    delete: (id) => api.delete(`/api/ressources/${id}`),
+  },
 
-    emploiDuTemps: {
+  cours: {
+    getAll: () => api.get("/api/cours"),
 
-        getAll: () => api.get('/api/emploiDuTemps'),
+    create: (data) => api.post("/api/cours", data),
 
-        create: (data) => api.post('/api/emploiDuTemps', data),
+    update: (id, data) => api.put(`/api/cours/${id}`, data),
 
-        update: (id, data) => api.put(`/api/emploiDuTemps/${id}`, data),
+    delete: (id) => api.delete(`/api/cours/${id}`),
+  },
 
-        delete: (id) => api.delete(`/api/emploiDuTemps/${id}`),
-    },
+  chapitres: {
+    getAll: () => api.get("/api/chapitres"),
 
-    // =========================
-    // ENCADREMENTS
-    // =========================
+    create: (data) => api.post("/api/chapitres", data),
 
-    encadrements: {
+    update: (id, data) => api.put(`/api/chapitres/${id}`, data),
 
-        getAll: () => api.get('/api/encadrements'),
+    delete: (id) => api.delete(`/api/chapitres/${id}`),
+  },
 
-        create: (data) => api.post('/api/encadrements', data),
+  domaines: {
+    getAll: () => api.get("/api/domaines"),
 
-        update: (id, data) => api.put(`/api/encadrements/${id}`, data),
+    create: (data) => api.post("/api/domaines", data),
 
-        delete: (id) => api.delete(`/api/encadrements/${id}`),
-    },
+    update: (id, data) => api.put(`/api/domaines/${id}`, data),
 
-    // =========================
-    // FILIERES
-    // =========================
+    delete: (id) => api.delete(`/api/domaines/${id}`),
+  },
 
-    filieres: {
+  // =========================
+  // ACTUALITES / ENCADREURS (public)
+  // =========================
 
-        getAll: () => api.get('/api/filieres'),
+  actualites: {
+    getAll: () => api.get("/api/actualites"),
 
-        create: (data) => api.post('/api/filieres', data),
+    create: (data) => api.post("/api/actualites", data),
 
-        update: (id, data) => api.put(`/api/filieres/${id}`, data),
+    update: (id, data) => api.put(`/api/actualites/${id}`, data),
 
-        delete: (id) => api.delete(`/api/filieres/${id}`),
-    },
+    delete: (id) => api.delete(`/api/actualites/${id}`),
+  },
 
-    // =========================
-    // FORMATIONS PUBLIQUES
-    // =========================
+  contacts: {
+    create: (data) => api.post("/api/contacts", data),
 
-    formationInitiale: {
+    getAll: () => api.get("/api/contacts"),
+  },
 
-        getAll: () => api.get('/api/formationInitiale'),
+  encadreurs: {
+    getAll: () => api.get("/api/encadreurs"),
 
-        create: (data) => api.post('/api/formationInitiale', data),
+    create: (data) => api.post("/api/encadreurs", data),
 
-        update: (id, data) => api.put(`/api/formationInitiale/${id}`, data),
+    update: (id, data) => api.put(`/api/encadreurs/${id}`, data),
 
-        delete: (id) => api.delete(`/api/formationInitiale/${id}`),
-    },
+    delete: (id) => api.delete(`/api/encadreurs/${id}`),
+  },
 
-    formationContinue: {
+  // =========================
+  // EMAILS (public - corrige le "/" manquant côté gateway, voir note)
+  // =========================
 
-        getAll: () => api.get('/api/formationContinue'),
+  emails: {
+    getAll: () => api.get("/api/emails"),
 
-        create: (data) => api.post('/api/formationContinue', data),
+    send: (data) => api.post("/api/emails", data),
+  },
 
-        update: (id, data) => api.put(`/api/formationContinue/${id}`, data),
+  // =========================
+  // EMPLOI DU TEMPS
+  // =========================
 
-        delete: (id) => api.delete(`/api/formationContinue/${id}`),
-    },
+  emploiDuTemps: {
+    getAll: () => api.get("/api/emploiDuTemps"),
 
-    formationEnLigne: {
+    create: (data) => api.post("/api/emploiDuTemps", data),
 
-        getAll: () => api.get('/api/formationEnLigne'),
+    update: (id, data) => api.put(`/api/emploiDuTemps/${id}`, data),
 
-        create: (data) => api.post('/api/formationEnLigne', data),
+    delete: (id) => api.delete(`/api/emploiDuTemps/${id}`),
+  },
 
-        update: (id, data) => api.put(`/api/formationEnLigne/${id}`, data),
+  // =========================
+  // ENCADREMENTS
+  // =========================
 
-        delete: (id) => api.delete(`/api/formationEnLigne/${id}`),
-    },
+  encadrements: {
+    getAll: () => api.get("/api/encadrements"),
 
-    // =========================
-    // HISTORIQUES
-    // =========================
+    create: (data) => api.post("/api/encadrements", data),
 
-    historiques: {
+    update: (id, data) => api.put(`/api/encadrements/${id}`, data),
 
-        getAll: () => api.get('/api/historiques'),
+    delete: (id) => api.delete(`/api/encadrements/${id}`),
+  },
 
-        create: (data) => api.post('/api/historiques', data),
+  // =========================
+  // FILIERES
+  // =========================
 
-        update: (id, data) => api.put(`/api/historiques/${id}`, data),
+  filieres: {
+    getAll: () => api.get("/api/filieres"),
 
-        delete: (id) => api.delete(`/api/historiques/${id}`),
-    },
+    create: (data) => api.post("/api/filieres", data),
 
-    // =========================
-    // MATIERES
-    // =========================
+    update: (id, data) => api.put(`/api/filieres/${id}`, data),
 
-    matieres: {
+    delete: (id) => api.delete(`/api/filieres/${id}`),
+  },
 
-        getAll: () => api.get('/api/matieres'),
+  // =========================
+  // FORMATIONS PUBLIQUES
+  // =========================
 
-        create: (data) => api.post('/api/matieres', data),
+  formationInitiale: {
+    getAll: () => api.get("/api/formationInitiale"),
 
-        update: (id, data) => api.put(`/api/matieres/${id}`, data),
+    create: (data) => api.post("/api/formationInitiale", data),
 
-        delete: (id) => api.delete(`/api/matieres/${id}`),
-    },
+    update: (id, data) => api.put(`/api/formationInitiale/${id}`, data),
 
-    // =========================
-    // MEMOIRES
-    // =========================
+    delete: (id) => api.delete(`/api/formationInitiale/${id}`),
+  },
 
-    memoires: {
+  formationContinue: {
+    getAll: () => api.get("/api/formationContinue"),
 
-        getAll: () => api.get('/api/memoires'),
+    create: (data) => api.post("/api/formationContinue", data),
 
-        create: (data) => api.post('/api/memoires', data),
+    update: (id, data) => api.put(`/api/formationContinue/${id}`, data),
 
-        update: (id, data) => api.put(`/api/memoires/${id}`, data),
+    delete: (id) => api.delete(`/api/formationContinue/${id}`),
+  },
 
-        delete: (id) => api.delete(`/api/memoires/${id}`),
-    },
+  formationEnLigne: {
+    getAll: () => api.get("/api/formationEnLigne"),
 
-    // =========================
-    // MOYENNES
-    // =========================
+    create: (data) => api.post("/api/formationEnLigne", data),
 
-    moyennes: {
+    update: (id, data) => api.put(`/api/formationEnLigne/${id}`, data),
 
-        getAll: () => api.get('/api/moyennes'),
+    delete: (id) => api.delete(`/api/formationEnLigne/${id}`),
+  },
 
-        create: (data) => api.post('/api/moyennes', data),
+  // =========================
+  // HISTORIQUES
+  // =========================
 
-        update: (id, data) => api.put(`/api/moyennes/${id}`, data),
+  historiques: {
+    getAll: () => api.get("/api/historiques"),
 
-        delete: (id) => api.delete(`/api/moyennes/${id}`),
-    },
+    create: (data) => api.post("/api/historiques", data),
 
-    // =========================
-    // NIVEAU
-    // =========================
+    update: (id, data) => api.put(`/api/historiques/${id}`, data),
 
-    niveau: {
+    delete: (id) => api.delete(`/api/historiques/${id}`),
+  },
 
-        getAll: () => api.get('/api/niveau'),
+  // =========================
+  // MATIERES
+  // =========================
 
-        create: (data) => api.post('/api/niveau', data),
+  matieres: {
+    getAll: () => api.get("/api/matieres"),
 
-        update: (id, data) => api.put(`/api/niveau/${id}`, data),
+    create: (data) => api.post("/api/matieres", data),
 
-        delete: (id) => api.delete(`/api/niveau/${id}`),
-    },
+    update: (id, data) => api.put(`/api/matieres/${id}`, data),
 
-    // =========================
-    // NOTES
-    // =========================
+    delete: (id) => api.delete(`/api/matieres/${id}`),
+  },
 
-    notes: {
+  // =========================
+  // MEMOIRES
+  // =========================
 
-        getAll: () => api.get('/api/notes'),
+  memoires: {
+    getAll: () => api.get("/api/memoires"),
 
-        create: (data) => api.post('/api/notes', data),
+    create: (data) => api.post("/api/memoires", data),
 
-        update: (id, data) => api.put(`/api/notes/${id}`, data),
+    update: (id, data) => api.put(`/api/memoires/${id}`, data),
 
-        delete: (id) => api.delete(`/api/notes/${id}`),
-    },
+    delete: (id) => api.delete(`/api/memoires/${id}`),
+  },
 
-    // =========================
-    // NOTIFICATIONS
-    // =========================
+  // =========================
+  // MOYENNES
+  // =========================
 
-    notifications: {
+  moyennes: {
+    getAll: () => api.get("/api/moyennes"),
 
-        getAll: () => api.get('/api/notifications'),
+    create: (data) => api.post("/api/moyennes", data),
 
-        create: (data) => api.post('/api/notifications', data),
+    update: (id, data) => api.put(`/api/moyennes/${id}`, data),
 
-        update: (id, data) => api.put(`/api/notifications/${id}`, data),
+    delete: (id) => api.delete(`/api/moyennes/${id}`),
+  },
 
-        delete: (id) => api.delete(`/api/notifications/${id}`),
-    },
+  // =========================
+  // NIVEAU
+  // =========================
 
-    // =========================
-    // ORGANIGRAMMES
-    // =========================
+  niveau: {
+    getAll: () => api.get("/api/niveau"),
 
-    organigrammes: {
+    create: (data) => api.post("/api/niveau", data),
 
-        getAll: () => api.get('/api/organigrammes'),
+    update: (id, data) => api.put(`/api/niveau/${id}`, data),
 
-        create: (data) => api.post('/api/organigrammes', data),
+    delete: (id) => api.delete(`/api/niveau/${id}`),
+  },
 
-        update: (id, data) => api.put(`/api/organigrammes/${id}`, data),
+  // =========================
+  // NOTES
+  // =========================
 
-        delete: (id) => api.delete(`/api/organigrammes/${id}`),
-    },
+  notes: {
+    getAll: () => api.get("/api/notes"),
 
-    // =========================
-    // PRESENCES
-    // =========================
+    create: (data) => api.post("/api/notes", data),
 
-    presences: {
+    update: (id, data) => api.put(`/api/notes/${id}`, data),
 
-        getAll: () => api.get('/api/presences'),
+    delete: (id) => api.delete(`/api/notes/${id}`),
+  },
 
-        create: (data) => api.post('/api/presences', data),
+  // =========================
+  // NOTIFICATIONS
+  // =========================
 
-        update: (id, data) => api.put(`/api/presences/${id}`, data),
+  notifications: {
+    getAll: () => api.get("/api/notifications"),
 
-        delete: (id) => api.delete(`/api/presences/${id}`),
-    },
+    create: (data) => api.post("/api/notifications", data),
 
-    // =========================
-    // MOTS
-    // =========================
+    update: (id, data) => api.put(`/api/notifications/${id}`, data),
 
-    mots: {
+    delete: (id) => api.delete(`/api/notifications/${id}`),
+  },
 
-        getAll: () => api.get('/api/mots'),
+  // =========================
+  // ORGANIGRAMMES
+  // =========================
 
-        create: (data) => api.post('/api/mots', data),
+  organigrammes: {
+    getAll: () => api.get("/api/organigrammes"),
 
-        update: (id, data) => api.put(`/api/mots/${id}`, data),
+    create: (data) => api.post("/api/organigrammes", data),
 
-        delete: (id) => api.delete(`/api/mots/${id}`),
-    },
+    update: (id, data) => api.put(`/api/organigrammes/${id}`, data),
 
-    // =========================
-    // SEMESTRES
-    // =========================
+    delete: (id) => api.delete(`/api/organigrammes/${id}`),
+  },
 
-    semestres: {
+  // =========================
+  // PRESENCES
+  // =========================
 
-        getAll: () => api.get('/api/semestres'),
+  presences: {
+    getAll: () => api.get("/api/presences"),
 
-        create: (data) => api.post('/api/semestres', data),
+    create: (data) => api.post("/api/presences", data),
 
-        update: (id, data) => api.put(`/api/semestres/${id}`, data),
+    update: (id, data) => api.put(`/api/presences/${id}`, data),
 
-        delete: (id) => api.delete(`/api/semestres/${id}`),
-    },
+    delete: (id) => api.delete(`/api/presences/${id}`),
+  },
 
-    // =========================
-    // SLIDES
-    // =========================
+  // =========================
+  // MOTS
+  // =========================
 
-    slides: {
+  mots: {
+    getAll: () => api.get("/api/mots"),
 
-        getAll: () => api.get('/api/slides'),
+    create: (data) => api.post("/api/mots", data),
 
-        create: (data) => api.post('/api/slides', data),
+    update: (id, data) => api.put(`/api/mots/${id}`, data),
 
-        update: (id, data) => api.put(`/api/slides/${id}`, data),
+    delete: (id) => api.delete(`/api/mots/${id}`),
+  },
 
-        delete: (id) => api.delete(`/api/slides/${id}`),
-    },
+  // =========================
+  // SEMESTRES
+  // =========================
 
-    // =========================
-    // ANNEES UNIVERSITAIRES
-    // =========================
+  semestres: {
+    getAll: () => api.get("/api/semestres"),
 
-    anneesUniv: {
+    create: (data) => api.post("/api/semestres", data),
 
-        getAll: () => api.get('/api/anneesUniv'),
+    update: (id, data) => api.put(`/api/semestres/${id}`, data),
 
-        create: (data) => api.post('/api/anneesUniv', data),
+    delete: (id) => api.delete(`/api/semestres/${id}`),
+  },
 
-        update: (id, data) => api.put(`/api/anneesUniv/${id}`, data),
+  // =========================
+  // SLIDES
+  // =========================
 
-        delete: (id) => api.delete(`/api/anneesUniv/${id}`),
-    },
+  slides: {
+    getAll: () => api.get("/api/slides"),
+
+    create: (data) => api.post("/api/slides", data),
+
+    update: (id, data) => api.put(`/api/slides/${id}`, data),
+
+    delete: (id) => api.delete(`/api/slides/${id}`),
+  },
+
+  // =========================
+  // ANNEES UNIVERSITAIRES
+  // =========================
+
+  anneesUniv: {
+    getAll: () => api.get("/api/anneesUniv"),
+
+    create: (data) => api.post("/api/anneesUniv", data),
+
+    update: (id, data) => api.put(`/api/anneesUniv/${id}`, data),
+
+    delete: (id) => api.delete(`/api/anneesUniv/${id}`),
+  },
 };
 
 export default ApiService;

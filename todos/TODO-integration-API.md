@@ -232,5 +232,5 @@ Vérifier que `spring.application.name` dans chaque backend correspond exactemen
 - [x] **16** : Implémenter `@ControllerAdvice` global dans le backend
 - [x] **17** : Ajouter ErrorBoundary React
 - [x] **18** : Nettoyer les stubs services
-- [ ] **19** : Vérifier les noms Eureka
+- [x] **19** : Vérifier les noms Eureka
 - [ ] Tester après chaque correction — vérifier que les erreurs 400/405/500 disparaissent

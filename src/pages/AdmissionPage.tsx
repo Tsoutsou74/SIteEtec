@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { ClipboardCheck, User, Mail, Phone, BookOpen, Send, CheckCircle } from 'lucide-react';
 import ApiService from '../services/ApiService';
+import { useT } from '../config/I18nProvider';
 
 interface FiliereApi {
   id?: number;
@@ -12,6 +13,7 @@ interface FiliereApi {
 
 export default function AdmissionPage() {
   const { darkMode } = useTheme();
+  const { t } = useT();
   const [submitted, setSubmitted] = useState(false);
   const [filiers, setFiliers] = useState<FiliereApi[]>([]);
   const [formData, setFormData] = useState({
@@ -19,7 +21,7 @@ export default function AdmissionPage() {
     prenom: '',
     email: '',
     telephone: '',
-    filiere: 'Administration et Gestion'
+    filiere: 'Administration et Gestion',
   });
 
   useEffect(() => {
@@ -27,7 +29,7 @@ export default function AdmissionPage() {
 
     const loadFiliers = async () => {
       try {
-        const response = await ApiService.filiers.getAll();
+        const response = await ApiService.filieres.getAll();
         const data = response.data;
 
         if (isMounted && Array.isArray(data) && data.length > 0) {
@@ -58,166 +60,158 @@ export default function AdmissionPage() {
   };
 
   const ETAPES = [
-    { num: "01", title: "Candidature en ligne",    desc: "Remplissez le formulaire de pré-inscription avec vos informations personnelles." },
-    { num: "02", title: "Étude de dossier",        desc: "Notre équipe pédagogique examine vos relevés de notes et votre parcours." },
-    { num: "03", title: "Entretien de motivation", desc: "Un échange pour comprendre vos ambitions et valider votre orientation." },
-    { num: "04", title: "Inscription finale",      desc: "Validation de votre place après dépôt des pièces physiques et écolage." }
+    { num: '01', title: t('admission', 'step1Title'), desc: t('admission', 'step1Desc') },
+    { num: '02', title: t('admission', 'step2Title'), desc: t('admission', 'step2Desc') },
+    { num: '03', title: t('admission', 'step3Title'), desc: t('admission', 'step3Desc') },
+    { num: '04', title: t('admission', 'step4Title'), desc: t('admission', 'step4Desc') },
   ];
 
   const inputStyle = {
     backgroundColor: 'var(--bg)',
     borderColor: 'var(--border)',
-    color: 'var(--text)'
+    color: 'var(--text)',
   };
 
-  return (
-    <div className="w-full px-0 sm:px-4 md:px-8 lg:px-12 py-10 md:py-16 animate-fade-in">
+  const fallbackOptions = [
+    t('admission', 'optionFallback1'),
+    t('admission', 'optionFallback2'),
+    t('admission', 'optionFallback3'),
+    t('admission', 'optionFallback4'),
+  ];
 
-      {/* En-tête */}
-      <div className="max-w-2xl mb-10 md:mb-16 space-y-3 md:space-y-4 px-1">
-        <span
-          className="text-xs font-bold tracking-widest uppercase flex items-center gap-2"
-          style={{ color: 'var(--primary)' }}
-        >
-          <ClipboardCheck size={14} /> Inscriptions ouvertes
+  return (
+    <div className="animate-fade-in w-full px-0 py-10 sm:px-4 md:px-8 md:py-16 lg:px-12">
+      <div className="mb-10 max-w-2xl space-y-3 px-1 md:mb-16 md:space-y-4">
+        <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--primary)' }}>
+          <ClipboardCheck size={14} /> {t('admission', 'sectionLabel')}
         </span>
-        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
-          Rejoignez <span className="text-gradient">E-TEC University</span>
+        <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
+          {t('admission', 'title1')} <span className="text-gradient">{t('admission', 'title2')}</span>
         </h1>
-        <p className="text-sm opacity-70 leading-relaxed">
-          Prenez en main votre avenir professionnel. Remplissez votre demande d'admission en quelques clics pour nos campus de Faravohitra.
-        </p>
+        <p className="text-sm leading-relaxed opacity-70">{t('admission', 'desc')}</p>
       </div>
 
-      {/* Grille principale
-          - mobile  : colonne unique (processus puis formulaire)
-          - lg      : côte à côte (5 + 7 colonnes) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-start">
+      <div className="grid grid-cols-1 items-start gap-8 md:gap-12 lg:grid-cols-12">
+        <div className="space-y-6 md:space-y-8 lg:col-span-5">
+          <h2 className="text-lg font-black tracking-tight md:text-xl">{t('admission', 'processTitle')}</h2>
 
-        {/* GAUCHE : Processus d'admission */}
-        <div className="lg:col-span-5 space-y-6 md:space-y-8">
-          <h2 className="text-lg md:text-xl font-black tracking-tight">Le processus d'admission</h2>
-
-          <div className="space-y-5 md:space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-400/20">
-            {ETAPES.map((etape, idx) => (
-              <div key={idx} className="flex gap-3 md:gap-4 relative">
-                <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-xs shrink-0 z-10"
-                  style={{ backgroundColor: 'var(--primary)', color: 'white' }}
-                >
+          <div className="relative space-y-5 before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-amber-400/20 md:space-y-6">
+            {ETAPES.map((etape) => (
+              <div key={etape.num} className="relative flex gap-3 md:gap-4">
+                <div className="z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-black" style={{ backgroundColor: 'var(--primary)', color: 'white' }}>
                   {etape.num}
                 </div>
                 <div className="space-y-1 pt-0.5">
                   <h3 className="text-sm font-bold tracking-tight">{etape.title}</h3>
-                  <p className="text-xs opacity-70 leading-relaxed">{etape.desc}</p>
+                  <p className="text-xs leading-relaxed opacity-70">{etape.desc}</p>
                 </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* DROITE : Formulaire */}
         <div className="lg:col-span-7">
           <div
-            className="p-5 md:p-8 rounded-3xl border shadow-lg backdrop-blur-md transition-all duration-300"
-            style={{
-              backgroundColor: darkMode ? "rgba(0,0,0,0.35)" : "rgba(255,255,255,0.45)",
-              borderColor: 'var(--border)',
-              color: 'var(--text)'
-            }}
+            className="rounded-3xl border p-5 shadow-lg backdrop-blur-md transition-all duration-300 md:p-8"
+            style={{ backgroundColor: darkMode ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.45)', borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             {submitted ? (
-              /* Succès */
-              <div className="text-center py-10 md:py-12 space-y-4 animate-scale-up">
-                <div className="w-14 h-14 md:w-16 md:h-16 bg-green-500/10 text-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="animate-scale-up space-y-4 py-10 text-center md:py-12">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-green-500/10 text-green-500 md:h-16 md:w-16">
                   <CheckCircle size={36} />
                 </div>
-                <h3 className="text-xl md:text-2xl font-black tracking-tight">Demande reçue !</h3>
-                <p className="text-xs opacity-75 max-w-sm mx-auto leading-relaxed">
-                  Merci {formData.prenom}, votre pré-inscription a bien été enregistrée. Notre service de scolarité vous contactera par email sous 48 heures.
+                <h3 className="text-xl font-black tracking-tight md:text-2xl">{t('admission', 'successTitle')}</h3>
+                <p className="mx-auto max-w-sm text-xs leading-relaxed opacity-75">
+                  {t('admission', 'successDesc', { prenom: formData.prenom || '' })}
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
-                  className="mt-4 text-xs font-bold uppercase tracking-wider underline cursor-pointer hover:opacity-80"
+                  className="mt-4 cursor-pointer text-xs font-bold uppercase tracking-wider underline hover:opacity-80"
                 >
-                  Faire une nouvelle demande
+                  {t('admission', 'newRequest')}
                 </button>
               </div>
             ) : (
-              /* Formulaire */
               <form onSubmit={handleSubmit} className="space-y-4 md:space-y-5">
                 <div>
-                  <h2 className="text-lg md:text-xl font-black tracking-tight mb-1">
-                    Formulaire de pré-inscription
-                  </h2>
-                  <p className="text-xs opacity-60">
-                    Tous les champs sont obligatoires pour l'étude de votre dossier initial.
-                  </p>
+                  <h2 className="mb-1 text-lg font-black tracking-tight md:text-xl">{t('admission', 'formTitle')}</h2>
+                  <p className="text-xs opacity-60">{t('admission', 'formDesc')}</p>
                 </div>
 
-                {/* Nom + Prénom — côte à côte dès sm */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                      <User size={10} /> Nom
+                    <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-60">
+                      <User size={10} /> {t('admission', 'labelNom')}
                     </label>
                     <input
-                      type="text" required name="nom"
-                      value={formData.nom} onChange={handleChange}
-                      placeholder="Ex: RAKOTO"
-                      className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors"
+                      type="text"
+                      required
+                      name="nom"
+                      value={formData.nom}
+                      onChange={handleChange}
+                      placeholder={t('admission', 'placeholderNom')}
+                      className="w-full rounded-xl border p-3 text-xs transition-colors focus:outline-none"
                       style={inputStyle}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                      <User size={10} /> Prénom
+                    <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-60">
+                      <User size={10} /> {t('admission', 'labelPrenom')}
                     </label>
                     <input
-                      type="text" required name="prenom"
-                      value={formData.prenom} onChange={handleChange}
-                      placeholder="Ex: Andry"
-                      className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors"
+                      type="text"
+                      required
+                      name="prenom"
+                      value={formData.prenom}
+                      onChange={handleChange}
+                      placeholder={t('admission', 'placeholderPrenom')}
+                      className="w-full rounded-xl border p-3 text-xs transition-colors focus:outline-none"
                       style={inputStyle}
                     />
                   </div>
                 </div>
 
-                {/* Email */}
                 <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                    <Mail size={10} /> Adresse Email
+                  <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-60">
+                    <Mail size={10} /> {t('admission', 'labelEmail')}
                   </label>
                   <input
-                    type="email" required name="email"
-                    value={formData.email} onChange={handleChange}
-                    placeholder="exemple@gmail.com"
-                    className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors"
+                    type="email"
+                    required
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder={t('admission', 'placeholderEmail')}
+                    className="w-full rounded-xl border p-3 text-xs transition-colors focus:outline-none"
                     style={inputStyle}
                   />
                 </div>
 
-                {/* Téléphone + Filière — côte à côte sur md+ */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                      <Phone size={10} /> Téléphone
+                    <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-60">
+                      <Phone size={10} /> {t('admission', 'labelPhone')}
                     </label>
                     <input
-                      type="tel" required name="telephone"
-                      value={formData.telephone} onChange={handleChange}
-                      placeholder="+261 34 00 000 00"
-                      className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors"
+                      type="tel"
+                      required
+                      name="telephone"
+                      value={formData.telephone}
+                      onChange={handleChange}
+                      placeholder={t('admission', 'placeholderPhone')}
+                      className="w-full rounded-xl border p-3 text-xs transition-colors focus:outline-none"
                       style={inputStyle}
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold uppercase tracking-wider opacity-60 flex items-center gap-1">
-                      <BookOpen size={10} /> Filière souhaitée
+                    <label className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider opacity-60">
+                      <BookOpen size={10} /> {t('admission', 'labelFiliere')}
                     </label>
                     <select
-                      name="filiere" value={formData.filiere} onChange={handleChange}
-                      className="w-full p-3 rounded-xl text-xs focus:outline-none border transition-colors cursor-pointer appearance-none"
+                      name="filiere"
+                      value={formData.filiere}
+                      onChange={handleChange}
+                      className="w-full cursor-pointer appearance-none rounded-xl border p-3 text-xs transition-colors focus:outline-none"
                       style={inputStyle}
                     >
                       {filiers.length > 0 ? (
@@ -227,30 +221,27 @@ export default function AdmissionPage() {
                           </option>
                         ))
                       ) : (
-                        <>
-                          <option value="Administration et Gestion">Administration et Gestion</option>
-                          <option value="Génie Logiciel et Administration Réseaux">Génie Logiciel et Administration Réseaux</option>
-                          <option value="Bâtiment et Travaux Publics">Bâtiment et Travaux Publics</option>
-                          <option value="Électromécanique et Industriels">Électromécanique et Industriels</option>
-                        </>
+                        fallbackOptions.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))
                       )}
                     </select>
                   </div>
                 </div>
 
-                {/* Bouton envoi */}
                 <button
                   type="submit"
-                  className="w-full text-white font-bold px-6 py-3.5 rounded-xl text-xs uppercase tracking-wider flex items-center justify-center gap-2 transition hover:opacity-95 cursor-pointer"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl px-6 py-3.5 text-xs font-bold uppercase tracking-wider text-white transition hover:opacity-95"
                   style={{ backgroundColor: 'var(--primary)' }}
                 >
-                  Envoyer ma candidature <Send size={13} />
+                  {t('admission', 'submit')} <Send size={13} />
                 </button>
               </form>
             )}
           </div>
         </div>
-
       </div>
     </div>
   );

@@ -1,46 +1,48 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, MapPin, MessageCircle, Phone, PlaySquare, Send, Share2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { useT } from '../../config/I18nProvider';
 
 const footerSections = [
   {
-    title: 'Universite',
+    titleKey: 'universityTitle' as const,
     links: [
-      { label: 'Historique', path: '/historiques' },
-      { label: 'Mot du President', path: '/motduPresidents' },
-      { label: 'Organigramme', path: '/organigrammes' },
-      { label: 'Actualites', path: '/actualites' },
+      { labelKey: 'history' as const, path: '/historiques' },
+      { labelKey: 'president' as const, path: '/motduPresidents' },
+      { labelKey: 'organigram' as const, path: '/organigrammes' },
+      { labelKey: 'news' as const, path: '/actualites' },
     ],
   },
   {
-    title: 'Formations',
+    titleKey: 'trainingTitle' as const,
     links: [
-      { label: 'Formation initiale', path: '/formationInitiale' },
-      { label: 'Formation continue', path: '/formationContinue' },
-      { label: 'Formations en ligne', path: '/formationsEnligne' },
-      { label: 'Toutes les filieres', path: '/formations' },
+      { labelKey: 'initialTraining' as const, path: '/formationInitiale' },
+      { labelKey: 'continuingTraining' as const, path: '/formationContinue' },
+      { labelKey: 'onlineTraining' as const, path: '/formationsEnligne' },
+      { labelKey: 'training' as const, path: '/formations' },
     ],
   },
   {
-    title: 'Acces rapides',
+    titleKey: 'quickLinksTitle' as const,
     links: [
-      { label: 'Admissions', path: '/admission' },
-      { label: 'Contact', path: '/contact' },
-      { label: 'Connexion', path: '/log_in' },
-      { label: 'Inscription etudiant', path: '/Inscriptions' },
+      { labelKey: 'admission' as const, path: '/admission' },
+      { labelKey: 'contact' as const, path: '/contact' },
+      { labelKey: 'login' as const, path: '/log_in' },
+      { labelKey: 'application' as const, path: '/Inscriptions' },
     ],
   },
-];
+] as const;
 
 const socialLinks = [
-  { label: 'Facebook', icon: MessageCircle, href: 'https://facebook.com' },
-  { label: 'LinkedIn', icon: Share2, href: 'https://linkedin.com' },
-  { label: 'YouTube', icon: PlaySquare, href: 'https://youtube.com' },
-];
+  { labelKey: 'facebook' as const, icon: MessageCircle, href: 'https://facebook.com' },
+  { labelKey: 'linkedin' as const, icon: Share2, href: 'https://linkedin.com' },
+  { labelKey: 'youtube' as const, icon: PlaySquare, href: 'https://youtube.com' },
+] as const;
 
 export default function Footer() {
   const { darkMode } = useTheme();
+  const { t } = useT();
 
   const panelStyle = {
     backgroundColor: darkMode ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
@@ -73,37 +75,36 @@ export default function Footer() {
             </Link>
 
             <p className="max-w-sm text-sm leading-relaxed opacity-70">
-              Etablissement d enseignement superieur oriente vers les competences professionnelles,
-              l innovation technologique et l accompagnement des etudiants a Madagascar.
+              {t('footer', 'description')}
             </p>
 
             <div className="space-y-3 text-xs opacity-80">
               <p className="flex items-start gap-3">
                 <MapPin size={15} className="mt-0.5 shrink-0 text-green-500" />
-                <span>Faravohitra, Antananarivo, Madagascar</span>
+                <span>{t('footer', 'location')}</span>
               </p>
               <p className="flex items-center gap-3">
                 <Phone size={15} className="shrink-0 text-green-500" />
-                <span>+261 34 00 123 45</span>
+                <span>{t('topbar', 'phone')}</span>
               </p>
               <p className="flex items-center gap-3">
                 <Mail size={15} className="shrink-0 text-green-500" />
-                <span>contact@etec.mg</span>
+                <span>{t('topbar', 'email')}</span>
               </p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
             {footerSections.map((section) => (
-              <div key={section.title}>
+              <div key={section.titleKey}>
                 <h2 className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-green-500">
-                  {section.title}
+                  {t('footer', section.titleKey)}
                 </h2>
                 <ul className="space-y-3 text-sm">
                   {section.links.map((link) => (
                     <li key={link.path}>
                       <Link to={link.path} className="opacity-70 transition hover:opacity-100 hover:text-green-500">
-                        {link.label}
+                        {t('navbar', link.labelKey)}
                       </Link>
                     </li>
                   ))}
@@ -114,14 +115,14 @@ export default function Footer() {
 
           <div className="space-y-5">
             <div className="rounded-2xl border p-5" style={panelStyle}>
-              <h2 className="text-sm font-black uppercase tracking-wider">Newsletter</h2>
+              <h2 className="text-sm font-black uppercase tracking-wider">{t('footer', 'newsletterTitle')}</h2>
               <p className="mt-2 text-xs leading-relaxed opacity-65">
-                Recevez les actualites, les admissions et les annonces de formations.
+                {t('footer', 'newsletterDesc')}
               </p>
               <form className="mt-4 flex overflow-hidden rounded-xl border" style={{ borderColor: 'var(--border)' }}>
                 <input
                   type="email"
-                  placeholder="Votre email"
+                  placeholder={t('footer', 'emailPlaceholder')}
                   className="min-w-0 flex-1 bg-transparent px-3 py-2.5 text-xs outline-none"
                   style={{ color: 'var(--text)' }}
                 />
@@ -129,7 +130,7 @@ export default function Footer() {
                   type="submit"
                   className="flex w-11 items-center justify-center text-white transition hover:opacity-90"
                   style={{ backgroundColor: 'var(--primary)' }}
-                  aria-label="Envoyer"
+                  aria-label={t('footer', 'send')}
                 >
                   <Send size={15} />
                 </button>
@@ -137,17 +138,17 @@ export default function Footer() {
             </div>
 
             <div>
-              <h2 className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-green-500">Reseaux</h2>
+              <h2 className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-green-500">{t('contact', 'socialTitle')}</h2>
               <div className="flex gap-2">
                 {socialLinks.map((social) => {
                   const Icon = social.icon;
                   return (
                     <a
-                      key={social.label}
+                      key={social.labelKey}
                       href={social.href}
                       target="_blank"
                       rel="noreferrer"
-                      aria-label={social.label}
+                      aria-label={t('footer', social.labelKey)}
                       className="flex h-10 w-10 items-center justify-center rounded-xl border transition hover:border-green-500 hover:text-green-500"
                       style={{ borderColor: 'var(--border)' }}
                     >
@@ -164,14 +165,17 @@ export default function Footer() {
           className="mt-10 flex flex-col gap-3 border-t pt-6 text-xs opacity-65 md:flex-row md:items-center md:justify-between"
           style={{ borderColor: 'var(--border)' }}
         >
-          <p>Copyright 2026 E-TEC University. Tous droits reserves.</p>
+          <p>
+            Copyright 2026 E-TEC University. {t('footer', 'rights')}
+          </p>
           <div className="flex flex-wrap gap-4">
-            <Link to="/contact" className="transition hover:text-green-500">Support</Link>
-            <Link to="/admission" className="transition hover:text-green-500">Candidature</Link>
-            <Link to="/actualites" className="transition hover:text-green-500">Communiques</Link>
+            <Link to="/contact" className="transition hover:text-green-500">{t('footer', 'support')}</Link>
+            <Link to="/admission" className="transition hover:text-green-500">{t('footer', 'application')}</Link>
+            <Link to="/actualites" className="transition hover:text-green-500">{t('footer', 'communiques')}</Link>
           </div>
         </div>
       </div>
     </footer>
   );
 }
+

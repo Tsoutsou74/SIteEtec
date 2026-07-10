@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin si nécessaire
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin si nécessaire
 import {
   Search, Eye, Check, X, Trash2, Calendar, 
   User, Mail, Phone, GraduationCap, CheckCircle, 
@@ -65,7 +65,7 @@ export default function AdminInscription() {
   // ─── Chargement des données depuis l'API ────────────────
   const fetchInscriptions = async () => {
     try {
-      const response = await apiService.etudiant.getAll();
+      const response = await ApiService.etudiant.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: item.id,
@@ -108,7 +108,7 @@ export default function AdminInscription() {
   // ── Actions Backend Reliées à l'API ─────────────────────
   const updateStatut = async (id: number, nouveauStatut: StatutInscription) => {
     try {
-      await apiService.etudiant.update(id, { statut: nouveauStatut });
+      await ApiService.etudiant.update(id, { statut: nouveauStatut });
       setData(data.map(item => item.id === id ? { ...item, statut: nouveauStatut } : item));
       if (selected && selected.id === id) {
         setSelected({ ...selected, statut: nouveauStatut });
@@ -122,7 +122,7 @@ export default function AdminInscription() {
   const handleDelete = async () => {
     if (deleteId !== null) {
       try {
-        await apiService.etudiant.delete(deleteId);
+        await ApiService.etudiant.delete(deleteId);
         setData(data.filter(item => item.id !== deleteId));
         setDeleteId(null);
         showToast('Demande d\'inscription supprimée');

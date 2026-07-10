@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import ApiService from '../../services/ApiService';
 import { 
   Calendar, Clock, MapPin, 
   Layers, Grid, List, Loader2, AlertTriangle
@@ -42,9 +43,22 @@ export default function EmploiDuTemps() {
       try {
         setLoading(true);
         setError(null);
-        // Appel de votre service API
-        const data = await apiService.getEmploiDuTemps();
-        setEmploiDuTemps(data || []);
+        const res = await ApiService.etudiant.getEmploiDuTemps();
+        const raw = res?.data ?? [];
+        const normalized = Array.isArray(raw) && raw.length > 0 && raw[0] && typeof raw[0] === 'object' && 'seances' in raw[0]
+          ? raw.flatMap((jour: any) =>
+              (jour.seances || []).map((seance: any, indexHeure: number) => ({
+                jour: jour.jour,
+                heure: `${seance.heureDebut} - ${seance.heureFin}`,
+                classe: seance.classe || seance.matiere,
+                matiere: seance.matiere,
+                salle: seance.salle,
+                type: seance.type,
+                indexHeure,
+              }))
+            )
+          : raw;
+        setEmploiDuTemps(normalized || []);
       } catch (err) {
         console.error("Erreur lors de la récupération de l'emploi du temps:", err);
         setError("Impossible de charger l'emploi du temps. Veuillez réessayer ultérieurement.");

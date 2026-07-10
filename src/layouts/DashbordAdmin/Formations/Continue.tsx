@@ -4,7 +4,7 @@ import {
   Clock, Award, CheckCircle, X, Layers 
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── INTERFACES ──────────────────────────────────────────
 interface FormationContinue {
@@ -32,7 +32,7 @@ export default function Continue() {
   const fetchFormations = async () => {
     setLoading(true);
     try {
-      const response = await apiService.formationContinue.getAll();
+      const response = await ApiService.formationContinue.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: String(item.id),
@@ -76,11 +76,11 @@ export default function Continue() {
     try {
       if (currentFC.id) {
         // Modification API
-        await apiService.formationContinue.update(currentFC.id, currentFC);
+        await ApiService.formationContinue.update(currentFC.id, currentFC);
         setFormations(prev => prev.map(f => f.id === currentFC.id ? (currentFC as FormationContinue) : f));
       } else {
         // Création API
-        const response = await apiService.formationContinue.create(currentFC);
+        const response = await ApiService.formationContinue.create(currentFC);
         const createdFC: FormationContinue = {
           ...(currentFC as Omit<FormationContinue, 'id'>),
           id: response?.data?.id ? String(response.data.id) : Date.now().toString(),
@@ -97,7 +97,7 @@ export default function Continue() {
   const handleDelete = async (id: string) => {
     if (window.confirm("Voulez-vous supprimer ce module de formation continue ?")) {
       try {
-        await apiService.formationContinue.delete(id);
+        await ApiService.formationContinue.delete(id);
         setFormations(prev => prev.filter(f => f.id !== id));
       } catch (error) {
         console.error("Erreur lors de la suppression :", error);

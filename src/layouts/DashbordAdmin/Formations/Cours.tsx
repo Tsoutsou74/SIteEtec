@@ -5,7 +5,7 @@ import {
   Edit2, Trash2, X, Check
 } from 'lucide-react';
 import { useTheme } from '../../../context/ThemeContext';
-import { apiService } from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
+import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Course {
@@ -46,7 +46,7 @@ export default function AdminCours() {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const response = await apiService.cours.getAll();
+      const response = await ApiService.cours.getAll();
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: Number(item.id),
@@ -127,7 +127,7 @@ export default function AdminCours() {
   const handleDelete = async (id: number) => {
     if (confirm('Voulez-vous vraiment supprimer ce cours ?')) {
       try {
-        await apiService.cours.delete(String(id));
+        await ApiService.cours.delete(String(id));
         setCourses(prev => prev.filter(c => c.id !== id));
         setActiveMenu(null);
       } catch (error) {
@@ -143,11 +143,11 @@ export default function AdminCours() {
     try {
       if (editingCourse) {
         // Action API: UPDATE
-        await apiService.cours.update(String(editingCourse.id), formData);
+        await ApiService.cours.update(String(editingCourse.id), formData);
         setCourses(prev => prev.map(c => c.id === editingCourse.id ? { ...c, ...formData } : c));
       } else {
         // Action API: CREATE
-        const response = await apiService.cours.create(formData);
+        const response = await ApiService.cours.create(formData);
         const newCourse: Course = {
           id: response?.data?.id ? Number(response.data.id) : Date.now(),
           ...formData

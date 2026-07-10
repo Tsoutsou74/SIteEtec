@@ -1,7 +1,8 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Building2, Mail, Phone, UserRound } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import ApiService from '../services/ApiService';
+import { useT } from '../config/I18nProvider';
 
 interface Member {
   id: number;
@@ -30,6 +31,7 @@ const FALLBACK_MEMBERS: Member[] = [
 
 export default function Organigrammes() {
   const { darkMode } = useTheme();
+  const { t } = useT();
   const [members, setMembers] = useState<Member[]>(FALLBACK_MEMBERS);
 
   useEffect(() => {
@@ -84,18 +86,25 @@ export default function Organigrammes() {
     color: 'var(--text)',
   };
 
+  const categoryLabelMap: Record<Member['category'], string> = {
+    Direction: t('organigram', 'direction'),
+    Mentions: t('organigram', 'mentions'),
+    Administration: t('organigram', 'administration'),
+    Enseignants: t('organigram', 'teachers'),
+  };
+
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-12 pt-28 md:pt-32 pb-16 animate-fade-in">
-      <section className="max-w-6xl mx-auto space-y-10">
+    <div className="animate-fade-in w-full px-4 pb-16 pt-28 sm:px-6 md:pt-32 lg:px-12">
+      <section className="mx-auto max-w-6xl space-y-10">
         <div className="max-w-3xl space-y-4">
-          <span className="inline-flex items-center gap-2 text-xs font-black tracking-widest uppercase text-green-500">
-            <Building2 size={15} /> Organisation
+          <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-green-500">
+            <Building2 size={15} /> {t('organigram', 'sectionLabel')}
           </span>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-tight">
-            Organigramme de <span className="text-gradient">E-TEC University</span>
+          <h1 className="text-3xl font-black leading-tight tracking-tight sm:text-4xl md:text-5xl">
+            {t('organigram', 'title1')} <span className="text-gradient">{t('organigram', 'title2')}</span>
           </h1>
-          <p className="text-sm md:text-base opacity-70 leading-relaxed">
-            Retrouvez les responsables de la direction, des mentions, de l'administration et des equipes pedagogiques.
+          <p className="text-sm leading-relaxed opacity-70 md:text-base">
+            {t('organigram', 'desc')}
           </p>
         </div>
 
@@ -108,35 +117,33 @@ export default function Organigrammes() {
             return (
               <section key={category} className="space-y-4">
                 <div className="flex items-center gap-3 border-b pb-3" style={{ borderColor: 'var(--border)' }}>
-                  <div className="w-9 h-9 rounded-xl border flex items-center justify-center text-green-500" style={cardStyle}>
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl border text-green-500" style={cardStyle}>
                     <Building2 size={16} />
                   </div>
                   <div>
-                    <h2 className="text-sm font-black uppercase tracking-widest">{category}</h2>
-                    <p className="text-[11px] opacity-50 font-semibold">{categoryMembers.length} responsable(s)</p>
+                    <h2 className="text-sm font-black uppercase tracking-widest">{categoryLabelMap[category]}</h2>
+                    <p className="text-[11px] font-semibold opacity-50">
+                      {categoryMembers.length} {t('organigram', 'responsibles')}
+                    </p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
                   {categoryMembers.map((member) => (
                     <article key={member.id} className="rounded-2xl border p-5 shadow-sm" style={cardStyle}>
                       <div className="flex items-start gap-4">
-                        <div className="w-14 h-14 rounded-2xl overflow-hidden border flex items-center justify-center shrink-0 bg-green-500/10 text-green-500" style={{ borderColor: 'var(--border)' }}>
-                          {member.imageUrl ? (
-                            <img src={member.imageUrl} alt={member.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <UserRound size={22} />
-                          )}
+                        <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-green-500/10 text-green-500" style={{ borderColor: 'var(--border)' }}>
+                          {member.imageUrl ? <img src={member.imageUrl} alt={member.name} className="h-full w-full object-cover" /> : <UserRound size={22} />}
                         </div>
 
                         <div className="min-w-0">
-                          <h3 className="text-sm font-black tracking-tight truncate">{member.name}</h3>
-                          <p className="text-xs font-bold text-green-500 mt-1">{member.role}</p>
+                          <h3 className="truncate text-sm font-black tracking-tight">{member.name}</h3>
+                          <p className="mt-1 text-xs font-bold text-green-500">{member.role}</p>
                         </div>
                       </div>
 
-                      <div className="mt-5 pt-4 border-t space-y-2 text-[11px] opacity-65" style={{ borderColor: 'var(--border)' }}>
-                        <div className="flex items-center gap-2 min-w-0">
+                      <div className="mt-5 space-y-2 border-t pt-4 text-[11px] opacity-65" style={{ borderColor: 'var(--border)' }}>
+                        <div className="flex min-w-0 items-center gap-2">
                           <Mail size={12} className="shrink-0" />
                           <span className="truncate">{member.email}</span>
                         </div>

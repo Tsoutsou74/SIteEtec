@@ -33,7 +33,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setDocumentLanguage(next);
   };
 
-  const t = (section: Section, key: string, options?: TOptions) => i18n.t(`${section}.${key}`, options);
+  const t = <S extends Section>(section: S, key: Key<S>, options?: TOptions) => i18n.t(`${section}.${String(key)}`, options);
 
   return (
     <I18nContext.Provider value={{ locale, setLocale, t }}>

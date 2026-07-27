@@ -1,8 +1,9 @@
-﻿import React, { useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSwitcher from '../components/layout/LanguageSwitcher';
+import { NotificationsService } from '../services/ApiService';
 import {
   LayoutDashboard, Users, BookOpen, Calendar,
   FileText, Bell, Settings, LogOut, Menu, ChevronDown,
@@ -12,6 +13,22 @@ import {
 
 type ChildItem = { key: string; path: string; label?: string };
 type NavItem = { icon: React.ReactNode; key: string; path: string; badge?: number; label?: string; children?: ChildItem[] };
+
+type CurrentUser = {
+  nom?: string;
+  prenom?: string;
+  email?: string;
+  role?: string;
+};
+
+type NotificationItem = {
+  id: string | number;
+  titre?: string;
+  message?: string;
+  description?: string;
+  date?: string;
+  lu?: boolean;
+};
 
 const NAV_CONFIG: Array<Omit<NavItem, 'icon'> & { icon: React.ReactNode }> = [
   { icon: <LayoutDashboard size={18} />, key: 'home', path: '/admin' },
@@ -47,7 +64,7 @@ const NAV_CONFIG: Array<Omit<NavItem, 'icon'> & { icon: React.ReactNode }> = [
   { icon: <MessageSquare size={18} />, key: 'messages', path: '/admin/messages' },
   { icon: <TrendingUp size={18} />, key: 'statistics', path: '/admin/statistiques' },
   { icon: <ClipboardCheck size={18} />, key: 'enrollmentOpen', path: '/admin/iouverts' },
-  { icon: <Bell size={18} />, key: 'notifications', path: '/admin/notifications', badge: 5 },
+  { icon: <Bell size={18} />, key: 'notifications', path: '/admin/notifications' },
   { icon: <Settings size={18} />, key: 'settings', path: '/admin/parametres' },
 ];
 
@@ -85,7 +102,7 @@ function SidebarItem({ item, active, onSelect, darkMode, collapsed, label, child
       >
         <span className="shrink-0">{item.icon}</span>
         {!collapsed && <span className="flex-1 text-left truncate">{label}</span>}
-        {!collapsed && item.badge && (
+        {!collapsed && !!item.badge && (
           <span className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white" style={{ backgroundColor: 'var(--primary)' }}>
             {item.badge}
           </span>
@@ -128,6 +145,52 @@ export default function DashboardLayout() {
   const [mobileSidebar, setMobileSidebar] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
+  // --- Utilisateur connecté (récupéré depuis localStorage après le login) ---
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('user');
+      if (raw) {
+        setCurrentUser(JSON.parse(raw));
+      }
+    } catch {
+      setCurrentUser(null);
+    }
+  }, []);
+
+  // --- Notifications réelles ---
+  useEffect(() => {
+    let cancelled = false;
+    setNotifLoading(true);
+    NotificationsService.getAll()
+      .then((data: NotificationItem[]) => {
+        if (!cancelled) setNotifications(Array.isArray(data) ? data : []);
+      })
+      .catch(() => {
+        if (!cancelled) setNotifications([]);
+      })
+      .finally(() => {
+        if (!cancelled) setNotifLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const unreadCount = notifications.filter((n) => !n.lu).length;
+
+  const displayName = useMemo(() => {
+    if (!currentUser) return t('dashboard.shared.administration');
+    const full = [currentUser.prenom, currentUser.nom].filter(Boolean).join(' ');
+    return full || currentUser.email || t('dashboard.shared.administration');
+  }, [currentUser, t]);
+
+  const displayEmail = currentUser?.email ?? '';
+  const avatarLetter = (currentUser?.prenom || currentUser?.nom || currentUser?.email || 'A').charAt(0).toUpperCase();
+
   const sidebarBg = darkMode ? 'rgba(10,10,10,0.97)' : 'rgba(255,255,255,0.98)';
   const topbarBg = darkMode ? 'rgba(10,10,10,0.95)' : 'rgba(255,255,255,0.95)';
   const contentBg = darkMode ? '#0d0d0d' : '#f4f6f8';
@@ -135,9 +198,10 @@ export default function DashboardLayout() {
 
   const navItems = useMemo<NavItem[]>(() => NAV_CONFIG.map((item) => ({
     ...item,
+    badge: item.key === 'notifications' ? (unreadCount || undefined) : item.badge,
     label: t(`dashboard.admin.layout.${item.key}`),
     children: item.children?.map((child) => ({ ...child, label: t(`dashboard.admin.layout.${child.key}`) })),
-  })) as NavItem[], [t]);
+  })) as NavItem[], [t, unreadCount]);
 
   const activeItem = navItems.find((item) => item.path === '/admin' ? location.pathname === '/admin' : location.pathname.startsWith(item.path));
   const activeLabel = activeItem ? t(`dashboard.admin.layout.${activeItem.key}`) : t('dashboard.admin.layout.home');
@@ -145,6 +209,14 @@ export default function DashboardLayout() {
   const goTo = (path: string) => {
     navigate(path);
     setMobileSidebar(false);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('role');
+    localStorage.removeItem('token');
+    localStorage.removeItem('isConnected');
+    navigate('/log_in');
   };
 
   const SidebarContent = (
@@ -180,15 +252,15 @@ export default function DashboardLayout() {
 
       <div className="px-3 py-4 border-t" style={{ borderColor: 'var(--border)' }}>
         <div className="flex items-center gap-3 p-2 rounded-xl cursor-pointer hover:opacity-80 transition" onClick={() => goTo('/admin/parametres')}>
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0" style={{ backgroundColor: 'var(--primary)' }}>A</div>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center font-black text-sm text-white shrink-0" style={{ backgroundColor: 'var(--primary)' }}>{avatarLetter}</div>
           {sidebarOpen && (
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold truncate">Administrateur</p>
-              <p className="text-[10px] opacity-45 truncate">admin@etec.mg</p>
+              <p className="text-xs font-bold truncate">{displayName}</p>
+              <p className="text-[10px] opacity-45 truncate">{displayEmail}</p>
             </div>
           )}
           {sidebarOpen && (
-            <button className="p-1.5 rounded-lg hover:opacity-70 transition cursor-pointer shrink-0" style={{ color: 'var(--text)' }} title={t('dashboard.shared.logout')} onClick={(e) => { e.stopPropagation(); navigate('/log_in'); }}>
+            <button className="p-1.5 rounded-lg hover:opacity-70 transition cursor-pointer shrink-0" style={{ color: 'var(--text)' }} title={t('dashboard.shared.logout')} onClick={(e) => { e.stopPropagation(); handleLogout(); }}>
               <LogOut size={14} />
             </button>
           )}
@@ -233,26 +305,48 @@ export default function DashboardLayout() {
             <div className="relative">
               <button className="relative p-2 rounded-xl border cursor-pointer transition hover:opacity-70" style={{ borderColor: 'var(--border)', color: 'var(--text)' }} onClick={() => setNotifOpen((value) => !value)}>
                 <Bell size={16} />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>5</span>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black text-white flex items-center justify-center" style={{ backgroundColor: '#ef4444' }}>
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
               </button>
               {notifOpen && (
                 <div className="absolute right-0 top-full mt-2 rounded-2xl border shadow-2xl overflow-hidden w-72" style={{ zIndex: 200, backgroundColor: sidebarBg, borderColor: 'var(--border)' }}>
                   <div className="px-4 py-3 border-b flex items-center justify-between" style={{ borderColor: 'var(--border)' }}>
                     <span className="text-xs font-black uppercase tracking-wider">{t('dashboard.shared.notifications')}</span>
-                    <button className="text-[10px] opacity-50 hover:opacity-80 cursor-pointer" onClick={() => setNotifOpen(false)}>{t('dashboard.shared.markAllRead')}</button>
+                    <button
+                      className="text-[10px] opacity-50 hover:opacity-80 cursor-pointer"
+                      onClick={() => {
+                        setNotifOpen(false);
+                        goTo('/admin/notifications');
+                      }}
+                    >
+                      {t('dashboard.shared.markAllRead')}
+                    </button>
                   </div>
-                  {[
-                    { msg: '12 nouvelles inscriptions en attente', time: 'Il y a 5 min', dot: '#22c55e' },
-                    { msg: 'Résultats S1 publiés — Dept. Info', time: 'Il y a 1h', dot: '#3b82f6' },
-                    { msg: '3 dossiers à valider — BTP', time: 'Il y a 2h', dot: '#f59e0b' },
-                    { msg: 'Nouveau message de la scolarité', time: 'Hier', dot: '#8b5cf6' },
-                    { msg: 'Mise à jour du calendrier académique', time: 'Hier', dot: '#6b7280' },
-                  ].map((n, i) => (
-                    <div key={i} className="flex items-start gap-3 px-4 py-3 border-b cursor-pointer hover:opacity-70 transition" style={{ borderColor: 'var(--border)' }} onClick={() => { goTo('/admin/notifications'); setNotifOpen(false); }}>
-                      <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ backgroundColor: n.dot }} />
+
+                  {notifLoading && (
+                    <div className="px-4 py-6 text-center text-xs opacity-50">…</div>
+                  )}
+
+                  {!notifLoading && notifications.length === 0 && (
+                    <div className="px-4 py-6 text-center text-xs opacity-50">
+                      {t('dashboard.shared.noNotifications', 'Aucune notification')}
+                    </div>
+                  )}
+
+                  {!notifLoading && notifications.slice(0, 5).map((n) => (
+                    <div
+                      key={n.id}
+                      className="flex items-start gap-3 px-4 py-3 border-b cursor-pointer hover:opacity-70 transition"
+                      style={{ borderColor: 'var(--border)' }}
+                      onClick={() => { goTo('/admin/notifications'); setNotifOpen(false); }}
+                    >
+                      <span className="w-2 h-2 rounded-full mt-1 shrink-0" style={{ backgroundColor: n.lu ? '#6b7280' : 'var(--primary)' }} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs leading-snug">{n.msg}</p>
-                        <p className="text-[10px] opacity-40 mt-0.5">{n.time}</p>
+                        <p className="text-xs leading-snug">{n.titre ?? n.message ?? n.description}</p>
+                        {n.date && <p className="text-[10px] opacity-40 mt-0.5">{n.date}</p>}
                       </div>
                     </div>
                   ))}
@@ -266,7 +360,7 @@ export default function DashboardLayout() {
               {darkMode ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-slate-600" />}
             </button>
 
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }} onClick={() => goTo('/admin/parametres')}>A</div>
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-sm text-white cursor-pointer" style={{ backgroundColor: 'var(--primary)' }} onClick={() => goTo('/admin/parametres')}>{avatarLetter}</div>
           </div>
         </header>
 

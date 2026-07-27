@@ -1,77 +1,40 @@
-﻿import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { BookOpenCheck, CalendarDays, CheckCircle, GraduationCap, Layers, Users } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import ApiService from '../services/ApiService';
 import { useT } from '../config/I18nProvider';
 
-interface FormationInitiale {
-  id?: string | number;
-  code?: string;
-  titre?: string;
-  title?: string;
-  filiere?: string;
-  duree?: string;
-  duration?: string;
-  frais?: string;
-  description?: string;
-  statut?: string;
-  items?: string[];
-}
-
-const FALLBACK_PARCOURS: FormationInitiale[] = [
+const STATIC_PARCOURS = [
   {
-    titre: 'Administration et Gestion',
+    id: 'adm',
+    titre: 'Gestion',
     duree: 'Licence 3 ans / Master 5 ans',
-    items: ['Management', 'Comptabilite et finance', 'Marketing', 'Ressources humaines'],
+    items: ['Management', 'Comptabilité et finance', 'Marketing', 'Ressources humaines'],
   },
   {
-    titre: 'Genie logiciel et reseaux',
+    id: 'gl',
+    titre: 'Génie Logiciel et Réseaux',
     duree: 'Licence 3 ans / Master 5 ans',
-    items: ['Developpement web et mobile', 'Administration systeme', 'Cloud et reseaux', 'Cybersecurite'],
+    items: ['Développement web et mobile', 'Administration système', 'Cloud et réseaux', 'Cybersécurité'],
   },
   {
-    titre: 'Batiment et Travaux Publics',
+    id: 'btp',
+    titre: 'Bâtiment et Travaux Publics',
     duree: 'Licence professionnelle 3 ans',
-    items: ['Dessin BTP', 'Topographie', 'Conduite de chantier', 'Structures et beton arme'],
+    items: ['Dessin BTP', 'Topographie', 'Conduite de chantier', 'Structures et béton armé'],
   },
   {
-    titre: 'Electromecanique',
+    id: 'em',
+    titre: 'Électromécanique',
     duree: 'Licence professionnelle 3 ans',
-    items: ['Automatisme', 'Maintenance industrielle', 'Electricite', 'Systemes mecaniques'],
+    items: ['Automatisme', 'Maintenance industrielle', 'Électricité', 'Systèmes mécaniques'],
   },
 ];
 
-const steps = ['Depot du dossier', 'Etude du profil', 'Entretien d orientation', 'Inscription definitive'];
+const steps = ['Dépôt du dossier', 'Étude du profil', 'Entretien d\'orientation', 'Inscription définitive'];
 
 export default function FormationInitialePage() {
   const { darkMode } = useTheme();
   const { t } = useT();
-  const [parcours, setParcours] = useState<FormationInitiale[]>(FALLBACK_PARCOURS);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadFormations = async () => {
-      try {
-        const response = await ApiService.formationInitiale.getAll();
-        const data = response.data;
-
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setParcours(data);
-        }
-      } catch {
-        if (isMounted) {
-          setParcours(FALLBACK_PARCOURS);
-        }
-      }
-    };
-
-    loadFormations();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.34)' : 'rgba(255,255,255,0.72)',
@@ -80,7 +43,7 @@ export default function FormationInitialePage() {
   };
 
   return (
-    <div className="animate-fade-in w-full px-4 pb-16 pt-28 sm:px-6 md:pt-32 lg:px-12">
+    <div className="animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:pb-16 md:pt-28 lg:px-12">
       <section className="mx-auto max-w-6xl space-y-12">
         <div className="grid grid-cols-1 items-end gap-8 lg:grid-cols-12">
           <div className="space-y-4 lg:col-span-8">
@@ -109,33 +72,27 @@ export default function FormationInitialePage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {parcours.map((item, index) => {
-            const title = item.titre || item.title || t('formationInitiale', 'sectionLabel');
-            const duration = item.duree || item.duration || item.frais || t('formationInitiale', 'durationFallback');
-            const details = item.items || [item.filiere, item.description, item.statut].filter(Boolean);
-
-            return (
-              <article key={item.id || `${title}-${index}`} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-green-500/20 bg-green-500/10 text-green-500">
-                    <BookOpenCheck size={22} />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-black tracking-tight">{title}</h2>
-                    <p className="mt-1 text-xs font-bold uppercase tracking-wide opacity-55">{duration}</p>
-                  </div>
+          {STATIC_PARCOURS.map((item) => (
+            <article key={item.id} className="rounded-3xl border p-6 shadow-sm" style={cardStyle}>
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-green-500/20 bg-green-500/10 text-green-500">
+                  <BookOpenCheck size={22} />
                 </div>
-                <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
-                  {details.map((skill) => (
-                    <li key={skill} className="flex items-center gap-2 text-xs opacity-75">
-                      <CheckCircle size={14} className="shrink-0 text-green-500" />
-                      {skill}
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            );
-          })}
+                <div>
+                  <h2 className="text-lg font-black tracking-tight">{item.titre}</h2>
+                  <p className="mt-1 text-xs font-bold uppercase tracking-wide opacity-55">{item.duree}</p>
+                </div>
+              </div>
+              <ul className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                {item.items.map((skill) => (
+                  <li key={skill} className="flex items-center gap-2 text-xs opacity-75">
+                    <CheckCircle size={14} className="shrink-0 text-green-500" />
+                    {skill}
+                  </li>
+                ))}
+              </ul>
+            </article>
+          ))}
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">

@@ -9,17 +9,13 @@ const footerSections = [
     titleKey: 'universityTitle' as const,
     links: [
       { labelKey: 'history' as const, path: '/historiques' },
-      { labelKey: 'president' as const, path: '/motduPresidents' },
-      { labelKey: 'organigram' as const, path: '/organigrammes' },
+      // { labelKey: 'organigram' as const, path: '/organigrammes' },
       { labelKey: 'news' as const, path: '/actualites' },
     ],
   },
   {
     titleKey: 'trainingTitle' as const,
     links: [
-      { labelKey: 'initialTraining' as const, path: '/formationInitiale' },
-      { labelKey: 'continuingTraining' as const, path: '/formationContinue' },
-      { labelKey: 'onlineTraining' as const, path: '/formationsEnligne' },
       { labelKey: 'training' as const, path: '/formations' },
     ],
   },
@@ -29,7 +25,7 @@ const footerSections = [
       { labelKey: 'admission' as const, path: '/admission' },
       { labelKey: 'contact' as const, path: '/contact' },
       { labelKey: 'login' as const, path: '/log_in' },
-      { labelKey: 'application' as const, path: '/Inscriptions' },
+      // { labelKey: 'application' as const, path: '/Inscriptions' },
     ],
   },
 ] as const;
@@ -52,7 +48,7 @@ export default function Footer() {
   return (
     <footer
       className="mt-auto border-t transition-colors"
-      style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--text)' }}
+      style={{ backgroundColor: 'transparent', borderColor: 'var(--border)', color: 'var(--text)' }}
     >
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-12 lg:py-16">
         <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1.25fr_2fr_1.1fr]">
@@ -178,4 +174,3 @@ export default function Footer() {
     </footer>
   );
 }
-

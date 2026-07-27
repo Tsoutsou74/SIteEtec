@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import ScrollToTop from "../components/ScrollToTop";
 
 import MainLayout from "../layouts/MainLayout";
 import DashboardLayout from '../layouts/DashboardLayout';
@@ -11,7 +12,6 @@ import Auth from "../pages/Auth";
 import EtudiantsInscription from "../feature/auth/pages/EtudiantsInscription";
 import FiliersPage from "../pages/FiliersPage";
 import Historques from "../pages/Historique";
-import MtPresidents from "../pages/MotPresidents";
 import Orga from "../pages/Organigrammes";
 import Actu from "../pages/NewsPage";
 import FormationInitialePage from "../pages/FormationInitialePage";
@@ -85,6 +85,7 @@ import StudentMessages          from "../layouts/DashboardEtud/Messages";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Routes>
           <Route element={<MainLayout />}>
           <Route path="/" element={<HomPages />} /> 
@@ -99,8 +100,7 @@ export default function AppRoutes() {
           <Route path="formationsEnligne" element={<FormationsEnLignePage />} />
           <Route path="historiques" element={<Historques />} />
           <Route path="organigrammes" element={<Orga />} />
-          <Route path="motduPresidents" element={<MtPresidents />} />
-          <Route path="actualites" element={<Actu />} />
+          <Route path="actualites" element={<Actu showSeeMore={false} />} />
 
         </Route>
 

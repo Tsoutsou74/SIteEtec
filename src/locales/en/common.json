@@ -1,4 +1,4 @@
-﻿{
+{
   "topbar": {
     "phone": "+261 22 02 123 45",
     "email": "contact@etec.mg",
@@ -25,7 +25,7 @@
   },
   "hero": {
     "badge": "Open admissions",
-    "title1": "University of excellence",
+    "title1": "Ecole Professionnel Polytechnique Private",
     "title2": "and innovation",
     "subtitle": "Discover a modern learning environment designed to propel your professional ambitions in Madagascar.",
     "ctaAdmission": "Apply",
@@ -50,6 +50,10 @@
     "missionDesc": "Boost the employability of Malagasy youth through professional training.",
     "visionTitle": "Our Vision",
     "visionDesc": "Become Madagascar's reference institution for training tomorrow's executives and engineers.",
+    "sloganLabel": "Mission and objectives",
+    "sloganTitle": "A future is built with projects",
+    "sloganLine1": "Have projects to anticipate",
+    "sloganLine2": "Everything is possible for those who believe",
     "valuesTitle": "The values that guide us",
     "valuesDesc": "Every day, our academic community relies on four unwavering pillars.",
     "excellenceTitle": "Excellence",
@@ -101,6 +105,19 @@
     "step3Desc": "A discussion to understand your ambitions and confirm your direction.",
     "step4Title": "Final registration",
     "step4Desc": "Confirmation of your place after submitting physical documents and tuition.",
+    "documentsEyebrow": "Your application file",
+    "documentsTitle": "Required documents",
+    "documentsDesc": "Prepare these documents to help us review your application quickly.",
+    "document1Title": "Certified transcript",
+    "document1Desc": "Your transcript from the most recent level of study.",
+    "document2Title": "Proof of residence",
+    "document2Desc": "A recent document confirming your current address.",
+    "document3Title": "Three ID photos",
+    "document3Desc": "Recent official-format photos to include in your file.",
+    "document4Title": "ID card or birth certificate",
+    "document4Desc": "A legible copy of your identity card or birth certificate.",
+    "documentsNote": "Bring the originals for final registration. Additional documents may be requested depending on the program.",
+    "formEyebrow": "First step",
     "formTitle": "Pre-registration form",
     "formDesc": "All fields are required for the review of your initial application.",
     "labelNom": "Last name",
@@ -119,7 +136,7 @@
     "optionFallback1": "Business Administration",
     "optionFallback2": "Software Engineering and Network Administration",
     "optionFallback3": "Civil Engineering and Public Works",
-    "optionFallback4": "Electromechanics and Industrial Systems"
+    "optionFallback4": "Electromechanics"
   },
   "formationInitiale": {
     "sectionLabel": "Initial training",
@@ -206,7 +223,7 @@
     "desc": "A question about programs, procedures or our campuses? Leave us a message and our team will get back to you as soon as possible.",
     "coordTitle": "Contact details",
     "locationTitle": "Location",
-    "locationAddr": "Faravohitra, Fianarantsoa",
+    "locationAddr": "Faravohitra, Antananarivo",
     "locationHours": "Mon-Fri: 09:00 - 18:00",
     "phoneTitle": "Phone",
     "phoneFormat": "International format",
@@ -240,7 +257,7 @@
     "send": "Send",
     "rights": "All rights reserved.",
     "madeWith": "Made with love in",
-    "location": "Fianarantsoa, Madagascar",
+    "location": "Faravohitra, Antananarivo",
     "support": "Support",
     "application": "Application",
     "communiques": "News",

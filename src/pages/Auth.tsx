@@ -8,7 +8,7 @@ import {
   EyeOff,
   ArrowRight,
 } from "lucide-react";
-import { ApiService, TokenStorage } from "../services/api";
+import  ApiService, {TokenStorage} from "../services/api";
 
 type Role = "etudiant" | "enseignant";
 type StudentFormationType = "initiale" | "continue" | "enligne";

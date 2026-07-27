@@ -1,7 +1,6 @@
-﻿import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Building2, Mail, Phone, UserRound } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import ApiService from '../services/ApiService';
 import { useT } from '../config/I18nProvider';
 
 interface Member {
@@ -17,47 +16,19 @@ interface Member {
 
 const CATEGORIES: Member['category'][] = ['Direction', 'Mentions', 'Administration', 'Enseignants'];
 
-const FALLBACK_MEMBERS: Member[] = [
-  {
-    id: 1,
-    name: 'Direction E-TEC',
-    role: 'Administration generale',
-    category: 'Direction',
-    email: 'contact@etec.mg',
-    phone: '+261 34 00 000 00',
-    order: 1,
-  },
+const STATIC_MEMBERS: Member[] = [
+  { id: 1, name: 'Direction E-TEC', role: 'Administration générale', category: 'Direction', email: 'contact@etec.mg', phone: '+261 34 00 000 00', order: 1 },
+  { id: 2, name: 'Département Génie Logiciel', role: 'Chef de mention GL', category: 'Mentions', email: 'gl@etec.mg', phone: '+261 34 00 000 01', order: 1 },
+  { id: 3, name: 'Département Administration', role: 'Chef de mention ADM', category: 'Mentions', email: 'adm@etec.mg', phone: '+261 34 00 000 02', order: 2 },
+  { id: 4, name: 'Département BTP', role: 'Chef de mention BTP', category: 'Mentions', email: 'btp@etec.mg', phone: '+261 34 00 000 03', order: 3 },
+  { id: 5, name: 'Département Électromécanique', role: 'Chef de mention EM', category: 'Mentions', email: 'em@etec.mg', phone: '+261 34 00 000 04', order: 4 },
+  { id: 6, name: 'Service Scolarité', role: 'Responsable scolarité', category: 'Administration', email: 'scolarite@etec.mg', phone: '+261 34 00 000 05', order: 1 },
+  { id: 7, name: 'Service Financier', role: 'Responsable financier', category: 'Administration', email: 'finance@etec.mg', phone: '+261 34 00 000 06', order: 2 },
 ];
 
 export default function Organigrammes() {
   const { darkMode } = useTheme();
   const { t } = useT();
-  const [members, setMembers] = useState<Member[]>(FALLBACK_MEMBERS);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadOrganigramme = async () => {
-      try {
-        const response = await ApiService.organigrammes.getAll();
-        const data = response.data;
-
-        if (isMounted && Array.isArray(data) && data.length > 0) {
-          setMembers(data);
-        }
-      } catch {
-        if (isMounted) {
-          setMembers(FALLBACK_MEMBERS);
-        }
-      }
-    };
-
-    loadOrganigramme();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   const groupedMembers = useMemo(() => {
     const groups: Record<Member['category'], Member[]> = {
@@ -67,7 +38,7 @@ export default function Organigrammes() {
       Enseignants: [],
     };
 
-    members.forEach((member) => {
+    STATIC_MEMBERS.forEach((member) => {
       if (groups[member.category]) {
         groups[member.category].push(member);
       }
@@ -78,7 +49,7 @@ export default function Organigrammes() {
     });
 
     return groups;
-  }, [members]);
+  }, []);
 
   const cardStyle = {
     backgroundColor: darkMode ? 'rgba(0,0,0,0.32)' : 'rgba(255,255,255,0.72)',
@@ -94,7 +65,7 @@ export default function Organigrammes() {
   };
 
   return (
-    <div className="animate-fade-in w-full px-4 pb-16 pt-28 sm:px-6 md:pt-32 lg:px-12">
+    <div className="animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:pb-16 md:pt-28 lg:px-12">
       <section className="mx-auto max-w-6xl space-y-10">
         <div className="max-w-3xl space-y-4">
           <span className="inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest text-green-500">

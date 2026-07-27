@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import { ApiService } from '../../services/ApiService';
+import ApiService from '../../services/ApiService';
 import {
   Search, Plus, Pencil, Trash2, X, Save,
   Calendar, CheckCircle, AlertCircle, Image, Loader2, Upload

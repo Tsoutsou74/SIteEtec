@@ -1,7 +1,6 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Mail, User, Phone, MapPin, Share2, Info, Send, CheckCircle } from 'lucide-react';
-import ApiService from '../services/ApiService';
 import { useT } from '../config/I18nProvider';
 
 export default function ContactPage() {
@@ -9,7 +8,6 @@ export default function ContactPage() {
   const { t } = useT();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
   const [formData, setFormData] = useState({
     nom: '',
     prenom: '',
@@ -19,23 +17,13 @@ export default function ContactPage() {
     message: '',
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setErrorMessage('');
-
-    try {
-      await ApiService.contacts.create(formData);
-      setSubmitted(true);
-    } catch (error) {
-      const message =
-        error && typeof error === 'object' && 'message' in error
-          ? String(error.message)
-          : t('contact', 'errorDefault');
-      setErrorMessage(message);
-    } finally {
+    setTimeout(() => {
       setLoading(false);
-    }
+      setSubmitted(true);
+    }, 800);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -53,8 +41,8 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="animate-fade-in w-full px-0 py-10 sm:px-4 md:px-8 md:py-16 lg:px-12">
-      <div className="mb-10 max-w-2xl space-y-3 px-1 md:mb-16 md:space-y-4">
+    <div className="animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:px-8 md:pb-16 md:pt-28 lg:px-12">
+      <div className="mb-10 max-w-2xl space-y-3 md:mb-16 md:space-y-4">
         <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--primary)' }}>
           <Info size={14} /> {t('contact', 'sectionLabel')}
         </span>
@@ -71,7 +59,7 @@ export default function ContactPage() {
           <div className="h-52 w-full overflow-hidden rounded-2xl border shadow-sm sm:h-60 md:h-64" style={cardStyle}>
             <iframe
               title="E-TEC University - Faravohitra"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3775.1234567890!2d47.08500!3d-21.45300!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1fa3ab1234567890%3A0xabcdef1234567890!2sFaravohitra%2C%20Fianarantsoa%2C%20Madagascar!5e0!3m2!1sfr!2smg!4v1687212345678!5m2!1sfr!2smg"
+              src="https://maps.google.com/maps?q=Faravohitra,%20Antananarivo&t=&z=15&ie=UTF8&iwloc=&output=embed"
               className={`h-full w-full border-0 opacity-90 ${darkMode ? 'invert-[0.9] hue-rotate-180' : ''}`}
               allowFullScreen={false}
               loading="lazy"
@@ -91,7 +79,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: 'var(--primary)' }}>
                 <Phone size={12} /> {t('contact', 'phoneTitle')}
               </div>
-              <p className="text-xs font-bold tracking-wide">+261 34 36 678</p>
+              <p className="text-xs font-bold tracking-wide">+261 34 10 077 01</p>
               <p className="text-[10px] opacity-60">{t('contact', 'phoneFormat')}</p>
             </div>
 
@@ -99,8 +87,8 @@ export default function ContactPage() {
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: 'var(--primary)' }}>
                 <Mail size={12} /> {t('contact', 'emailTitle')}
               </div>
-              <p className="text-xs font-medium break-all">contact@etec.mg</p>
-              <p className="text-xs font-medium break-all opacity-60">info@etec.mg</p>
+              <p className="text-xs font-medium break-all">etecpoli@gmail.com</p>
+              <p className="text-xs font-medium break-all opacity-60">etecpoli@gmail.com</p>
             </div>
 
             <div className="space-y-1.5 rounded-xl border p-3 md:p-4" style={cardStyle}>
@@ -141,7 +129,6 @@ export default function ContactPage() {
                 <div>
                   <h2 className="mb-1 text-lg font-black tracking-tight md:text-xl">{t('contact', 'formTitle')}</h2>
                   <p className="text-xs opacity-60">{t('contact', 'formDesc')}</p>
-                  {errorMessage && <p className="mt-2 text-xs font-semibold text-red-500">{errorMessage}</p>}
                 </div>
 
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:gap-4">

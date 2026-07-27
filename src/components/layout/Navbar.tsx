@@ -3,10 +3,11 @@ import { ChevronDown, Menu, Search, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
 import { useT } from '../../config/I18nProvider';
+import etecLogo from '../../assets/logo/logo etec 3D.png';
 
 const ANNEE_SCOLAIRE = {
-  debut: { mois: 6, jour: 1 },
-  fin: { mois: 12, jour: 15 },
+  debut: { mois: 1, jour: 1 },
+  fin: { mois: 3, jour: 15 },
 };
 
 function isPeriodeScolaireActive(): boolean {
@@ -128,20 +129,10 @@ export default function Navbar() {
       label: t('navbar', 'university'),
       submenu: [
         { id: 'history', label: t('navbar', 'history'), icon: 'H', path: '/historiques' },
-        { id: 'president', label: t('navbar', 'president'), icon: 'P', path: '/motduPresidents' },
-        { id: 'organigram', label: t('navbar', 'organigram'), icon: 'O', path: '/organigrammes' },
+        // { id: 'organigram', label: t('navbar', 'organigram'), icon: 'O', path: '/organigrammes' },
       ],
     },
-    {
-      id: 'training',
-      label: t('navbar', 'training'),
-      submenu: [
-        { id: 'initialTraining', label: t('navbar', 'initialTraining'), icon: 'FI', path: '/formationInitiale' },
-        { id: 'continuingTraining', label: t('navbar', 'continuingTraining'), icon: 'FC', path: '/formationContinue' },
-        { id: 'onlineTraining', label: t('navbar', 'onlineTraining'), icon: 'EL', path: '/formationsEnligne' },
-      ],
-    },
-    { id: 'admission', label: t('navbar', 'admission'), path: '/admission' },
+    // { id: 'admission', label: t('navbar', 'admission'), path: '/admission' },
     { id: 'news', label: t('navbar', 'news'), path: '/actualites' },
     { id: 'contact', label: t('navbar', 'contact'), path: '/contact' },
   ], [t]);
@@ -196,22 +187,20 @@ export default function Navbar() {
       >
         <div className="flex cursor-pointer items-center gap-2 md:gap-3" onClick={() => handleNavigation('/')}>
           <div
-            className="flex h-9 w-14 items-center justify-center rounded-xl border transition-colors md:h-10 md:w-20"
+            className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border transition-colors md:h-14 md:w-14"
             style={{
-              backgroundColor: darkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,128,0,0.08)',
+              backgroundColor: 'transparent',
               borderColor: darkMode ? 'rgba(255,255,255,0.2)' : 'rgba(0,128,0,0.3)',
             }}
           >
-            <span className="text-sm font-black md:text-base" style={{ color: darkMode ? 'inherit' : '#16a34a' }}>
-              E-TEC
-            </span>
+            <img src={etecLogo} alt="E-TEC University" className="h-full w-full rounded-full object-cover mix-blend-multiply" />
           </div>
           <div className="hidden sm:block">
             <h1
               className="text-[9px] font-bold uppercase leading-none tracking-widest opacity-90 md:text-[10px]"
               style={{ color: darkMode ? 'inherit' : '#16a34a' }}
             >
-              Education in Training Employments and Communication
+              Education in Training Employment and Communication
             </h1>
             <p className="mt-0.5 text-xs font-black uppercase tracking-wider" style={{ color: darkMode ? 'inherit' : '#15803d' }}>
               Faravohitra

@@ -332,12 +332,16 @@ const STATIC_FILIERES: FilierDetail[] = [
   },
 ];
 
-export default function FiliersPage() {
+interface FiliersPageProps {
+  showMission?: boolean;
+}
+
+export default function FiliersPage({ showMission = false }: FiliersPageProps) {
   const { t } = useT();
   const [selectedFilier, setSelectedFilier] = useState<FilierDetail | null>(null);
 
   return (
-    <div className="animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:px-8 md:pb-16 md:pt-28 lg:px-12">
+    <div className="filieres-page animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:px-8 md:pb-16 md:pt-28 lg:px-12">
       <div className="mb-6 max-w-2xl space-y-3 md:mb-10 md:space-y-4">
         <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--primary)' }}>
           <GraduationCap size={20} /> {t('filiers', 'sectionLabel')}
@@ -359,28 +363,31 @@ export default function FiliersPage() {
         ))}
       </div>
 
-      <div className="relative mx-auto mt-12 max-w-3xl overflow-hidden rounded-[2rem] border bg-gradient-to-br from-amber-50/80 via-white/75 to-green-50/80 px-5 py-7 shadow-lg shadow-green-900/[0.04] backdrop-blur-md dark:from-amber-400/[0.08] dark:via-white/[0.03] dark:to-green-500/[0.08] md:mt-16 md:px-10 md:py-9" style={{ borderColor: 'var(--border)' }}>
-        <div className="absolute bottom-0 left-0 top-0 w-1 rounded-full bg-gradient-to-b from-amber-400 via-green-500 to-blue-500" />
+      {showMission && <div className="relative mx-auto mt-12 max-w-5xl overflow-hidden rounded-[2.5rem] border bg-gradient-to-br from-amber-50/90 via-white/80 to-green-50/90 px-6 py-9 shadow-2xl shadow-green-900/[0.08] backdrop-blur-md dark:from-amber-400/[0.1] dark:via-white/[0.04] dark:to-green-500/[0.1] md:mt-16 md:px-12 md:py-12" style={{ borderColor: 'var(--border)' }}>
+        <div className="absolute bottom-0 left-0 top-0 w-1.5 rounded-full bg-gradient-to-b from-amber-400 via-green-500 to-blue-500" />
+        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-green-500/10 blur-3xl" />
         <span aria-hidden="true" className="pointer-events-none absolute -right-2 -top-8 text-[9rem] font-black leading-none text-green-500/[0.06]">“</span>
-        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:gap-7">
-          <Quote size={32} strokeWidth={1.5} className="shrink-0 text-amber-500/70" />
-          <div className="space-y-3">
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:gap-8">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-500 shadow-sm">
+            <Quote size={34} strokeWidth={1.5} />
+          </div>
+          <div className="space-y-4">
             <div className="flex items-center gap-3">
               <span className="h-px w-8" style={{ backgroundColor: 'var(--primary)' }} />
               <span className="text-[10px] font-black uppercase tracking-[0.24em]" style={{ color: 'var(--primary)' }}>
                 {t('about', 'sloganLabel')}
               </span>
             </div>
-            <h2 className="text-xl font-black leading-tight tracking-tight md:text-2xl">
+            <h2 className="max-w-3xl text-2xl font-black leading-tight tracking-tight md:text-4xl">
               <span className="text-gradient">{t('about', 'sloganTitle')}</span>
             </h2>
-            <p className="text-sm font-medium italic leading-7 opacity-75 md:text-base">
+            <p className="max-w-3xl text-sm font-medium italic leading-7 opacity-75 md:text-base md:leading-8">
               {t('about', 'sloganLine1')}<br />
               <span className="font-semibold opacity-90">{t('about', 'sloganLine2')}</span>
             </p>
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Modal */}
       {selectedFilier && (

@@ -11,7 +11,7 @@ export default function HomPages() {
       <div className="w-full">
         <AboutPage compact />
         <NewsPage />
-        <FiliersPage />
+        <FiliersPage showMission />
       </div>
     </>
   );

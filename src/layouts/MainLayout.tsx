@@ -10,7 +10,7 @@ interface MainLayoutProps {
 
 export default function MainLayout({ children }: MainLayoutProps) {
   return (
-    <div className="min-h-screen flex flex-col transition-colors duration-400" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
+    <div className="public-layout min-h-screen flex flex-col transition-colors duration-400" style={{ backgroundColor: 'var(--bg)', color: 'var(--text)' }}>
       
       <TopBar />
 

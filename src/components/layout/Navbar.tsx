@@ -69,7 +69,9 @@ function NavItem({
 
   return (
     <li className="relative cursor-pointer" onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
-      <span className={`flex items-center gap-1 transition ${open ? (darkMode ? 'text-white' : 'text-black') : 'opacity-75 hover:opacity-100'}`}>
+      <span
+        className={`flex items-center gap-1 transition ${open ? (darkMode ? 'text-white' : 'text-black') : 'opacity-75 hover:opacity-100'}`}
+      >
         {link.label}
         <ChevronDown size={11} className="transition-transform duration-200" style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }} />
       </span>

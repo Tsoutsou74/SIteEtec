@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Mail, MapPin, MessageCircle, Phone, PlaySquare, Send, Share2 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { useT } from '../../config/I18nProvider';
+import etecLogo from '../../assets/logo/logo etec 3D.png';
 
 const footerSections = [
   {
@@ -55,14 +56,16 @@ export default function Footer() {
           <div className="space-y-5">
             <Link to="/" className="inline-flex items-center gap-3">
               <span
-                className="flex h-11 w-20 items-center justify-center rounded-xl border text-sm font-black"
+                className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border bg-white shadow-sm"
                 style={{
-                  backgroundColor: darkMode ? 'rgba(255,255,255,0.08)' : 'rgba(0,128,0,0.08)',
                   borderColor: darkMode ? 'rgba(255,255,255,0.16)' : 'rgba(0,128,0,0.25)',
-                  color: darkMode ? 'inherit' : '#16a34a',
                 }}
               >
-                E-TEC
+                <img
+                  src={etecLogo}
+                  alt="Logo E-TEC University"
+                  className="h-full w-full object-cover"
+                />
               </span>
               <div>
                 <p className="text-sm font-black uppercase tracking-wider text-green-500">E-TEC University</p>

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { ArrowRight, Newspaper, X } from 'lucide-react';
@@ -94,7 +95,7 @@ function NewsCard({ image, title, excerpt, onRead }: ArticleProps & { onRead: ()
         />
       </div>
 
-        <div className="flex flex-grow flex-col justify-between p-3 md:p-3.5">
+      <div className="flex flex-grow flex-col justify-between p-3 md:p-3.5">
         <div className="space-y-1 md:space-y-1.5">
           <h3 className="line-clamp-2 text-sm font-black leading-snug tracking-tight md:text-base">
             {title}
@@ -154,7 +155,7 @@ export default function NewsPage({ showSeeMore = true }: { showSeeMore?: boolean
         ))}
       </div>
 
-      {selectedArticle && (
+      {selectedArticle && createPortal(
         <div
           role="presentation"
           onMouseDown={(event) => {
@@ -173,7 +174,8 @@ export default function NewsPage({ showSeeMore = true }: { showSeeMore?: boolean
               <p className="mt-3 text-sm leading-7 opacity-75">{selectedArticle.details ?? selectedArticle.excerpt}</p>
             </div>
           </article>
-        </div>
+        </div>,
+        document.body,
       )}
 
       {showSeeMore && (

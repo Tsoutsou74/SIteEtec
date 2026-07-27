@@ -41,7 +41,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="animate-fade-in w-full px-4 pb-12 pt-24 sm:px-6 md:px-8 md:pb-16 md:pt-28 lg:px-12">
+    <div className="animate-fade-in w-full px-4 pb-12 pt-44 sm:px-6 md:px-8 md:pb-16 md:pt-52 lg:px-12">
       <div className="mb-10 max-w-2xl space-y-3 md:mb-16 md:space-y-4">
         <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest" style={{ color: 'var(--primary)' }}>
           <Info size={14} /> {t('contact', 'sectionLabel')}
@@ -56,14 +56,26 @@ export default function ContactPage() {
         <div className="space-y-5 md:space-y-6 lg:col-span-5">
           <h2 className="text-lg font-black tracking-tight md:text-xl">{t('contact', 'coordTitle')}</h2>
 
-          <div className="h-52 w-full overflow-hidden rounded-2xl border shadow-sm sm:h-60 md:h-64" style={cardStyle}>
+          <div className="relative h-52 w-full overflow-hidden rounded-2xl border shadow-sm sm:h-60 md:h-64" style={cardStyle}>
             <iframe
               title="E-TEC University - Faravohitra"
-              src="https://maps.google.com/maps?q=Faravohitra,%20Antananarivo&t=&z=15&ie=UTF8&iwloc=&output=embed"
+              src="https://maps.google.com/maps?q=-18.908989,47.529536&t=&z=18&ie=UTF8&iwloc=&output=embed"
               className={`h-full w-full border-0 opacity-90 ${darkMode ? 'invert-[0.9] hue-rotate-180' : ''}`}
               allowFullScreen={false}
               loading="lazy"
             />
+            <div className="pointer-events-none absolute left-1/2 top-[42%] z-10 -translate-x-1/2 -translate-y-full">
+              <div className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.22em] shadow-lg backdrop-blur-md"
+                   style={{
+                     backgroundColor: darkMode ? 'rgba(0,0,0,0.78)' : 'rgba(255,255,255,0.92)',
+                     borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)',
+                     color: 'var(--primary)',
+                   }}>
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--primary)] text-[9px] text-white">E</span>
+                <span>E-TEC UNIVERSITY</span>
+              </div>
+              <div className="mx-auto h-3 w-3 translate-y-[-1px] rotate-45 border-b border-r" style={{ backgroundColor: darkMode ? 'rgba(0,0,0,0.78)' : 'rgba(255,255,255,0.92)', borderColor: darkMode ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)' }} />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-3 md:gap-4">

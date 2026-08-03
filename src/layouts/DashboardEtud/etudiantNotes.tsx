@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { 
   ClipboardList, Search, Award, CheckCircle2, 
   AlertTriangle, HelpCircle, TrendingUp, Loader2 
@@ -26,25 +25,18 @@ export default function Notes() {
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
 
-  // ─── Récupération des Notes depuis l'API ──────────────────
+  // ─── Récupération des Notes ──────────────────
   useEffect(() => {
     const fetchNotesData = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      };
-
       try {
-        if (ApiService.etudiant?.getNotesDetail) {
-          const res = await ApiService.etudiant.getNotesDetail(config);
-          if (res && res.data) {
-            setNotes(res.data);
-          }
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setNotes([
+          { id: '1', code: 'INFO101', matiere: 'Algorithmique 1', noteDevoir: 15, noteExamen: 14, coefficient: 4, enseignant: 'M. Dupont' },
+          { id: '2', code: 'MATH101', matiere: 'Algèbre linéaire', noteDevoir: 12, noteExamen: 9, coefficient: 3, enseignant: 'Mme. Martin' },
+          { id: '3', code: 'PHYS101', matiere: 'Mécanique', noteDevoir: null, noteExamen: null, coefficient: 3, enseignant: 'M. Bernard' },
+          { id: '4', code: 'LANG101', matiere: 'Anglais', noteDevoir: 18, noteExamen: 16, coefficient: 2, enseignant: 'Mr. Smith' }
+        ]);
       } catch (err) {
         console.error("Erreur lors de la récupération des notes :", err);
       } finally {

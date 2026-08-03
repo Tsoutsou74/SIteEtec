@@ -5,7 +5,7 @@ import {
   Clock, User, Download, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface LogEntry {
@@ -39,8 +39,13 @@ export default function AdminHistorique() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.historiques.getAll();
-      setLogs(res.data);
+      const mockData: LogEntry[] = [
+        { id: 1, adminName: 'Jean Dupont', action: 'Création d\'un étudiant', target: 'Marie Curie', type: 'create', date: '2026-07-29', time: '14:30', ipAddress: '192.168.1.10' },
+        { id: 2, adminName: 'Admin System', action: 'Tentative de connexion échouée', target: 'Compte Admin', type: 'security', date: '2026-07-30', time: '08:15', ipAddress: '10.0.0.5' },
+        { id: 3, adminName: 'Sophie Leroux', action: 'Modification de filière', target: 'Génie Logiciel', type: 'update', date: '2026-07-30', time: '10:45', ipAddress: '192.168.1.12' },
+        { id: 4, adminName: 'Jean Dupont', action: 'Suppression de document', target: 'Dossier 4502', type: 'delete', date: '2026-07-30', time: '11:20', ipAddress: '192.168.1.10' },
+      ];
+      setLogs(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'historique des activités.");
@@ -80,19 +85,11 @@ export default function AdminHistorique() {
   const handlePurgeLogs = async () => {
     if (!confirm('Voulez-vous vraiment vider tout l’historique des logs ? Cette action est irréversible.')) return;
 
-    const previous = logs;
     setIsPurging(true);
-    setLogs([]);
-
-    try {
-      await ApiService.historiques.purgeAll();
-    } catch (err) {
-      console.error(err);
-      setLogs(previous); // rollback
-      alert("La purge a échoué côté serveur, réessaie.");
-    } finally {
+    setTimeout(() => {
+      setLogs([]);
       setIsPurging(false);
-    }
+    }, 500);
   };
 
   const handleExportCSV = () => {

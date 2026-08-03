@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { 
   Award, CheckCircle2, XCircle, ShieldCheck, 
   ChevronDown, ChevronUp, FileText, Info, Loader2 
@@ -48,29 +47,39 @@ export default function Resultats() {
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
 
-  // ─── Récupération des Résultats via l'API ────────────────
+  // ─── Récupération des Résultats ────────────────
   useEffect(() => {
     const fetchResultatsData = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      };
-
       try {
-        if (ApiService.etudiant?.getResultats) {
-          const res = await ApiService.etudiant.getResultats(config);
-          if (res && res.data) {
-            setDeliberation(res.data);
-            // Ouvrir par défaut la première UE de la liste s'il y en a une
-            if (res.data.ues && res.data.ues.length > 0) {
-              setExpandedUE({ [res.data.ues[0].id]: true });
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setDeliberation({
+          semestre: 'Semestre 5',
+          anneeUniversitaire: '2025-2026',
+          moyenneGenerale: 14.5,
+          totalCreditsAcquis: 30,
+          totalCreditsSemestre: 30,
+          statutFinal: 'Admis',
+          mention: 'Bien',
+          decisionJury: 'Admis(e) à passer au semestre suivant',
+          ues: [
+            {
+              id: 'ue1', codeUE: 'UE51', nomUE: 'Ingénierie Logicielle', creditsUE: 15, moyenneUE: 15.2, valide: true,
+              matieres: [
+                { code: 'IL501', nom: 'Génie Logiciel Avancé', note: 16, credit: 5, valide: true },
+                { code: 'IL502', nom: 'Architecture des Systèmes', note: 14.5, credit: 10, valide: true }
+              ]
+            },
+            {
+              id: 'ue2', codeUE: 'UE52', nomUE: 'Développement Web', creditsUE: 15, moyenneUE: 13.8, valide: true,
+              matieres: [
+                { code: 'DW501', nom: 'Frameworks JavaScript', note: 15, credit: 8, valide: true },
+                { code: 'DW502', nom: 'Technologies Backend', note: 12.5, credit: 7, valide: true }
+              ]
             }
-          }
-        }
+          ]
+        });
+        setExpandedUE({ 'ue1': true });
       } catch (err) {
         console.error("Erreur lors de la récupération des notes et délibérations :", err);
       } finally {

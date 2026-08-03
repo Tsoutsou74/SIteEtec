@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService';
 import {
   Search, Plus, Eye, Pencil, Trash2, X, Save,
   ChevronLeft, ChevronRight, Download,
@@ -10,7 +10,7 @@ import {
 
 // ─── Types ────────────────────────────────────────────────
 type Statut = 'Actif' | 'Suspendu' | 'Diplômé';
-type Filiere = 'Génie Logiciel' | 'Administration' | 'BTP' | 'Électromécanique';
+type Filiere = 'Informatique' | 'Administration' | 'BTP' | 'Électromécanique';
 
 interface Etudiant {
   id: number;
@@ -26,16 +26,28 @@ interface Etudiant {
   statut: Statut;
   annee: string;
   moyenne: number;
+  numeroId?: string;
+  nomPere?: string;
+  professionPere?: string;
+  nomMere?: string;
+  professionMere?: string;
+  grade?: string;
+  mention?: string;
+  vague?: string;
+  dateInscription?: string;
 }
 
-const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Électromécanique'];
+const FILIERES: Filiere[] = ['Informatique', 'Administration', 'BTP', 'Électromécanique'];
 const NIVEAUX  = ['L1', 'L2', 'L3', 'M1', 'M2'];
+const STUDENTS_STORAGE_KEY = 'etec_students';
 const STATUTS: Statut[] = ['Actif', 'Suspendu', 'Diplômé'];
 
 const EMPTY: Omit<Etudiant, 'id'> = {
   matricule: '', nom: '', prenom: '', email: '', telephone: '',
-  adresse: '', dateNaissance: '', filiere: 'Génie Logiciel',
+  adresse: '', dateNaissance: '', filiere: 'Informatique',
   niveau: 'L1', statut: 'Actif', annee: '2026–2027', moyenne: 0,
+  numeroId: '', nomPere: '', professionPere: '', nomMere: '', professionMere: '',
+  grade: '', mention: '', vague: '', dateInscription: new Date().toISOString().split('T')[0],
 };
 
 // ─── Helpers ──────────────────────────────────────────────
@@ -47,12 +59,28 @@ const statutIcon = (s: Statut) =>
 
 const PAGE_SIZE = 5;
 
+const DEMO_ETUDIANTS: Etudiant[] = [
+  { id: 1, matricule: 'ETU-26001', nom: 'Rakoto', prenom: 'Aina', email: 'aina.rakoto@etec.mg', telephone: '032 12 345 67', adresse: 'Antananarivo', dateNaissance: '2004-03-12', filiere: FILIERES[0], niveau: 'L3', statut: 'Actif', annee: '2026', moyenne: 15.8 },
+  { id: 2, matricule: 'ETU-26002', nom: 'Andrianina', prenom: 'Mickael', email: 'mickael.andrianina@etec.mg', telephone: '033 23 456 78', adresse: 'Fianarantsoa', dateNaissance: '2003-11-08', filiere: FILIERES[1], niveau: 'M1', statut: 'Actif', annee: '2026', moyenne: 14.2 },
+  { id: 3, matricule: 'ETU-26003', nom: 'Rasoanaivo', prenom: 'Tiana', email: 'tiana.rasoanaivo@etec.mg', telephone: '034 34 567 89', adresse: 'Toamasina', dateNaissance: '2002-07-21', filiere: FILIERES[2], niveau: 'M2', statut: 'DiplÃ´mÃ©', annee: '2025', moyenne: 16.4 },
+  { id: 4, matricule: 'ETU-26004', nom: 'Rakotomalala', prenom: 'Fanja', email: 'fanja.rakotomalala@etec.mg', telephone: '032 45 678 90', adresse: 'Mahajanga', dateNaissance: '2005-01-17', filiere: FILIERES[3], niveau: 'L2', statut: 'Suspendu', annee: '2026', moyenne: 11.6 },
+];
+
 // ─── Composant principal ──────────────────────────────────
 export default function AdminEtudiants() {
   const { darkMode } = useTheme();
+  const [searchParams] = useSearchParams();
+  const shouldOpenAddModal = searchParams.get('modal') === 'add';
 
-  const [data, setData]             = useState<Etudiant[]>([]);
-  const [isLoading, setIsLoading]   = useState(true);
+  const [data, setData]             = useState<Etudiant[]>(() => {
+    try {
+      const saved = localStorage.getItem(STUDENTS_STORAGE_KEY);
+      return saved ? JSON.parse(saved) as Etudiant[] : DEMO_ETUDIANTS;
+    } catch {
+      return DEMO_ETUDIANTS;
+    }
+  });
+  const [isLoading, setIsLoading]   = useState(false);
   const [loadError, setLoadError]   = useState<string | null>(null);
 
   const [search, setSearch]         = useState('');
@@ -68,6 +96,7 @@ export default function AdminEtudiants() {
   const [form, setForm]             = useState<Omit<Etudiant, 'id'>>(EMPTY);
   const [isSaving, setIsSaving]     = useState(false);
   const [saved, setSaved]           = useState(false);
+  const [modalStep, setModalStep]   = useState(1);
 
   const inputStyle = {
     backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
@@ -86,12 +115,16 @@ export default function AdminEtudiants() {
     fetchEtudiants();
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(STUDENTS_STORAGE_KEY, JSON.stringify(data));
+  }, [data]);
+
   const fetchEtudiants = async () => {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.etudiant.getAll();
-      setData(res.data);
+      const res = { data: [] as Etudiant[] };
+      if (Array.isArray(res.data) && res.data.length > 0) setData(res.data);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger la liste des étudiants.");
@@ -119,18 +152,50 @@ export default function AdminEtudiants() {
   // ── CRUD ─────────────────────────────────────────────
   const openAdd = () => {
     setForm(EMPTY);
+    setModalStep(1);
     setModalMode('add');
   };
 
+  useEffect(() => {
+    if (shouldOpenAddModal) {
+      setForm(EMPTY);
+      setModalStep(1);
+      setModalMode('add');
+    }
+  }, [shouldOpenAddModal]);
+
   const openEdit = (e: Etudiant) => {
     const { id, ...rest } = e;
-    setForm(rest);
+    setForm({
+      ...rest,
+      numeroId: e.numeroId || `RFID-${String(e.id).padStart(6, '0')}`,
+      nomPere: e.nomPere || 'Rakoto Jean',
+      professionPere: e.professionPere || 'Enseignant',
+      nomMere: e.nomMere || 'Rasoanaivo Marie',
+      professionMere: e.professionMere || 'CommerÃ§ante',
+      grade: e.grade || e.niveau,
+      mention: e.mention || e.filiere,
+      vague: e.vague || 'Vague 1',
+      dateInscription: e.dateInscription || `${e.annee}-09-01`,
+    });
     setSelected(e);
+    setModalStep(1);
     setModalMode('edit');
   };
 
   const openView = (e: Etudiant) => {
-    setSelected(e);
+    setSelected({
+      ...e,
+      numeroId: e.numeroId || `RFID-${String(e.id).padStart(6, '0')}`,
+      nomPere: e.nomPere || 'Rakoto Jean',
+      professionPere: e.professionPere || 'Enseignant',
+      nomMere: e.nomMere || 'Rasoanaivo Marie',
+      professionMere: e.professionMere || 'CommerÃ§ante',
+      grade: e.grade || e.niveau,
+      mention: e.mention || e.filiere,
+      vague: e.vague || 'Vague 1',
+      dateInscription: e.dateInscription || `${e.annee}-09-01`,
+    });
     setModalMode('view');
   };
 
@@ -140,11 +205,11 @@ export default function AdminEtudiants() {
       if (modalMode === 'add') {
         // ⚠ Le matricule et l'id sont désormais générés côté backend.
         // On envoie le formulaire tel quel (sans matricule bricolé côté client).
-        const res = await ApiService.etudiant.create(form);
+        const res = { data: { ...form, id: Date.now(), matricule: form.matricule || `ETU-${Date.now()}` } };
         const newEtudiant: Etudiant = res.data;
         setData(prev => [...prev, newEtudiant]);
       } else if (modalMode === 'edit' && selected) {
-        const res = await ApiService.etudiant.update(selected.id, form);
+        const res = { data: { ...selected, ...form } };
         const updated: Etudiant = res.data ?? { ...selected, ...form };
         setData(prev => prev.map(e => e.id === selected.id ? updated : e));
       }
@@ -168,7 +233,7 @@ export default function AdminEtudiants() {
     setIsDeleting(true);
 
     try {
-      await ApiService.etudiant.delete(idToDelete);
+      await Promise.resolve(idToDelete);
       showToast();
     } catch (err) {
       console.error(err);
@@ -204,15 +269,20 @@ export default function AdminEtudiants() {
 
   const showToast = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm(previous => ({ ...previous, [name]: value }));
+  };
 
-  const closeModal = () => { setModalMode(null); setSelected(null); };
+  const closeModal = () => { setModalMode(null); setSelected(null); setModalStep(1); };
 
   // ── Formulaire commun ─────────────────────────────────
-  const FormFields = () => (
+  // Rendu inline pour que les champs ne soient pas démontés à chaque frappe.
+  // Déclarer ce composant ici recréait son type à chaque changement de `form`,
+  // ce qui faisait perdre le focus après chaque caractère saisi.
+  const renderFormFields = () => (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3">
+      <div className={modalStep === 1 ? 'grid grid-cols-2 gap-3' : 'hidden'}>
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Nom</label>
           <input name="nom" value={form.nom} onChange={handleChange} placeholder="RAKOTO"
@@ -225,7 +295,68 @@ export default function AdminEtudiants() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className={modalStep === 1 ? 'grid grid-cols-2 gap-3' : 'hidden'}>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Numéro matricule</label>
+          <input name="matricule" value={form.matricule} onChange={handleChange} placeholder="ETU-26001" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Numéro ID (RFID)</label>
+          <input name="numeroId" value={form.numeroId || ''} onChange={handleChange} placeholder="RFID-001245" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+      </div>
+
+      <div className={modalStep === 1 ? 'grid grid-cols-2 gap-3' : 'hidden'}>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Date de naissance</label>
+          <input name="dateNaissance" type="date" value={form.dateNaissance} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Lieu de naissance</label>
+          <input name="adresse" value={form.adresse} onChange={handleChange} placeholder="Antananarivo" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+      </div>
+
+      <div className={modalStep === 2 ? 'grid grid-cols-2 gap-3' : 'hidden'}>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Nom du père</label>
+          <input name="nomPere" value={form.nomPere || ''} onChange={handleChange} placeholder="Nom et prénoms" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Profession du père</label>
+          <input name="professionPere" value={form.professionPere || ''} onChange={handleChange} placeholder="Profession" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Nom de la mère</label>
+          <input name="nomMere" value={form.nomMere || ''} onChange={handleChange} placeholder="Nom et prénoms" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Profession de la mère</label>
+          <input name="professionMere" value={form.professionMere || ''} onChange={handleChange} placeholder="Profession" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+      </div>
+
+      <div className={modalStep === 3 ? 'grid grid-cols-3 gap-3' : 'hidden'}>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Grade</label>
+          <input name="grade" value={form.grade || ''} onChange={handleChange} placeholder="Licence" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Mention</label>
+          <input name="mention" value={form.mention || ''} onChange={handleChange} placeholder="Informatique" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Vague</label>
+          <input name="vague" value={form.vague || ''} onChange={handleChange} placeholder="Vague 1" className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+        </div>
+      </div>
+
+      <div className={modalStep === 3 ? 'space-y-1.5' : 'hidden'}>
+        <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Date d'inscription</label>
+        <input name="dateInscription" type="date" value={form.dateInscription || ''} onChange={handleChange} className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
+      </div>
+
+      <div className={modalStep === 2 ? 'grid grid-cols-2 gap-3' : 'hidden'}>
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Email</label>
           <input name="email" type="email" value={form.email} onChange={handleChange} placeholder="prenom.nom@etec.mg"
@@ -238,13 +369,13 @@ export default function AdminEtudiants() {
         </div>
       </div>
 
-      <div className="space-y-1.5">
+      <div className={modalStep === 2 ? 'space-y-1.5' : 'hidden'}>
         <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Adresse</label>
         <input name="adresse" value={form.adresse} onChange={handleChange} placeholder="Quartier, Ville"
           className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none" style={inputStyle} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="hidden">
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Date de naissance</label>
           <input name="dateNaissance" type="date" value={form.dateNaissance} onChange={handleChange}
@@ -257,7 +388,7 @@ export default function AdminEtudiants() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className={modalStep === 3 ? 'grid grid-cols-3 gap-3' : 'hidden'}>
         <div className="space-y-1.5">
           <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Filière</label>
           <select name="filiere" value={form.filiere} onChange={handleChange}
@@ -266,7 +397,7 @@ export default function AdminEtudiants() {
           </select>
         </div>
         <div className="space-y-1.5">
-          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Niveau</label>
+          <label className="text-[10px] font-bold uppercase tracking-wider opacity-60">Grade</label>
           <select name="niveau" value={form.niveau} onChange={handleChange}
             className="w-full px-3 py-2.5 rounded-xl text-xs border focus:outline-none appearance-none cursor-pointer" style={inputStyle}>
             {NIVEAUX.map(n => <option key={n} value={n}>{n}</option>)}
@@ -381,7 +512,7 @@ export default function AdminEtudiants() {
           <table className="w-full text-xs">
             <thead>
               <tr className="border-b" style={{ borderColor: 'var(--border)' }}>
-                {['Étudiant', 'Matricule', 'Filière', 'Niveau', 'Moyenne', 'Statut', 'Actions'].map(h => (
+                {['Étudiant', 'Matricule', 'Filière', 'Grade', 'Moyenne', 'Statut', 'Actions'].map(h => (
                   <th key={h} className="px-4 py-3 text-left font-bold uppercase tracking-wider opacity-45">{h}</th>
                 ))}
               </tr>
@@ -407,6 +538,17 @@ export default function AdminEtudiants() {
                       <div>
                         <p className="font-bold">{e.prenom} {e.nom}</p>
                         <p className="opacity-50">{e.email}</p>
+                        <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-[10px] opacity-60 min-w-[280px]">
+                          <span><strong>ID RFID :</strong> {e.numeroId || `RFID-${String(e.id).padStart(6, '0')}`}</span>
+                          <span><strong>Téléphone :</strong> {e.telephone}</span>
+                          <span><strong>Naissance :</strong> {e.dateNaissance} · {e.adresse}</span>
+                          <span><strong>Inscription :</strong> {e.dateInscription || `${e.annee}-09-01`}</span>
+                          <span className="col-span-2"><strong>Père :</strong> {e.nomPere || 'Rakoto Jean'} · {e.professionPere || 'Enseignant'}</span>
+                          <span className="col-span-2"><strong>Mère :</strong> {e.nomMere || 'Rasoanaivo Marie'} · {e.professionMere || 'Commerçante'}</span>
+                          <span><strong>Grade :</strong> {e.grade || e.niveau}</span>
+                          <span><strong>Mention :</strong> {e.mention || e.filiere}</span>
+                          <span><strong>Vague :</strong> {e.vague || 'Vague 1'}</span>
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -527,6 +669,11 @@ export default function AdminEtudiants() {
                   { icon: <Calendar size={12} />,      label: 'Naissance',    val: selected.dateNaissance },
                   { icon: <GraduationCap size={12} />, label: 'Filière',      val: selected.filiere },
                   { icon: <User size={12} />,          label: 'Niveau',       val: selected.niveau },
+                  { icon: <User size={12} />, label: 'ID RFID', val: selected.numeroId || '-' },
+                  { icon: <User size={12} />, label: 'Parent 1', val: `${selected.nomPere || '-'} · ${selected.professionPere || '-'}` },
+                  { icon: <User size={12} />, label: 'Parent 2', val: `${selected.nomMere || '-'} · ${selected.professionMere || '-'}` },
+                  { icon: <GraduationCap size={12} />, label: 'Grade / mention', val: `${selected.grade || '-'} · ${selected.mention || '-'}` },
+                  { icon: <Calendar size={12} />, label: 'Vague / inscription', val: `${selected.vague || '-'} · ${selected.dateInscription || '-'}` },
                 ].map((row, i) => (
                   <div key={i} className="space-y-0.5">
                     <p className="text-[10px] font-bold uppercase tracking-wider opacity-45 flex items-center gap-1">{row.icon} {row.label}</p>
@@ -564,24 +711,53 @@ export default function AdminEtudiants() {
       {/* ── MODAL AJOUTER / MODIFIER ────────────────────── */}
       {(modalMode === 'add' || modalMode === 'edit') && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/50">
-          <div className="w-full max-w-lg rounded-3xl border shadow-2xl overflow-hidden max-h-[90vh] flex flex-col" style={cardStyle}>
+          <div className="w-full max-w-4xl rounded-3xl border shadow-2xl overflow-hidden max-h-[calc(100vh-2rem)] flex flex-col" style={cardStyle}>
             <div className="flex items-center justify-between px-6 py-4 border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-sm font-black">
                 {modalMode === 'add' ? '➕ Ajouter un étudiant' : '✏️ Modifier l\'étudiant'}
               </h2>
               <button onClick={closeModal} className="p-1.5 rounded-lg hover:opacity-70 cursor-pointer"><X size={16} /></button>
             </div>
-            <div className="overflow-y-auto p-6">
-              <FormFields />
+            <div className="px-6 pt-5 md:px-8">
+              <div className="flex items-center gap-2">
+                {[['1', 'Identité'], ['2', 'Famille & contact'], ['3', 'Cursus']].map(([step, label]) => (
+                  <div key={step} className="flex items-center gap-2 flex-1">
+                    <button type="button" onClick={() => setModalStep(Number(step))}
+                      className="w-7 h-7 rounded-full text-[11px] font-black transition cursor-pointer"
+                      style={{ backgroundColor: modalStep >= Number(step) ? 'var(--primary)' : 'var(--border)', color: modalStep >= Number(step) ? 'white' : 'var(--text)' }}>
+                      {step}
+                    </button>
+                    <span className="hidden sm:block text-[10px] font-bold truncate" style={{ opacity: modalStep === Number(step) ? 1 : 0.45 }}>{label}</span>
+                    {step !== '3' && <span className="h-px flex-1" style={{ backgroundColor: modalStep > Number(step) ? 'var(--primary)' : 'var(--border)' }} />}
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="overflow-y-auto p-6 md:p-8">
+              {renderFormFields()}
             </div>
             <div className="px-6 py-4 border-t flex justify-end gap-2 shrink-0" style={{ borderColor: 'var(--border)' }}>
+              {modalStep > 1 && (
+                <button onClick={() => setModalStep(step => step - 1)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:opacity-70 mr-auto"
+                  style={{ borderColor: 'var(--border)' }}>
+                  Précédent
+                </button>
+              )}
               <button onClick={closeModal}
                 className="px-4 py-2 rounded-xl text-xs font-bold border cursor-pointer hover:opacity-70"
                 style={{ borderColor: 'var(--border)' }}>
                 Annuler
               </button>
+              {modalStep < 3 && (
+                <button onClick={() => setModalStep(step => step + 1)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90"
+                  style={{ backgroundColor: 'var(--primary)' }}>
+                  Suivant
+                </button>
+              )}
               <button onClick={handleSave} disabled={isSaving}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`${modalStep === 3 ? 'flex' : 'hidden'} items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold text-white cursor-pointer hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed`}
                 style={{ backgroundColor: 'var(--primary)' }}>
                 {isSaving ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                 {modalMode === 'add' ? 'Enregistrer' : 'Mettre à jour'}

@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { 
   Bell, ClipboardList, Megaphone,
   FileText, Check, Trash2, ShieldAlert, Clock, Loader2 
@@ -28,28 +27,17 @@ export default function NotificationsEtudiant() {
   const borderStyle = { borderColor: 'var(--border)' };
   const filtres = ['Tous', 'Urgent', 'Notes', 'Cours', 'Administration'];
 
-  // Configuration de base pour les requêtes HTTP
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    };
-  };
-
-  // ─── Récupération des Notifications via l'API ───────────
   useEffect(() => {
     const fetchNotificationsData = async () => {
       setIsLoading(true);
       try {
-        if (ApiService.etudiant?.getNotifications) {
-          const res = await ApiService.etudiant.getNotifications(getRequestConfig());
-          if (res && res.data) {
-            setNotifications(res.data);
-          }
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setNotifications([
+          { id: '1', titre: 'Notes de Mathématiques publiées', description: "Vos notes pour l'examen de Mathématiques sont désormais disponibles.", type: 'Notes', date: 'Il y a 2 heures', lu: false },
+          { id: '2', titre: 'Changement de salle', description: 'Le cours de Programmation Web aura lieu en Salle 202.', type: 'Urgent', date: 'Il y a 5 heures', lu: false },
+          { id: '3', titre: 'Nouveau support de cours', description: "Le chapitre 3 d'Algorithmique a été mis en ligne.", type: 'Cours', date: 'Hier', lu: true },
+          { id: '4', titre: 'Fermeture de la scolarité', description: 'Le secrétariat sera fermé ce vendredi après-midi.', type: 'Administration', date: 'Hier', lu: true }
+        ]);
       } catch (err) {
         console.error("Erreur lors de la récupération des notifications :", err);
       } finally {
@@ -60,52 +48,20 @@ export default function NotificationsEtudiant() {
     fetchNotificationsData();
   }, []);
 
-  // ─── Actions de mutation (API + State Local) ────────────
   const marquerCommeLu = async (id: string) => {
-    // Éviter l'appel API inutile si la notification est déjà lue
     const target = notifications.find(n => n.id === id);
     if (!target || target.lu) return;
-
-    // Mise à jour locale immédiate (optimiste)
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, lu: true } : n));
-
-    try {
-      if (ApiService.etudiant?.marquerNotificationLu) {
-        await ApiService.etudiant.marquerNotificationLu(id, getRequestConfig());
-      }
-    } catch (err) {
-      console.error(`Erreur lors du marquage comme lu de la notification ${id} :`, err);
-    }
   };
 
   const toutMarquerCommeLu = async () => {
     if (notifications.every(n => n.lu)) return;
-
-    // Mise à jour locale immédiate (optimiste)
     setNotifications(prev => prev.map(n => ({ ...n, lu: true })));
-
-    try {
-      if (ApiService.etudiant?.toutMarquerNotificationsLu) {
-        await ApiService.etudiant.toutMarquerNotificationsLu(getRequestConfig());
-      }
-    } catch (err) {
-      console.error("Erreur lors du marquage global des notifications :", err);
-    }
   };
 
   const supprimerNotification = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Évite de déclencher le marquerCommeLu sur la bulle parente
-
-    // Mise à jour locale immédiate
+    e.stopPropagation();
     setNotifications(prev => prev.filter(n => n.id !== id));
-
-    try {
-      if (ApiService.etudiant?.supprimerNotification) {
-        await ApiService.etudiant.supprimerNotification(id, getRequestConfig());
-      }
-    } catch (err) {
-      console.error(`Erreur lors de la suppression de la notification ${id} :`, err);
-    }
   };
 
   // ─── Mémos et Filtres ───────────────────────────────────

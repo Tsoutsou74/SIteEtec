@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { Users, UserCheck, BookOpen, ClipboardList } from 'lucide-react';
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
@@ -49,6 +49,38 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
+const INSCRIPTIONS_DATA = [
+  { mois: 'Jan', etudiants: 82 },
+  { mois: 'Fév', etudiants: 118 },
+  { mois: 'Mar', etudiants: 96 },
+  { mois: 'Avr', etudiants: 145 },
+  { mois: 'Mai', etudiants: 132 },
+  { mois: 'Juin', etudiants: 168 },
+  { mois: 'Juil', etudiants: 154 },
+];
+
+const FILIERE_DATA = [
+  { name: 'Génie logiciel', value: 34, color: '#3b82f6' },
+  { name: 'Intelligence artificielle', value: 26, color: '#8b5cf6' },
+  { name: 'Réseaux', value: 22, color: '#22c55e' },
+  { name: 'Cybersécurité', value: 18, color: '#f59e0b' },
+];
+
+const INSERTION_DATA = [
+  { annee: '2022', taux: 84 },
+  { annee: '2023', taux: 87 },
+  { annee: '2024', taux: 91 },
+  { annee: '2025', taux: 94 },
+  { annee: '2026', taux: 96 },
+];
+
+const TAUX_REUSSITE_DATA = [
+  { filiere: 'GL', s1: 78, s2: 84 },
+  { filiere: 'IA', s1: 82, s2: 89 },
+  { filiere: 'Réseaux', s1: 74, s2: 81 },
+  { filiere: 'Cyber', s1: 86, s2: 92 },
+];
+
 export default function AdminHome() {
   const { darkMode } = useTheme();
   const { t } = useTranslation();
@@ -56,40 +88,26 @@ export default function AdminHome() {
 
   const [stats, setStats] = useState({ etudiants: '0', enseignants: '0', formations: '0', dossiers: '0' });
   const [recentsInscriptions, setRecentsInscriptions] = useState<any[]>([]);
-  const [inscriptionsData] = useState<any[]>([]);
-  const [filiereData] = useState<any[]>([]);
-  const [insertionData] = useState<any[]>([]);
-  const [tauxReussiteData] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        const [resEtudiants, resEnseignants, resFiliers, resDemandes] = await Promise.all([
-          ApiService?.etudiant?.getAll().catch(() => ({ data: [] })),
-          ApiService?.enseignant?.getAll().catch(() => ({ data: [] })),
-          ApiService?.filieres?.getAll().catch(() => ({ data: [] })),
-          ApiService?.contacts?.getAll().catch(() => ({ data: [] })),
-        ]);
-
         setStats({
-          etudiants: resEtudiants?.data ? resEtudiants.data.length.toLocaleString() : '0',
-          enseignants: resEnseignants?.data ? resEnseignants.data.length.toLocaleString() : '0',
-          formations: resFiliers?.data ? resFiliers.data.length.toLocaleString() : '0',
-          dossiers: resDemandes?.data ? resDemandes.data.length.toLocaleString() : '0',
+          etudiants: '1 250',
+          enseignants: '145',
+          formations: '24',
+          dossiers: '320',
         });
 
-        if (resEtudiants?.data && resEtudiants.data.length > 0) {
-          const transformes = resEtudiants.data.slice(-5).reverse().map((e: any) => ({
-            nom: `${e.nom || ''} ${e.prenom || ''}`.trim() || 'Sans nom',
-            filiere: e.filiere || 'Génie Logiciel',
-            date: e.dateInscription || new Date().toLocaleDateString('fr-FR'),
-            statut: e.statut || 'En attente',
-            color: e.statut === 'Refusé' ? '#ef4444' : e.statut === 'Validé' ? '#22c55e' : '#f59e0b',
-          }));
-          setRecentsInscriptions(transformes);
-        }
+        setRecentsInscriptions([
+          { nom: 'Jean Dupont', filiere: 'Génie Logiciel', date: '12/09/2026', statut: 'Validé', color: '#22c55e' },
+          { nom: 'Marie Curie', filiere: 'Intelligence Artificielle', date: '14/09/2026', statut: 'En attente', color: '#f59e0b' },
+          { nom: 'Lucas Martin', filiere: 'Cybersécurité', date: '15/09/2026', statut: 'Refusé', color: '#ef4444' },
+          { nom: 'Sophie Leroux', filiere: 'Réseaux', date: '16/09/2026', statut: 'Validé', color: '#22c55e' },
+          { nom: 'Antoine Blanc', filiere: 'Génie Logiciel', date: '17/09/2026', statut: 'En attente', color: '#f59e0b' },
+        ]);
       } catch (error) {
-        console.error('Erreur lors du chargement des données API', error);
+        console.error('Erreur lors du chargement des données', error);
       }
     };
 
@@ -113,7 +131,7 @@ export default function AdminHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <ChartCard title={t('dashboard.admin.home.monthlyTitle')} subtitle={t('dashboard.admin.home.monthlySubtitle')}>
           <ResponsiveContainer width="100%" height={220}>
-            <AreaChart data={inscriptionsData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+            <AreaChart data={INSCRIPTIONS_DATA} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <defs><linearGradient id="gradEtu" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} /><stop offset="95%" stopColor="#3b82f6" stopOpacity={0} /></linearGradient></defs>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#ffffff12' : '#00000010'} />
               <XAxis dataKey="mois" tick={{ fontSize: 10, fill: darkMode ? '#ffffff55' : '#00000055' }} axisLine={false} tickLine={false} />
@@ -128,8 +146,8 @@ export default function AdminHome() {
         <ChartCard title={t('dashboard.admin.home.byProgramTitle')} subtitle={t('dashboard.admin.home.byProgramSubtitle')}>
           <ResponsiveContainer width="100%" height={180}>
             <PieChart>
-              <Pie data={filiereData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                {filiereData.map((entry, i) => <Cell key={i} fill={entry.color || '#3b82f6'} />)}
+              <Pie data={FILIERE_DATA} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                {FILIERE_DATA.map((entry) => <Cell key={entry.name} fill={entry.color} />)}
               </Pie>
               <Tooltip content={<CustomTooltip darkMode={darkMode} />} />
             </PieChart>
@@ -138,7 +156,7 @@ export default function AdminHome() {
 
         <ChartCard title={t('dashboard.admin.home.insertionTitle')} subtitle={t('dashboard.admin.home.insertionSubtitle')}>
           <ResponsiveContainer width="100%" height={220}>
-            <LineChart data={insertionData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+            <LineChart data={INSERTION_DATA} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#ffffff12' : '#00000010'} />
               <XAxis dataKey="annee" tick={{ fontSize: 10, fill: darkMode ? '#ffffff55' : '#00000055' }} axisLine={false} tickLine={false} />
               <YAxis domain={[80, 100]} tick={{ fontSize: 10, fill: darkMode ? '#ffffff55' : '#00000055' }} axisLine={false} tickLine={false} />
@@ -152,7 +170,7 @@ export default function AdminHome() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         <ChartCard title={t('dashboard.admin.home.successTitle')} subtitle={t('dashboard.admin.home.successSubtitle')}>
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={tauxReussiteData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={14}>
+            <BarChart data={TAUX_REUSSITE_DATA} margin={{ top: 4, right: 8, left: -20, bottom: 0 }} barSize={14}>
               <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? '#ffffff12' : '#00000010'} />
               <XAxis dataKey="filiere" tick={{ fontSize: 10, fill: darkMode ? '#ffffff55' : '#00000055' }} axisLine={false} tickLine={false} />
               <YAxis domain={[60, 100]} tick={{ fontSize: 10, fill: darkMode ? '#ffffff55' : '#00000055' }} axisLine={false} tickLine={false} />

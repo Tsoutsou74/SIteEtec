@@ -19,9 +19,16 @@ const EMPTY_FORM = {
   code: '', nom: '', responsable: '', description: '', nombreEtudiants: 0
 };
 
+const DEMO_FILIERES: Filiere[] = [
+  { id: 1, code: 'GL', nom: 'GÃ©nie Logiciel', responsable: 'Dr. Rakoto', description: 'Conception et dÃ©veloppement de solutions numÃ©riques.', nombreEtudiants: 286 },
+  { id: 2, code: 'ADM', nom: 'Administration', responsable: 'Mme. Rasoa', description: 'Management, gestion et pilotage des organisations.', nombreEtudiants: 214 },
+  { id: 3, code: 'BTP', nom: 'BÃ¢timent et Travaux Publics', responsable: 'M. Andrianina', description: 'Formation pratique aux mÃ©tiers de la construction.', nombreEtudiants: 178 },
+  { id: 4, code: 'ES', nom: 'Ã‰lectromÃ©canique', responsable: 'Dr. Martin', description: 'SystÃ¨mes Ã©lectriques, mÃ©caniques et automatisÃ©s.', nombreEtudiants: 142 },
+];
+
 export default function Filieres() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Filiere[]>([]);
+  const [data, setData] = useState<Filiere[]>(DEMO_FILIERES);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -58,7 +65,7 @@ export default function Filieres() {
           description: item.description || '',
           nombreEtudiants: Number(item.nombreEtudiants || 0)
         }));
-        setData(mappedData);
+        if (mappedData.length > 0) setData(mappedData);
       }
     } catch (error) {
       console.error("Erreur de récupération des filières :", error);

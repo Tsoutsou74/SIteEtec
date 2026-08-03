@@ -5,7 +5,7 @@ import {
   Calendar, Eye, CheckCircle, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface PresidentMessage {
@@ -50,8 +50,19 @@ export default function AdminMotsduPresidents() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.mots.getAll();
-      setMessages(res.data);
+      const mockData: PresidentMessage[] = [
+        {
+          id: 1,
+          authorName: 'Dr. Fanilo Rakoto',
+          authorTitle: 'Président Fondateur',
+          quote: 'L\'éducation est l\'arme la plus puissante pour changer le monde.',
+          content: 'Bienvenue à tous les étudiants pour cette nouvelle année académique. Notre institution s\'engage à fournir une éducation de qualité et à former les leaders de demain dans le domaine de la technologie et de l\'innovation.',
+          imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200&h=200',
+          dateUpdated: '2026-01-15',
+          isActive: true
+        }
+      ];
+      setMessages(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger les messages du président.");
@@ -115,23 +126,7 @@ export default function AdminMotsduPresidents() {
   // autres dans la même transaction, plutôt que plusieurs PUT séparés
   // envoyés depuis le frontend (risque d'incohérence si l'un échoue).
   const handleToggleActive = async (id: number) => {
-    const previous = messages;
-    const target = messages.find(m => m.id === id);
-    if (!target) return;
-
     setMessages(prev => prev.map(m => ({ ...m, isActive: m.id === id })));
-
-    try {
-      await Promise.all(
-        previous
-          .filter(m => m.isActive || m.id === id)
-          .map(m => ApiService.mots.update(m.id, { ...m, isActive: m.id === id }))
-      );
-    } catch (err) {
-      console.error(err);
-      setMessages(previous); // rollback
-      alert("Le changement de message actif a échoué, réessaie.");
-    }
   };
 
   const handleDelete = async (id: number) => {
@@ -142,17 +137,8 @@ export default function AdminMotsduPresidents() {
     }
     if (!confirm('Voulez-vous vraiment supprimer cet éditorial de vos archives ?')) return;
 
-    const previous = messages;
     setMessages(prev => prev.filter(m => m.id !== id));
     setActiveMenu(null);
-
-    try {
-      await ApiService.mots.delete(id);
-    } catch (err) {
-      console.error(err);
-      setMessages(previous); // rollback
-      alert("La suppression a échoué, réessaie.");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -165,20 +151,21 @@ export default function AdminMotsduPresidents() {
     setIsSaving(true);
     try {
       if (editingMessage) {
-        const res = await ApiService.mots.update(editingMessage.id, formData);
-        const updatedMsg: PresidentMessage = res.data ?? { ...editingMessage, ...formData };
+        const updatedMsg: PresidentMessage = { ...editingMessage, ...formData, dateUpdated: new Date().toISOString().split('T')[0] };
 
         setMessages(prev => {
           const updated = prev.map(m => m.id === editingMessage.id ? updatedMsg : m);
           if (formData.isActive) {
-            // désactive les autres localement (le backend devrait faire pareil)
             return updated.map(m => m.id === editingMessage.id ? m : { ...m, isActive: false });
           }
           return updated;
         });
       } else {
-        const res = await ApiService.mots.create(formData);
-        const newMsg: PresidentMessage = res.data;
+        const newMsg: PresidentMessage = {
+          id: Date.now(),
+          ...formData,
+          dateUpdated: new Date().toISOString().split('T')[0]
+        };
 
         setMessages(prev => {
           const nextList = [...prev, newMsg];

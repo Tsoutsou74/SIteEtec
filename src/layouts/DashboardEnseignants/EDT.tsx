@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { 
   Calendar, Clock, MapPin, 
   Layers, Grid, List, Loader2, AlertTriangle
@@ -29,7 +29,7 @@ export default function EmploiDuTemps() {
   const { darkMode } = useTheme();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
-  // États pour les données de l'API
+  // États pour les données du planning
   const [emploiDuTemps, setEmploiDuTemps] = useState<SlotEDT[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,26 +43,21 @@ export default function EmploiDuTemps() {
       try {
         setLoading(true);
         setError(null);
-        const res = await ApiService.etudiant.getEmploiDuTemps();
-        const raw = res?.data ?? [];
-        const normalized = Array.isArray(raw) && raw.length > 0 && raw[0] && typeof raw[0] === 'object' && 'seances' in raw[0]
-          ? raw.flatMap((jour: any) =>
-              (jour.seances || []).map((seance: any, indexHeure: number) => ({
-                jour: jour.jour,
-                heure: `${seance.heureDebut} - ${seance.heureFin}`,
-                classe: seance.classe || seance.matiere,
-                matiere: seance.matiere,
-                salle: seance.salle,
-                type: seance.type,
-                indexHeure,
-              }))
-            )
-          : raw;
-        setEmploiDuTemps(normalized || []);
+        const mockDataEDT: SlotEDT[] = [
+          { jour: 'Lundi', heure: '08h00 - 10h00', classe: 'L2 Info G1', matiere: 'Algorithmique', salle: 'Amphi A', type: 'Cours', indexHeure: 0 },
+          { jour: 'Lundi', heure: '10h00 - 12h00', classe: 'L3 Info G2', matiere: 'Base de données', salle: 'Salle TP3', type: 'TP', indexHeure: 1 },
+          { jour: 'Mardi', heure: '14h00 - 16h00', classe: 'M1 GL G1', matiere: 'Génie logiciel', salle: 'Salle 204', type: 'TD', indexHeure: 2 },
+          { jour: 'Mercredi', heure: '08h00 - 10h00', classe: 'L1 MI G3', matiere: 'Programmation C', salle: 'Salle TP1', type: 'TP', indexHeure: 0 },
+          { jour: 'Jeudi', heure: '16h00 - 18h00', classe: 'L2 Info G1', matiere: 'Structures de données', salle: 'Salle 102', type: 'TD', indexHeure: 3 },
+        ];
+        
+        setTimeout(() => {
+          setEmploiDuTemps(mockDataEDT);
+          setLoading(false);
+        }, 500);
       } catch (err) {
-        console.error("Erreur lors de la récupération de l'emploi du temps:", err);
-        setError("Impossible de charger l'emploi du temps. Veuillez réessayer ultérieurement.");
-      } finally {
+        console.error("Erreur:", err);
+        setError("Erreur.");
         setLoading(false);
       }
     };

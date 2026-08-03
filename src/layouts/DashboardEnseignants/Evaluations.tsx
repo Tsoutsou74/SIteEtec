@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { 
   Award, Save, Percent, Users, TrendingUp, 
   TrendingDown, FileSpreadsheet, CheckCircle, AlertCircle, Loader2
@@ -22,7 +22,7 @@ interface ConfigurationSaisie {
   evaluation: string;
 }
 
-// Les listes de structures fixes peuvent être conservées ou hydratées par l'API
+// Les listes de structures fixes
 const CLASSES = ['L1 Info A', 'L1 Info B', 'L2 Info B', 'L3 Info', 'M1 GL'];
 const EVALUATIONS = ['Devoir 1', 'Devoir 2', 'Examen Terminal', 'Session Pratique (TP)'];
 
@@ -55,22 +55,23 @@ export default function Evaluations() {
         setError(null);
         setIsSaved(false);
 
-        // Appels API simultanés pour récupérer les matières et les étudiants de la classe
-        const [matieresData, etudiantsData] = await Promise.all([
-          ApiService.getMatieresParClasse(config.classe),
-          ApiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation)
-        ]);
+        const matieresData = ['Algorithmique', 'Base de données', 'Programmation C'];
+        const etudiantsData: EtudiantNote[] = [
+          { id: '1', matricule: 'ETU001', nom: 'Dupont', prenom: 'Jean', note: 14, absent: false },
+          { id: '2', matricule: 'ETU002', nom: 'Martin', prenom: 'Sophie', note: 18, absent: false },
+          { id: '3', matricule: 'ETU003', nom: 'Lefebvre', prenom: 'Luc', note: 9, absent: false },
+          { id: '4', matricule: 'ETU004', nom: 'Moreau', prenom: 'Alice', note: '', absent: true },
+        ];
 
-        setMatieres(matieresData || []);
-        setEtudiants(etudiantsData || []);
+        setMatieres(matieresData);
+        setEtudiants(etudiantsData);
         
         // Mettre à jour la matière sélectionnée par défaut si nécessaire
         if (matieresData && matieresData.length > 0 && !matieresData.includes(config.matiere)) {
           setConfig(prev => ({ ...prev, matiere: matieresData[0] }));
         }
       } catch (err) {
-        console.error("Erreur lors du chargement des données:", err);
-        setError("Impossible de charger les données de la classe. Veuillez réessayer.");
+        console.error("Erreur:", err);
       } finally {
         setLoading(false);
       }
@@ -87,11 +88,15 @@ export default function Evaluations() {
       try {
         setError(null);
         setIsSaved(false);
-        const etudiantsData = await ApiService.getEtudiantsNotes(config.classe, config.matiere, config.evaluation);
-        setEtudiants(etudiantsData || []);
+        const etudiantsData: EtudiantNote[] = [
+          { id: '1', matricule: 'ETU001', nom: 'Dupont', prenom: 'Jean', note: 14, absent: false },
+          { id: '2', matricule: 'ETU002', nom: 'Martin', prenom: 'Sophie', note: 18, absent: false },
+          { id: '3', matricule: 'ETU003', nom: 'Lefebvre', prenom: 'Luc', note: 9, absent: false },
+          { id: '4', matricule: 'ETU004', nom: 'Moreau', prenom: 'Alice', note: '', absent: true },
+        ];
+        setEtudiants(etudiantsData);
       } catch (err) {
-        console.error("Erreur lors du rechargement des notes:", err);
-        setError("Erreur lors de la mise à jour de la liste des notes.");
+        console.error("Erreur:", err);
       }
     };
 
@@ -154,20 +159,17 @@ export default function Evaluations() {
     };
   }, [etudiants]);
 
-  // Envoi des données vers l'API lors de la sauvegarde
+  // Sauvegarde des données
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setSubmitting(true);
       setError(null);
       
-      await ApiService.saveEtudiantsNotes(config.classe, config.matiere, config.evaluation, etudiants);
-      
       setIsSaved(true);
       setTimeout(() => setIsSaved(false), 4000);
     } catch (err) {
-      console.error("Erreur lors de la sauvegarde des notes:", err);
-      setError("La sauvegarde du procès-verbal a échoué. Veuillez réessayer.");
+      console.error("Erreur:", err);
     } finally {
       setSubmitting(false);
     }

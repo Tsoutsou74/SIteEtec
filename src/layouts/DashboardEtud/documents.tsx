@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { 
   FileText, Search, Download, FileSpreadsheet, 
   FileCheck, ShieldAlert, Layers, ExternalLink, Loader2 
@@ -32,29 +31,21 @@ export default function Documents() {
   // Liste unique des catégories pour les onglets
   const categories = ['Tous', 'Scolarité', 'Stages / Pro', 'Examens', 'Règlements'];
 
-  // ─── Récupération des Documents depuis l'API ─────────────
+  // ─── Récupération des Documents ─────────────
   useEffect(() => {
     const fetchDocumentsData = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      };
-
       try {
-        if (ApiService.etudiant?.getDocuments) {
-          const res = await ApiService.etudiant.getDocuments(config);
-          if (res && res.data) {
-            setDocuments(res.data);
-          }
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setDocuments([
+          { id: '1', titre: 'Règlement Intérieur 2026', description: "Le règlement intérieur de l'établissement pour l'année universitaire.", categorie: 'Règlements', datePublication: '01/09/2026', taille: '2.5 MB', format: 'pdf' },
+          { id: '2', titre: 'Convention de Stage', description: 'Formulaire standard pour la convention de stage obligatoire.', categorie: 'Stages / Pro', datePublication: '15/09/2026', taille: '1.2 MB', format: 'pdf' },
+          { id: '3', titre: 'Certificat de Scolarité', description: 'Modèle de demande pour le certificat de scolarité.', categorie: 'Scolarité', datePublication: '10/09/2026', taille: '500 KB', format: 'docx' },
+          { id: '4', titre: 'Calendrier des Examens S1', description: 'Planning officiel des examens du premier semestre.', categorie: 'Examens', datePublication: '20/11/2026', taille: '800 KB', format: 'pdf' }
+        ]);
       } catch (err) {
         console.error("Erreur lors du chargement des documents administratifs :", err);
-      } // Correction de la coquille finaly -> finally
-      finally {
+      } finally {
         setIsLoading(false);
       }
     };

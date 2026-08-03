@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { 
   BookOpen, Plus, Search, Edit2, Trash2, 
   Clock, Layers, X, Save, AlertCircle, Loader2 
@@ -38,32 +38,17 @@ export default function CoursPage() {
   const cardBg  = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const inputBg = darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)';
 
-  // Configuration de base pour les requêtes (Headers JSON + Auth Token)
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    };
-  };
-
-  // ─── Charger les cours depuis l'API ──────────────────────
+  // ─── Charger les cours ──────────────────────
   const fetchCours = async () => {
     setIsLoading(true);
-    try {
-      if (ApiService.enseignant?.getCours) {
-        const res = await ApiService.enseignant.getCours(getRequestConfig());
-        if (res && res.data) {
-          setListeCours(res.data);
-        }
-      }
-    } catch (err) {
-      console.error("Erreur lors de la récupération des cours :", err);
-    } finally {
+    setTimeout(() => {
+      setListeCours([
+        { id: '1', titre: 'Algorithmique', code: 'ALG101', classe: 'L2 Info G1', volumeHoraire: 40, description: 'Bases de l\'algorithmique' },
+        { id: '2', titre: 'Base de données', code: 'BDD201', classe: 'L3 Info G2', volumeHoraire: 30, description: 'Modèle relationnel et SQL' },
+        { id: '3', titre: 'Génie logiciel', code: 'GL301', classe: 'M1 GL G1', volumeHoraire: 50, description: 'Méthodes agiles et gestion de projet' },
+      ]);
       setIsLoading(false);
-    }
+    }, 500);
   };
 
   useEffect(() => {
@@ -90,41 +75,24 @@ export default function CoursPage() {
     setIsModalOpen(true);
   };
 
-  // Soumission du Formulaire (Create & Update via l'API)
+  // Soumission du Formulaire
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.titre || !formData.code || !formData.classe) return;
 
-    try {
-      if (editingCours) {
-        // Mode ÉDITION (Update)
-        if (ApiService.enseignant?.updateCours) {
-          await ApiService.enseignant.updateCours(editingCours.id, formData, getRequestConfig());
-        }
-      } else {
-        // Mode CRÉATION (Create)
-        if (ApiService.enseignant?.createCours) {
-          await ApiService.enseignant.createCours(formData, getRequestConfig());
-        }
-      }
-      setIsModalOpen(false);
-      fetchCours(); // Rechargement dynamique de la liste
-    } catch (err) {
-      console.error("Erreur lors de l'enregistrement du cours :", err);
+    if (editingCours) {
+      setListeCours(prev => prev.map(c => c.id === editingCours.id ? { ...c, ...formData } : c));
+    } else {
+      const newCours = { id: Math.random().toString(36).substr(2, 9), ...formData };
+      setListeCours(prev => [...prev, newCours]);
     }
+    setIsModalOpen(false);
   };
 
-  // Suppression (Delete via l'API)
+  // Suppression
   const handleDelete = async (id: string) => {
     if (window.confirm('Êtes-vous sûr de vouloir supprimer ce cours ?')) {
-      try {
-        if (ApiService.enseignant?.deleteCours) {
-          await ApiService.enseignant.deleteCours(id, getRequestConfig());
-          fetchCours(); // Rechargement dynamique de la liste
-        }
-      } catch (err) {
-        console.error("Erreur lors de la suppression du cours :", err);
-      }
+      setListeCours(prev => prev.filter(c => c.id !== id));
     }
   };
 

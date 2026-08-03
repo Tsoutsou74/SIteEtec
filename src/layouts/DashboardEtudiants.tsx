@@ -1,11 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../context/ThemeContext';
 import LanguageSwitcher from '../components/layout/LanguageSwitcher';
-import ApiService from '../services/ApiService';
 import {
-  LayoutDashboard, BookOpen, Calendar, FileText, Bell, MessageSquare,
+  BookOpen, Calendar, FileText, Bell, MessageSquare,
   Settings, LogOut, Menu, Sun, Moon,
   Search, ChevronRight, GraduationCap, ClipboardList, TrendingUp, Loader2
 } from 'lucide-react';
@@ -13,7 +12,6 @@ import {
 type NavItem = { icon: React.ReactNode; key: string; path: string; badge?: number };
 
 const NAV_ITEMS: NavItem[] = [
-  { icon: <LayoutDashboard size={18} />, key: 'home', path: '/etudiants' },
   { icon: <ClipboardList size={18} />, key: 'notes', path: '/etudiants/notes' },
   { icon: <Calendar size={18} />, key: 'schedule', path: '/etudiants/edt' },
   { icon: <BookOpen size={18} />, key: 'courses', path: '/etudiants/cours' },
@@ -74,49 +72,17 @@ export default function DashboardEtudiant() {
   const topbarBg = darkMode ? 'rgba(10,10,10,0.95)' : 'rgba(255,255,255,0.95)';
   const contentBg = darkMode ? '#0d0d0d' : '#f4f6f8';
 
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } };
-  };
-
   useEffect(() => {
     const loadDashboardData = async () => {
       setIsLoading(true);
-      const config = getRequestConfig();
       try {
-        if (ApiService.etudiant?.getProfile) {
-          const profileRes = await ApiService.etudiant.getProfile(config);
-          if (profileRes && profileRes.data) {
-            setEtudiant({
-              nom: profileRes.data.nom || 'RAKOTO',
-              prenom: profileRes.data.prenom || 'Andry',
-              matricule: profileRes.data.matricule || 'ETU-2024-0042',
-              niveau: profileRes.data.niveau || 'L3 Info',
-            });
-          }
-        } else {
-          setEtudiant({ nom: 'RAKOTO', prenom: 'Andry', matricule: 'ETU-2024-0042', niveau: 'L3 Info' });
-        }
-
-        if (ApiService.notifications?.getAll) {
-          const notifRes = await ApiService.notifications.getAll(config);
-          if (notifRes && notifRes.data) {
-            const mappedNotifs = notifRes.data.map((n: any) => ({
-              id: n.id,
-              msg: n.message || n.msg || '',
-              time: n.time || 'Récemment',
-              dot: n.type === 'error' ? '#ef4444' : n.type === 'warning' ? '#f59e0b' : '#3b82f6',
-              lu: !!n.lu,
-            }));
-            setNotifications(mappedNotifs);
-          }
-        } else {
-          setNotifications([
-            { id: 1, msg: 'Note de BDD publiée : 17/20', time: 'Il y a 10 min', dot: '#22c55e', lu: false },
-            { id: 2, msg: 'Emploi du temps S2 mis à jour', time: 'Il y a 2h', dot: '#3b82f6', lu: false },
-            { id: 3, msg: 'Rappel : TP Réseaux demain 08h00', time: 'Hier', dot: '#f59e0b', lu: false },
-          ]);
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setEtudiant({ nom: 'RAKOTO', prenom: 'Andry', matricule: 'ETU-2024-0042', niveau: 'L3 Info' });
+        setNotifications([
+          { id: 1, msg: 'Note de BDD publiée : 17/20', time: 'Il y a 10 min', dot: '#22c55e', lu: false },
+          { id: 2, msg: 'Emploi du temps S2 mis à jour', time: 'Il y a 2h', dot: '#3b82f6', lu: false },
+          { id: 3, msg: 'Rappel : TP Réseaux demain 08h00', time: 'Hier', dot: '#f59e0b', lu: false },
+        ]);
       } catch (err) {
         console.error('Erreur lors de la récupération des données du tableau de bord:', err);
       } finally {

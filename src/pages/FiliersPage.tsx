@@ -16,7 +16,6 @@ interface FilierDetail {
   objectifs: string[];
   debouches: string[];
   conditions: string[];
-  semestres: string;
 }
 
 interface FilierCardProps {
@@ -161,12 +160,6 @@ function FilierModal({ item, onClose }: { item: FilierDetail; onClose: () => voi
             >
               <Clock size={13} style={{ color: 'var(--primary)' }} /> {item.duration}
             </span>
-            <span
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold"
-              style={{ borderColor: 'var(--border)', backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)' }}
-            >
-              <BookOpen size={13} style={{ color: 'var(--primary)' }} /> {item.semestres}
-            </span>
           </div>
 
           <div className="mt-6 rounded-2xl border p-4 sm:p-5" style={{ borderColor: 'var(--border)', backgroundColor: darkMode ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)' }}>
@@ -223,7 +216,6 @@ const STATIC_FILIERES: FilierDetail[] = [
     icon: <Code size={18} />,
     image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80',
     category: 'Informatique',
-    semestres: '6 semestres (Licence) / 10 semestres (Master)',
     objectifs: [
       'Maîtriser les langages de programmation modernes (Java, Python, JavaScript)',
       'Concevoir et déployer des applications web et mobiles',
@@ -252,7 +244,6 @@ const STATIC_FILIERES: FilierDetail[] = [
     icon: <Landmark size={18} />,
     image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=600&q=80',
     category: 'Gestion',
-    semestres: '6 semestres (Licence) / 10 semestres (Master)',
     objectifs: [
       'Maîtriser les outils de gestion et de comptabilité d\'entreprise',
       'Développer des compétences en management d\'équipe',
@@ -281,7 +272,6 @@ const STATIC_FILIERES: FilierDetail[] = [
     icon: <HardHat size={18} />,
     image: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80',
     category: 'Génie Civil',
-    semestres: '6 semestres',
     objectifs: [
       'Lire et produire des plans d\'architecture et de structure',
       'Maîtriser les logiciels de dessin assisté par ordinateur (AutoCAD)',
@@ -310,7 +300,6 @@ const STATIC_FILIERES: FilierDetail[] = [
     icon: <Cpu size={18} />,
     image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
     category: 'Industrie',
-    semestres: '6 semestres',
     objectifs: [
       'Installer et maintenir des équipements électromécaniques',
       'Programmer des automates industriels (PLC)',

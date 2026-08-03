@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { 
   Calendar, Clock, MapPin, User, 
   Grid, List, Loader2 
@@ -32,25 +31,35 @@ export default function EmploiDuTemps() {
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
 
-  // ─── Récupération de l'emploi du temps depuis l'API ───────
+  // ─── Récupération de l'emploi du temps ───────
   useEffect(() => {
     const fetchEdtData = async () => {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-        }
-      };
-
       try {
-        if (ApiService.etudiant?.getEmploiDuTemps) {
-          const res = await ApiService.etudiant.getEmploiDuTemps(config);
-          if (res && res.data) {
-            setSemaineEdt(res.data);
-          }
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setSemaineEdt([
+          {
+            jour: 'Lundi',
+            seances: [
+              { id: '1', matiere: 'Développement Web', enseignant: 'M. Dubois', salle: '101', heureDebut: '08:00', heureFin: '10:00', type: 'Cours', color: '#3b82f6' },
+              { id: '2', matiere: 'Développement Web', enseignant: 'M. Dubois', salle: 'Lab 1', heureDebut: '10:15', heureFin: '12:15', type: 'TP', color: '#10b981' }
+            ]
+          },
+          {
+            jour: 'Mardi',
+            seances: [
+              { id: '3', matiere: 'Base de données', enseignant: 'Mme. Martin', salle: '202', heureDebut: '09:00', heureFin: '11:00', type: 'TD', color: '#f59e0b' }
+            ]
+          },
+          { jour: 'Mercredi', seances: [] },
+          {
+            jour: 'Jeudi',
+            seances: [
+              { id: '4', matiere: 'Réseaux', enseignant: 'M. Lefevre', salle: 'Amphi A', heureDebut: '14:00', heureFin: '16:00', type: 'Cours', color: '#8b5cf6' }
+            ]
+          },
+          { jour: 'Vendredi', seances: [] }
+        ]);
       } catch (err) {
         console.error("Erreur lors du chargement de l'emploi du temps :", err);
       } finally {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService';
+
 import { 
   Search, Plus, Pencil, Trash2, X, Save, 
   UserPlus, Mail, Phone, CheckCircle, AlertTriangle, Loader2
@@ -59,8 +59,11 @@ export default function AdminEnseignants() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.enseignant.getAll();
-      setData(res.data);
+      const mockData: Enseignant[] = [
+        { id: 1, nom: 'ANDRIA', prenom: 'Rija', email: 'rija@etec.mg', telephone: '+261 34 00 123 45', statut: 'Permanent', matieres: ['Algorithmique', 'Java'] },
+        { id: 2, nom: 'RASOA', prenom: 'Miora', email: 'miora@etec.mg', telephone: '+261 34 00 123 46', statut: 'Vacataire', matieres: ['Design', 'IHM'] },
+      ];
+      setData(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger la liste des enseignants.");
@@ -101,62 +104,35 @@ export default function AdminEnseignants() {
       return;
     }
 
-    // Séparer les matières par virgule et nettoyer les espaces
-    const matieresArray = form.matieresRaw
-      .split(',')
-      .map(m => m.trim())
-      .filter(m => m.length > 0);
-
-    const payload = {
-      nom: form.nom.toUpperCase(),
-      prenom: form.prenom,
-      email: form.email,
-      telephone: form.telephone,
-      statut: form.statut,
-      matieres: matieresArray
-    };
+    const matieresArray = form.matieresRaw.split(',').map(m => m.trim()).filter(m => m.length > 0);
+    const payload = { nom: form.nom.toUpperCase(), prenom: form.prenom, email: form.email, telephone: form.telephone, statut: form.statut, matieres: matieresArray };
 
     setIsSaving(true);
-    try {
+    setTimeout(() => {
       if (modalMode === 'add') {
-        const res = await ApiService.enseignant.create(payload);
-        const newProf: Enseignant = res.data;
+        const newProf: Enseignant = { id: Date.now(), ...payload };
         setData(prev => [...prev, newProf]);
         showToast('Enseignant recruté avec succès');
       } else if (modalMode === 'edit' && selected) {
-        const res = await ApiService.enseignant.update(selected.id, payload);
-        const updated: Enseignant = res.data ?? { ...selected, ...payload };
+        const updated: Enseignant = { ...selected, ...payload };
         setData(prev => prev.map(e => e.id === selected.id ? updated : e));
         showToast('Dossier enseignant mis à jour');
       }
       setModalMode(null);
-    } catch (err) {
-      console.error(err);
-      showToast("Échec de l'enregistrement, réessaie.");
-    } finally {
       setIsSaving(false);
-    }
+    }, 500);
   };
 
   const handleDelete = async () => {
     if (deleteId === null) return;
-
-    const previous = data;
     const idToDelete = deleteId;
-    setData(prev => prev.filter(e => e.id !== idToDelete));
-    setDeleteId(null);
     setIsDeleting(true);
-
-    try {
-      await ApiService.enseignant.delete(idToDelete);
+    setTimeout(() => {
+      setData(prev => prev.filter(e => e.id !== idToDelete));
+      setDeleteId(null);
       showToast('Enseignant retiré du système');
-    } catch (err) {
-      console.error(err);
-      setData(previous); // rollback
-      showToast("La suppression a échoué, réessaie.");
-    } finally {
       setIsDeleting(false);
-    }
+    }, 500);
   };
 
   const showToast = (msg: string) => {

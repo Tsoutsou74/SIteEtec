@@ -1,3 +1,4 @@
+import React from 'react';
 import { useTheme } from '../context/ThemeContext';
 import { Info, Target, Eye } from 'lucide-react';
 import { useT } from '../config/I18nProvider';
@@ -29,15 +30,14 @@ export default function AboutPage({ compact = false }: AboutPageProps) {
               <Info size={12} /> {t('about', 'whoWeAre')}
             </span>
             <h3 className="text-xl font-black uppercase tracking-tight opacity-70 md:text-2xl">{t('about', 'sectionLabel')}</h3>
-            <h1 className="max-w-3xl text-4xl font-black leading-[0.98] tracking-[-0.04em] sm:text-5xl md:text-6xl">
+            <h1 className="max-w-3xl text-lg font-black leading-[0.98] tracking-[-0.04em] sm:text-xl md:text-2xl">
               {t('about', 'title1')} <br className="hidden sm:block" />
-              <span className="text-gradient">{t('about', 'title2')}</span>
+              <span className="text-green-500">{t('about', 'title2')}</span>
             </h1>
-            <p className={`max-w-2xl text-sm leading-8 opacity-75 md:text-base ${compact ? 'pt-0.5' : 'pt-2'}`}>
+            <p className={`max-w-2xl text-xs leading-8 opacity-75 md:text-sm ${compact ? 'pt-0.5' : 'pt-2'}`}>
               {t('about', 'desc')}
             </p>
           </div>
-
         </div>
 
         <div className="grid gap-4 lg:col-span-4">
@@ -54,9 +54,7 @@ export default function AboutPage({ compact = false }: AboutPageProps) {
             <p className="relative z-10 mt-3 text-sm leading-6 opacity-70">{t('about', 'visionDesc')}</p>
           </div>
         </div>
-
       </div>
-
     </div>
   );
 }

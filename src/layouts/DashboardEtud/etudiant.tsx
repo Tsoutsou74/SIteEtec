@@ -1,8 +1,7 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import { BookOpen, ClipboardList, TrendingUp, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
@@ -59,43 +58,52 @@ export default function EtudiantHome() {
   const [edtSemaine, setEdtSemaine] = useState<Array<{ jour: string; heure: string; matiere: string; salle: string; type: 'Cours' | 'TP' | 'TD' }>>([]);
   const [echeances, setEcheances] = useState<Array<{ label: string; date: string; color: string }>>([]);
 
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } };
-  };
-
   useEffect(() => {
     const fetchHomeDashboardData = async () => {
       setIsLoading(true);
-      const config = getRequestConfig();
       try {
-        if (ApiService.etudiant?.getHomeDashboard) {
-          const res = await ApiService.etudiant.getHomeDashboard(config);
-          if (res && res.data) {
-            const d = res.data;
-            setInfosPerso({
-              nom: d.infosPerso?.nom || '',
-              prenom: d.infosPerso?.prenom || '',
-              mention: d.infosPerso?.mention || 'Génie Logiciel',
-              niveau: d.infosPerso?.niveau || 'L3',
-              statutInscrit: !!d.infosPerso?.statutInscrit,
-            });
-            setStats({
-              moyenne: d.stats?.moyenne ? `${d.stats.moyenne}/20` : '0.00/20',
-              evolutionMoyenne: d.stats?.evolutionMoyenne || '0.0',
-              modulesValides: d.stats?.modulesValides || '0 / 0',
-              semestre: d.stats?.semestre || 'Semestre 1',
-              heuresCours: d.stats?.heuresCours ? `${d.stats.heuresCours}h` : '0h',
-              absences: String(d.stats?.absences || 0),
-            });
-            setNotesGraphiques(d.notes || []);
-            setHistoriqueSemestres(d.evolutionMoyennes || []);
-            setEdtSemaine(d.emploiDuTemps || []);
-            setEcheances(d.echeances || []);
-          }
-        }
+        // Simulate network delay
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        setInfosPerso({
+          nom: 'Dupont',
+          prenom: 'Jean',
+          mention: 'Génie Logiciel',
+          niveau: 'L3',
+          statutInscrit: true,
+        });
+        setStats({
+          moyenne: '14.50/20',
+          evolutionMoyenne: '0.5',
+          modulesValides: '5 / 6',
+          semestre: 'Semestre 5',
+          heuresCours: '24h',
+          absences: '2',
+        });
+        setNotesGraphiques([
+          { matiere: 'Mathématiques', note: 14, max: 20 },
+          { matiere: 'Programmation Web', note: 16, max: 20 },
+          { matiere: 'Bases de données', note: 11, max: 20 },
+          { matiere: 'Génie Logiciel', note: 15, max: 20 },
+          { matiere: 'Réseaux', note: 10, max: 20 }
+        ]);
+        setHistoriqueSemestres([
+          { sem: 'S1', moy: 12.5 },
+          { sem: 'S2', moy: 13.0 },
+          { sem: 'S3', moy: 13.8 },
+          { sem: 'S4', moy: 14.5 }
+        ]);
+        setEdtSemaine([
+          { jour: 'Lundi', heure: '08:00 - 10:00', matiere: 'Mathématiques', salle: 'Amphi A', type: 'Cours' },
+          { jour: 'Lundi', heure: '10:00 - 12:00', matiere: 'Programmation Web', salle: 'Labo 1', type: 'TP' },
+          { jour: 'Mardi', heure: '08:00 - 10:00', matiere: 'Bases de données', salle: 'Salle 101', type: 'TD' }
+        ]);
+        setEcheances([
+          { label: 'Projet Web', date: '12 Octobre', color: '#3b82f6' },
+          { label: 'Examen Math', date: '15 Octobre', color: '#f59e0b' }
+        ]);
       } catch (err) {
-        console.error('Erreur lors du chargement des données de l\'accueil étudiant :', err);
+        console.error("Erreur lors du chargement des données de l'accueil étudiant :", err);
       } finally {
         setIsLoading(false);
       }

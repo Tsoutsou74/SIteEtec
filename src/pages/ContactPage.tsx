@@ -91,7 +91,7 @@ export default function ContactPage() {
               <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider md:text-xs" style={{ color: 'var(--primary)' }}>
                 <Phone size={12} /> {t('contact', 'phoneTitle')}
               </div>
-              <p className="text-xs font-bold tracking-wide">+261 34 10 077 01</p>
+              <p className="text-xs font-bold tracking-wide">+261 33 11 669 79</p>
               <p className="text-[10px] opacity-60">{t('contact', 'phoneFormat')}</p>
             </div>
 

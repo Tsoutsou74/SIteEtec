@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import ApiService from '../../services/ApiService';
 import {
   ArrowLeft,
   BookOpen,
@@ -152,20 +151,10 @@ export default function OnlineCoursePlatform() {
     const fetchCourse = async () => {
       setIsLoading(true);
       try {
+        await new Promise(resolve => setTimeout(resolve, 500));
         if (connectedFormationType !== 'enligne') {
           setCourse(null);
           return;
-        }
-
-        if (ApiService.etudiant?.getCourseDetails) {
-          const res = await ApiService.etudiant.getCourseDetails(courseId ?? 'm-3');
-          if (res?.data) {
-            setCourse(res.data);
-            setSelectedLessonId(
-              res.data.lessons.find((lesson: Lesson) => lesson.status === 'En cours')?.id ?? res.data.lessons[0]?.id ?? ''
-            );
-            return;
-          }
         }
 
         const fallback = DEMO_COURSES.find((item) => item.id === courseId) ?? DEMO_COURSES[0];

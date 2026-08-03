@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import {
   Search, Award, CheckCircle, AlertTriangle, FileText,
   Download, GraduationCap, Loader2
@@ -51,8 +51,13 @@ export default function NotesResultats() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.notes.getAll();
-      setModules(res.data);
+      const mockData: ModuleResultat[] = [
+        { id: '1', code: 'DEV-101', nom: 'Algorithmique', classe: 'L1 Informatique', enseignant: 'Dr. Rakoto', moyenneClasse: 12.5, tauxReussite: 85, statut: 'Saisi', etudiantsInscrits: 45 },
+        { id: '2', code: 'WEB-201', nom: 'Développement Web', classe: 'L2 Génie Logiciel', enseignant: 'M. Andrianina', moyenneClasse: 14.2, tauxReussite: 92, statut: 'Délibéré', etudiantsInscrits: 38 },
+        { id: '3', code: 'RES-301', nom: 'Réseaux', classe: 'M1 Génie Logiciel', enseignant: 'Mme. Rasoa', moyenneClasse: 9.8, tauxReussite: 45, statut: 'Saisi', etudiantsInscrits: 25 },
+        { id: '4', code: 'MGT-401', nom: 'Management', classe: 'M2 Management', enseignant: 'M. Dubois', moyenneClasse: 0, tauxReussite: 0, statut: 'En attente', etudiantsInscrits: 30 },
+      ];
+      setModules(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger les notes et résultats.");
@@ -71,23 +76,15 @@ export default function NotesResultats() {
 
   // ── Actions ─────────────────────────────────────────────
   const handleDeliberer = async (id: string) => {
-    const previous = modules;
     const target = modules.find(m => m.id === id);
     if (!target) return;
 
     setDeliberatingId(id);
-    setModules(prev => prev.map(m => m.id === id ? { ...m, statut: 'Délibéré' } : m));
-
-    try {
-      await ApiService.notes.update(id, { ...target, statut: 'Délibéré' });
-      showToast(`Module ${target.code} officiellement délibéré et verrouillé`);
-    } catch (err) {
-      console.error(err);
-      setModules(previous); // rollback
-      showToast("Échec de la délibération, réessaie.");
-    } finally {
+    setTimeout(() => {
+      setModules(prev => prev.map(m => m.id === id ? { ...m, statut: 'Délibéré' } : m));
       setDeliberatingId(null);
-    }
+      showToast(`Module ${target.code} officiellement délibéré et verrouillé`);
+    }, 500);
   };
 
   const showToast = (msg: string) => {

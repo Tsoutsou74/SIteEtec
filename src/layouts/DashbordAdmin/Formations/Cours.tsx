@@ -22,8 +22,15 @@ interface Course {
 const FILIERES = ['Toutes', 'Informatique', 'Management', 'BTP'];
 const NIVEAUX = ['Licence 1', 'Licence 2', 'Licence 3', 'Master 1', 'Master 2'];
 
+const DEMO_COURSES: Course[] = [
+  { id: 1, code: 'GL301', name: 'Architecture logicielle', filiere: 'Informatique', niveau: 'Licence 3', enseignant: 'Dr. Rakoto', heures: 36, etudiants: 82 },
+  { id: 2, code: 'GL302', name: 'DÃ©veloppement mobile', filiere: 'Informatique', niveau: 'Licence 3', enseignant: 'Mme. Rasoa', heures: 30, etudiants: 76 },
+  { id: 3, code: 'AD401', name: 'Management stratÃ©gique', filiere: 'Management', niveau: 'Master 1', enseignant: 'M. Andrianina', heures: 24, etudiants: 54 },
+  { id: 4, code: 'BT201', name: 'MatÃ©riaux de construction', filiere: 'BTP', niveau: 'Licence 2', enseignant: 'Dr. Martin', heures: 42, etudiants: 61 },
+];
+
 export default function AdminCours() {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses] = useState<Course[]>(DEMO_COURSES);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFiliere, setSelectedFiliere] = useState('Toutes');
@@ -58,7 +65,7 @@ export default function AdminCours() {
           heures: Number(item.heures || item.volumeHoraire || 0),
           etudiants: Number(item.etudiants || item.nombreEtudiants || 0),
         }));
-        setCourses(mappedData);
+        if (mappedData.length > 0) setCourses(mappedData);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des cours :", error);

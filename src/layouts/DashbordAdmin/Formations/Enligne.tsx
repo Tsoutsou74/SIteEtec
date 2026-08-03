@@ -19,8 +19,14 @@ interface FormationEnLigne {
   statut: 'Publié' | 'Brouillon' | 'Archivé';
 }
 
+const DEMO_FORMATIONS_EN_LIGNE: FormationEnLigne[] = [
+  { id: 'el-1', code: 'EL-GL-01', titre: 'Developpement web moderne', categorie: 'Informatique', nbChapitres: 8, nbVideos: 24, lienPlateforme: 'https://cours.etec.mg/gl-moderne', enseignant: 'Dr. Rakoto', statut: 'PubliÃ©' },
+  { id: 'el-2', code: 'EL-DATA-02', titre: 'Fondamentaux de la data', categorie: 'Data science', nbChapitres: 6, nbVideos: 18, lienPlateforme: 'https://cours.etec.mg/data', enseignant: 'Mme. Rasoa', statut: 'PubliÃ©' },
+  { id: 'el-3', code: 'EL-CYB-03', titre: 'Sensibilisation a la cybersecurite', categorie: 'Reseaux', nbChapitres: 4, nbVideos: 10, lienPlateforme: 'https://cours.etec.mg/cyber', enseignant: 'M. Andrianina', statut: 'Brouillon' },
+];
+
 export default function EnLigne() {
-  const [formations, setFormations] = useState<FormationEnLigne[]>([]);
+  const [formations, setFormations] = useState<FormationEnLigne[]>(DEMO_FORMATIONS_EN_LIGNE);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -45,7 +51,7 @@ export default function EnLigne() {
           enseignant: item.enseignant || '',
           statut: item.statut || 'Brouillon',
         }));
-        setFormations(mappedData);
+        if (mappedData.length > 0) setFormations(mappedData);
       }
     } catch (error) {
       console.error("Erreur lors de la récupération des cours en ligne :", error);

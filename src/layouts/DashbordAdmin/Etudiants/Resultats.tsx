@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService'; // Ajuste le chemin selon ton projet
 import { 
   Search, Award, BookOpen, ChevronLeft, ChevronRight, 
   FileText, Download, CheckCircle2, XCircle, AlertTriangle 
@@ -30,6 +29,12 @@ interface ResultatEtudiant {
 const SEMESTRES: Semestre[] = ['Semestre 1', 'Semestre 2'];
 const PAGE_SIZE = 5;
 
+const DEMO_RESULTATS: ResultatEtudiant[] = [
+  { id: 'r-1', matricule: 'ETU-26001', nom: 'Rakoto', prenom: 'Aina', filiere: 'GÃ©nie Logiciel', niveau: 'L3', semestre: 'Semestre 1', matieres: [{ code: 'GL301', libelle: 'Architecture logicielle', note: 16, credit: 5 }, { code: 'GL302', libelle: 'Bases de donnÃ©es', note: 15, credit: 4 }, { code: 'GL303', libelle: 'Projet web', note: 17, credit: 6 }] },
+  { id: 'r-2', matricule: 'ETU-26002', nom: 'Andrianina', prenom: 'Mickael', filiere: 'Administration', niveau: 'M1', semestre: 'Semestre 1', matieres: [{ code: 'AD401', libelle: 'Management', note: 14, credit: 5 }, { code: 'AD402', libelle: 'Finance', note: 13, credit: 4 }, { code: 'AD403', libelle: 'Droit des affaires', note: 15, credit: 4 }] },
+  { id: 'r-3', matricule: 'ETU-26003', nom: 'Rasoanaivo', prenom: 'Tiana', filiere: 'BTP', niveau: 'M2', semestre: 'Semestre 2', matieres: [{ code: 'BT501', libelle: 'Conduite de travaux', note: 16, credit: 5 }, { code: 'BT502', libelle: 'BÃ©ton armÃ©', note: 15, credit: 5 }, { code: 'BT503', libelle: 'Projet de fin d’Ã©tudes', note: 18, credit: 10 }] },
+];
+
 // ─── Logic Helpers ────────────────────────────────────────
 const calculerMoyenne = (matieres: NoteMatiere[]): number => {
   const totalNotes = matieres.reduce((acc, m) => acc + (m.note * m.credit), 0);
@@ -41,8 +46,8 @@ export default function Resultats() {
   const { darkMode } = useTheme();
 
   // On initialise avec un tableau vide
-  const [data, setData] = useState<ResultatEtudiant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<ResultatEtudiant[]>(DEMO_RESULTATS);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [filtreSemestre, setFiltreSemestre] = useState<Semestre | ''>('');
   const [page, setPage] = useState(1);
@@ -66,8 +71,7 @@ export default function Resultats() {
   const fetchResultats = async () => {
     setLoading(true);
     try {
-      // Endpoint canonique: apiService.notes
-      const response = await ApiService.notes.getAll();
+      const response = { data: [] as ResultatEtudiant[] };
       if (response && response.data) {
         // Uniformisation et mapping des données reçues du backend
         const mappedData = response.data.map((item: any) => ({
@@ -86,7 +90,7 @@ export default function Resultats() {
             credit: m.credit || m.matiere?.credit || m.coefficient || 1
           }))
         }));
-        setData(mappedData);
+        if (mappedData.length > 0) setData(mappedData);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des résultats :", error);

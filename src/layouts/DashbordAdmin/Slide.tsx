@@ -5,7 +5,7 @@ import {
   Power, FileText, Loader2
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Slide {
@@ -50,8 +50,11 @@ export default function AdminSlides() {
     setIsLoading(true);
     setError(null);
     try {
-      const res = await ApiService.slides.getAll();
-      setSlides(res.data);
+      const mockData: Slide[] = [
+        { id: 1, title: 'Inscriptions Ouvertes', subtitle: 'Rejoignez-nous pour la rentrée 2026', imageUrl: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94', ctaText: 'S\'inscrire', ctaLink: '/inscription', isActive: true, order: 1 },
+        { id: 2, title: 'Nouveau Campus', subtitle: 'Découvrez nos nouvelles infrastructures', imageUrl: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a', ctaText: 'Visiter', ctaLink: '/campus', isActive: true, order: 2 },
+      ];
+      setSlides(mockData);
     } catch (err) {
       console.error(err);
       setError("Impossible de charger les slides. Vérifie que le service est bien démarré.");
@@ -107,31 +110,14 @@ export default function AdminSlides() {
 
   const toggleStatus = async (slide: Slide) => {
     const updated = { ...slide, isActive: !slide.isActive };
-    // mise à jour optimiste
     setSlides(prev => prev.map(s => s.id === slide.id ? updated : s));
-    try {
-      await ApiService.slides.update(slide.id, updated);
-    } catch (err) {
-      console.error(err);
-      // rollback en cas d'échec
-      setSlides(prev => prev.map(s => s.id === slide.id ? slide : s));
-    }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Voulez-vous supprimer ce slide de l’écran d’accueil vitrine ?')) return;
 
-    const previous = slides;
     setSlides(prev => prev.filter(s => s.id !== id));
     setActiveMenu(null);
-
-    try {
-      await ApiService.slides.delete(id);
-    } catch (err) {
-      console.error(err);
-      setSlides(previous); // rollback
-      alert("La suppression a échoué, réessaie.");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -139,23 +125,17 @@ export default function AdminSlides() {
     if (!formData.title || !formData.imageUrl) return;
 
     setIsSaving(true);
-    try {
+    setTimeout(() => {
       if (editingSlide) {
-        const res = await ApiService.slides.update(editingSlide.id, formData);
-        const updatedSlide: Slide = res.data ?? { ...editingSlide, ...formData };
+        const updatedSlide: Slide = { ...editingSlide, ...formData };
         setSlides(prev => prev.map(s => s.id === editingSlide.id ? updatedSlide : s));
       } else {
-        const res = await ApiService.slides.create(formData);
-        const newSlide: Slide = res.data;
+        const newSlide: Slide = { id: Date.now(), ...formData };
         setSlides(prev => [...prev, newSlide]);
       }
       setIsModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
-    } finally {
       setIsSaving(false);
-    }
+    }, 500);
   };
 
   // ─── États de chargement / erreur ────────────────────────────────────
@@ -341,23 +321,23 @@ export default function AdminSlides() {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div 
-            className="w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden p-6 animate-fade-in"
-            style={{ backgroundColor: 'rgba(20,20,20,0.98)', borderColor: 'var(--border)' }}
+            className="w-full max-w-lg max-h-[calc(100vh-2rem)] overflow-y-auto rounded-3xl border p-6 shadow-2xl animate-fade-in"
+            style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--text)' }}
           >
             <div className="flex items-center justify-between border-b pb-3 mb-4" style={{ borderColor: 'var(--border)' }}>
               <h2 className="text-sm font-black uppercase tracking-wider">
                 {editingSlide ? 'Modifier le Slide' : 'Créer un nouveau Slide'}
               </h2>
-              <button onClick={() => setIsModalOpen(false)} className="p-1 rounded-lg opacity-50 hover:opacity-100 transition cursor-pointer">
+              <button onClick={() => setIsModalOpen(false)} className="rounded-xl p-2 opacity-60 transition hover:bg-black/10 hover:opacity-100 dark:hover:bg-white/10 cursor-pointer">
                 <X size={16} />
               </button>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">Titre Principal</label>
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">Titre Principal</label>
                 <input type="text" required placeholder="Ex: Inscriptions Ouvertes 2026"
-                  className="w-full text-xs px-3 py-2 rounded-xl border bg-transparent outline-none focus:border-green-500"
+                  className="w-full rounded-xl border bg-black/[0.03] px-3 py-2 text-xs outline-none transition placeholder:opacity-40 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 dark:bg-white/[0.04]"
                   style={{ borderColor: 'var(--border)' }}
                   value={formData.title}
                   onChange={e => setFormData({...formData, title: e.target.value})}
@@ -365,9 +345,9 @@ export default function AdminSlides() {
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">Sous-titre / Description</label>
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">Sous-titre / Description</label>
                 <textarea required placeholder="Courte description percutante pour l'audience..." rows={2}
-                  className="w-full text-xs px-3 py-2 rounded-xl border bg-transparent outline-none focus:border-green-500 resize-none"
+                  className="w-full resize-none rounded-xl border bg-black/[0.03] px-3 py-2 text-xs outline-none transition placeholder:opacity-40 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 dark:bg-white/[0.04]"
                   style={{ borderColor: 'var(--border)' }}
                   value={formData.subtitle}
                   onChange={e => setFormData({...formData, subtitle: e.target.value})}
@@ -375,13 +355,13 @@ export default function AdminSlides() {
               </div>
 
               <div>
-                <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">URL de l'image de fond</label>
+                <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">URL de l'image de fond</label>
                 <div className="flex gap-2">
                   <div className="flex items-center gap-2 px-3 py-2 rounded-xl border text-xs flex-1"
-                    style={{ borderColor: 'var(--border)' }}>
+                    style={{ borderColor: 'var(--border)', backgroundColor: 'rgba(0,0,0,0.03)' }}>
                     <ImageIcon size={14} className="opacity-40" />
                     <input type="url" required placeholder="https://images.unsplash.com/..."
-                      className="bg-transparent outline-none w-full text-xs"
+                      className="w-full bg-transparent text-xs outline-none placeholder:opacity-40"
                       value={formData.imageUrl}
                       onChange={e => setFormData({...formData, imageUrl: e.target.value})}
                     />
@@ -392,18 +372,18 @@ export default function AdminSlides() {
               {/* Section d'alignement CTA (Bouton d'action) */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">Texte du Bouton (CTA)</label>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">Texte du Bouton (CTA)</label>
                   <input type="text" required placeholder="Ex: En savoir plus"
-                    className="w-full text-xs px-3 py-2 rounded-xl border bg-transparent outline-none"
+                    className="w-full rounded-xl border bg-black/[0.03] px-3 py-2 text-xs outline-none transition placeholder:opacity-40 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 dark:bg-white/[0.04]"
                     style={{ borderColor: 'var(--border)' }}
                     value={formData.ctaText}
                     onChange={e => setFormData({...formData, ctaText: e.target.value})}
                   />
                 </div>
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">Lien de redirection</label>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">Lien de redirection</label>
                   <input type="text" required placeholder="Ex: /formations ou URL externe"
-                    className="w-full text-xs px-3 py-2 rounded-xl border bg-transparent outline-none"
+                    className="w-full rounded-xl border bg-black/[0.03] px-3 py-2 text-xs outline-none transition placeholder:opacity-40 focus:border-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)]/20 dark:bg-white/[0.04]"
                     style={{ borderColor: 'var(--border)' }}
                     value={formData.ctaLink}
                     onChange={e => setFormData({...formData, ctaLink: e.target.value})}
@@ -413,7 +393,7 @@ export default function AdminSlides() {
 
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <div>
-                  <label className="text-[10px] font-black uppercase tracking-wider opacity-50 block mb-1">Ordre d'affichage</label>
+                  <label className="mb-1 block text-[10px] font-black uppercase tracking-wider opacity-75">Ordre d'affichage</label>
                   <input type="number" required min={1}
                     className="w-full text-xs px-3 py-2 rounded-xl border bg-transparent outline-none"
                     style={{ borderColor: 'var(--border)' }}

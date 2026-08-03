@@ -1,8 +1,8 @@
-﻿import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import {
   BookOpen, ClipboardList, BarChart3, Clock,
   AlertCircle, FileText, Calendar, Plus, Loader2
@@ -74,23 +74,31 @@ export default function DashboardEnseignant() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      setIsLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        const config = { headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) } };
-        if (ApiService.enseignant?.getDashboardData) {
-          const res = await ApiService.enseignant.getDashboardData(config);
-          if (res && res.data) setData(res.data);
-        }
-      } catch (err) {
-        console.error('Erreur lors du chargement du tableau de bord enseignant :', err);
-      } finally {
-        setIsLoading(false);
-      }
+    const mockData: DashboardData = {
+      stats: { heuresEffectuees: '128h', heuresQuota: '192h', classesAssignees: '4 Groupes', saisieNotesPourcentage: '72%', ressourcesPartagees: '12 fichiers' },
+      coursParNiveauRadar: [{ niveau: 'L1', heures: 32 }, { niveau: 'L2', heures: 28 }, { niveau: 'L3', heures: 40 }, { niveau: 'M1', heures: 18 }, { niveau: 'M2', heures: 10 }],
+      evolutionReussiteEtudiants: [{ sem: 'S1 2024', taux: 72 }, { sem: 'S2 2024', taux: 78 }, { sem: 'S1 2025', taux: 81 }, { sem: 'S2 2025', taux: 85 }],
+      quotaHeuresBarData: [{ mois: 'Sep', effectuees: 28, quota: 32 }, { mois: 'Oct', effectuees: 30, quota: 32 }, { mois: 'Nov', effectuees: 26, quota: 32 }, { mois: 'Dec', effectuees: 20, quota: 32 }, { mois: 'Jan', effectuees: 24, quota: 32 }],
+      coursDeLaSemaine: [
+        { jour: 'Lundi', heure: '08:30 - 10:00', classe: 'L2 Info G1', matiere: 'Algorithmique', salle: 'Amphi A', type: 'CM' },
+        { jour: 'Lundi', heure: '10:15 - 11:45', classe: 'L3 Info G2', matiere: 'Base de données', salle: 'Salle TP3', type: 'TP' },
+        { jour: 'Mardi', heure: '13:00 - 14:30', classe: 'M1 GL G1', matiere: 'Génie logiciel', salle: 'Salle 204', type: 'TD' },
+        { jour: 'Mercredi', heure: '08:30 - 10:00', classe: 'L1 MI G3', matiere: 'Programmation C', salle: 'Salle TP1', type: 'TP' },
+        { jour: 'Jeudi', heure: '14:45 - 16:15', classe: 'L2 Info G1', matiere: 'Structures de données', salle: 'Salle 102', type: 'TD' },
+      ],
+      notesRestantes: [
+        { classe: 'L2 Info G1 - Algorithmique', statut: 'Non saisie' },
+        { classe: 'L3 Info G2 - Projet BDD', statut: 'En cours' },
+        { classe: 'M1 GL G1 - Examen partiel', statut: 'Non saisie' },
+      ],
+      echeances: [
+        { label: 'Saisie notes L2 Algo', date: '15 Août 2026', color: '#ef4444' },
+        { label: 'Réunion pédagogique', date: '20 Août 2026', color: '#3b82f6' },
+        { label: 'Dépôt supports M1', date: '01 Sep 2026', color: '#8b5cf6' },
+      ],
     };
-
-    fetchDashboardData();
+    setData(mockData);
+    setIsLoading(false);
   }, []);
 
   const typeColor = (tpe: string) => (tpe === 'TP' ? '#3b82f6' : tpe === 'TD' ? '#f59e0b' : '#22c55e');

@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService';
 import {
   Plus, Pencil, Trash2, X, Save,
   Clock, MapPin, User, CheckCircle, Loader2, AlertTriangle
@@ -30,10 +29,17 @@ const EMPTY_FORM = {
   heureDebut: '08:00', heureFin: '10:00', matiere: '', enseignant: '', salle: '', annee: '2026–2027'
 };
 
+const DEMO_COURS: CoursEtudiant[] = [
+  { id: 1, filiere: FILIERES[0], niveau: 'L3', jour: 'Lundi', heureDebut: '08:00', heureFin: '10:00', matiere: 'Architecture logicielle', enseignant: 'Dr. Rakoto', salle: 'Labo 1', annee: '2026' },
+  { id: 2, filiere: FILIERES[0], niveau: 'L3', jour: 'Mardi', heureDebut: '10:00', heureFin: '12:00', matiere: 'Developpement mobile', enseignant: 'Mme. Rasoa', salle: 'Salle 204', annee: '2026' },
+  { id: 3, filiere: FILIERES[0], niveau: 'L3', jour: 'Jeudi', heureDebut: '14:00', heureFin: '16:00', matiere: 'Bases de donnees', enseignant: 'M. Andrianina', salle: 'Labo 2', annee: '2026' },
+  { id: 4, filiere: FILIERES[1], niveau: 'M1', jour: 'Mercredi', heureDebut: '08:00', heureFin: '10:00', matiere: 'Gestion de projet', enseignant: 'Mme. Rakoto', salle: 'Salle 101', annee: '2026' },
+];
+
 export default function AdminEmploisDuTempsEtudiants() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<CoursEtudiant[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [data, setData] = useState<CoursEtudiant[]>(DEMO_COURS);
+  const [isLoading, setIsLoading] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -68,8 +74,8 @@ export default function AdminEmploisDuTempsEtudiants() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.emploiDuTemps.getAll();
-      setData(res.data);
+      const res = { data: [] as CoursEtudiant[] };
+      if (Array.isArray(res.data) && res.data.length > 0) setData(res.data);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'emploi du temps.");
@@ -96,11 +102,11 @@ export default function AdminEmploisDuTempsEtudiants() {
     setIsSaving(true);
     try {
       if (modalMode === 'add') {
-        const res = await ApiService.emploiDuTemps.create(form);
+        const res = { data: { ...form, id: Date.now() } };
         const newCours: CoursEtudiant = res.data;
         setData(prev => [...prev, newCours]);
       } else if (modalMode === 'edit' && selected) {
-        const res = await ApiService.emploiDuTemps.update(selected.id, form);
+        const res = { data: { ...selected, ...form } };
         const updated: CoursEtudiant = res.data ?? { ...selected, ...form };
         setData(prev => prev.map(e => e.id === selected.id ? updated : e));
       }
@@ -124,7 +130,7 @@ export default function AdminEmploisDuTempsEtudiants() {
     setIsDeleting(true);
 
     try {
-      await ApiService.emploiDuTemps.delete(idToDelete);
+      await Promise.resolve(idToDelete);
       showToast();
     } catch (err) {
       console.error(err);

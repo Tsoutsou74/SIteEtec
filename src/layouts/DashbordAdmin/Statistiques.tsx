@@ -1,261 +1,70 @@
-import React, { useState } from 'react';
+import type { ReactNode } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { Activity, ArrowDownRight, ArrowUpRight, BookOpen, GraduationCap, Users } from 'lucide-react';
 import {
-  Save, CheckCircle, Building, Calendar, ShieldCheck, 
-  RefreshCw, Database, Eye, EyeOff, Key
-} from 'lucide-react';
+  Area, AreaChart, Bar, BarChart, CartesianGrid, Cell, Pie, PieChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
 
-// ── Types pour les paramètres de l'application ─────────────────
-interface ConfigurationSysteme {
-  nomUniversite: string;
-  codeEtablissement: string;
-  emailContact: string;
-  telephone: string;
-  anneeUniversitaire: string;
-  dateDebutRentrée: string;
-  statutInscriptions: boolean;
-  seuilValidationModule: number; // ex: 10/20 ou 12/20
-  doubleFacteurAuth: boolean;
-  sauvegardeAutomatique: boolean;
-}
+const inscriptions = [
+  { mois: 'Jan', total: 42 }, { mois: 'Fév', total: 58 }, { mois: 'Mar', total: 64 },
+  { mois: 'Avr', total: 78 }, { mois: 'Mai', total: 91 }, { mois: 'Juin', total: 108 },
+  { mois: 'Juil', total: 126 },
+];
 
-const CONFIG_INITIALE: ConfigurationSysteme = {
-  nomUniversite: 'ETEC University',
-  codeEtablissement: 'ETEC-TANA',
-  emailContact: 'contact@etec.mg',
-  telephone: '+261 20 22 345 67',
-  anneeUniversitaire: '2026-2027',
-  dateDebutRentrée: '2026-10-15',
-  statutInscriptions: true,
-  seuilValidationModule: 10,
-  doubleFacteurAuth: false,
-  sauvegardeAutomatique: true 
-};
+const mentions = [
+  { nom: 'Informatique', total: 186, color: '#16a34a' },
+  { nom: 'Administration', total: 124, color: '#3b82f6' },
+  { nom: 'BTP', total: 86, color: '#f59e0b' },
+  { nom: 'Électromécanique', total: 54, color: '#8b5cf6' },
+];
 
-export default function AdminParametres() {
+const activites = [
+  ['Nouvelle inscription validée', 'Aina Rakoto · il y a 12 min', 'bg-emerald-500'],
+  ['Résultats du semestre publiés', 'Licence 3 Informatique · il y a 1 h', 'bg-blue-500'],
+  ['Cours ajouté au catalogue', 'Architecture logicielle · il y a 3 h', 'bg-amber-500'],
+];
+
+export default function AdminStatistiques() {
   const { darkMode } = useTheme();
-  const [config, setConfig] = useState<ConfigurationSysteme>(CONFIG_INITIALE);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-
-  // États pour la section changement de mot de passe admin
-  const [showPwd, setShowPwd] = useState({ actuel: false, nouveau: false });
-  const [pwdForm, setPwdForm] = useState({ actuel: '', nouveau: '', confirmation: '' });
-
-  const inputStyle = {
-    backgroundColor: darkMode ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    borderColor: 'var(--border)',
-    color: 'var(--text)',
-  };
-
-  const cardStyle = {
-    backgroundColor: 'var(--card)',
-    borderColor: 'var(--border)',
-    color: 'var(--text)',
-  };
-
-  // ── Handlers ────────────────────────────────────────────
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setConfig({ ...config, [name]: value });
-  };
-
-  const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setConfig({ ...config, [name]: checked });
-  };
-
-  const handleSaveConfig = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    
-    // Simulation d'un enregistrement API
-    setTimeout(() => {
-      setIsSaving(false);
-      showToast('Configurations système enregistrées avec succès');
-    }, 800);
-  };
-
-  const handleUpdatePassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!pwdForm.actuel || !pwdForm.nouveau || !pwdForm.confirmation) {
-      showToast('Veuillez remplir tous les champs de sécurité.');
-      return;
-    }
-    if (pwdForm.nouveau !== pwdForm.confirmation) {
-      showToast('Le nouveau mot de passe et sa confirmation ne correspondent pas.');
-      return;
-    }
-    
-    showToast('Mot de passe administrateur mis à jour');
-    setPwdForm({ actuel: '', nouveau: '', confirmation: '' });
-  };
-
-  const showToast = (msg: string) => {
-    setToastMessage(msg);
-    setTimeout(() => setToastMessage(null), 2500);
-  };
+  const axisColor = darkMode ? '#9ca3af' : '#6b7280';
+  const tooltipStyle = { backgroundColor: darkMode ? '#171717' : '#ffffff', border: '1px solid var(--border)', borderRadius: 12, color: 'var(--text)' };
 
   return (
-    <div className="space-y-6 max-w-5xl">
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed top-20 right-6 z-[300] flex items-center gap-2 px-4 py-3 rounded-xl shadow-2xl text-xs font-bold text-white bg-green-500">
-          <CheckCircle size={15} /> {toastMessage}
-        </div>
-      )}
+    <div className="animate-fade-in space-y-6">
+      <header className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
+        <div><p className="text-[10px] font-black uppercase tracking-[0.2em] text-[var(--primary)]">Pilotage académique</p><h1 className="mt-1 text-2xl font-black tracking-tight md:text-3xl">Statistiques</h1><p className="mt-1 text-xs opacity-55">Suivez l’activité et la croissance de votre établissement.</p></div>
+        <span className="rounded-full border px-3 py-2 text-[11px] font-bold opacity-70" style={{ borderColor: 'var(--border)' }}>Année 2026–2027</span>
+      </header>
 
-      {/* En-tête de section */}
-      <div>
-        <h1 className="text-xl md:text-2xl font-black tracking-tight">Paramètres du Système</h1>
-        <p className="text-xs opacity-45 mt-1">Configurez les règles de gestion académique, les dates clés de l'établissement et la sécurité globale</p>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <StatCard icon={<Users size={18} />} label="Étudiants inscrits" value="450" change="+12,8 %" positive color="text-emerald-500" />
+        <StatCard icon={<GraduationCap size={18} />} label="Diplômés cette année" value="128" change="+8,4 %" positive color="text-blue-500" />
+        <StatCard icon={<BookOpen size={18} />} label="Cours actifs" value="86" change="+5,2 %" positive color="text-amber-500" />
+        <StatCard icon={<Activity size={18} />} label="Taux de réussite" value="87,6 %" change="-2,1 %" color="text-violet-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Colonne Principale : Configurations Générales & Académiques */}
-        <form onSubmit={handleSaveConfig} className="lg:col-span-2 space-y-5">
-          
-          {/* Section 1 : Informations Institutionnelles */}
-          <div className="p-5 rounded-2xl border space-y-4" style={cardStyle}>
-            <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <Building size={16} className="text-blue-500" />
-              <h2 className="text-xs font-black uppercase tracking-wider">Identité de l'Établissement</h2>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Nom officiel de l'Université</label>
-                <input name="nomUniversite" value={config.nomUniversite} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Code Identifiant</label>
-                <input name="codeEtablissement" value={config.codeEtablissement} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none font-mono text-[11px]" style={inputStyle} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Adresse Email de contact</label>
-                <input type="email" name="emailContact" value={config.emailContact} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Ligne Téléphonique</label>
-                <input name="telephone" value={config.telephone} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
-              </div>
-            </div>
-          </div>
+      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.5fr)_minmax(300px,1fr)]">
+        <section className="rounded-3xl border p-5 shadow-sm" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="mb-5 flex items-center justify-between"><div><h2 className="text-sm font-black">Évolution des inscriptions</h2><p className="mt-1 text-xs opacity-50">Progression mensuelle des nouveaux étudiants</p></div><span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-[10px] font-bold text-emerald-500">+ 126 ce mois</span></div>
+          <div className="h-72"><ResponsiveContainer width="100%" height="100%"><AreaChart data={inscriptions} margin={{ top: 8, right: 8, left: -22, bottom: 0 }}><defs><linearGradient id="inscriptionFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#16a34a" stopOpacity={0.28} /><stop offset="100%" stopColor="#16a34a" stopOpacity={0} /></linearGradient></defs><CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" /><XAxis dataKey="mois" axisLine={false} tickLine={false} tick={{ fill: axisColor, fontSize: 11 }} /><YAxis axisLine={false} tickLine={false} tick={{ fill: axisColor, fontSize: 11 }} /><Tooltip contentStyle={tooltipStyle} /><Area type="monotone" dataKey="total" name="Étudiants" stroke="#16a34a" strokeWidth={3} fill="url(#inscriptionFill)" /></AreaChart></ResponsiveContainer></div>
+        </section>
 
-          {/* Section 2 : Calendrier & Règlements Académiques */}
-          <div className="p-5 rounded-2xl border space-y-4" style={cardStyle}>
-            <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <Calendar size={16} className="text-purple-500" />
-              <h2 className="text-xs font-black uppercase tracking-wider">Périodes & Règles Universitaires</h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Année Académique Active</label>
-                <select name="anneeUniversitaire" value={config.anneeUniversitaire} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none cursor-pointer appearance-none" style={inputStyle}>
-                  <option value="2025-2026">2025-2026</option>
-                  <option value="2026-2027">2026-2027</option>
-                  <option value="2027-2028">2027-2028</option>
-                </select>
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Date prévisionnelle de la rentrée</label>
-                <input type="date" name="dateDebutRentrée" value={config.dateDebutRentrée} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
-              </div>
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Note minimale de validation de module (/20)</label>
-                <input type="number" name="seuilValidationModule" min={10} max={16} value={config.seuilValidationModule} onChange={handleInputChange} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none font-bold text-sm" style={inputStyle} />
-              </div>
-
-              {/* Toggles Interrupteurs */}
-              <div className="space-y-3 pt-4 sm:pt-6">
-                <label className="flex items-center gap-3 cursor-pointer select-none">
-                  <input type="checkbox" name="statutInscriptions" checked={config.statutInscriptions} onChange={handleCheckboxChange} className="w-4 h-4 accent-blue-500 cursor-pointer" />
-                  <div>
-                    <p className="font-bold text-[11px]">Inscriptions Publiques Ouvertes</p>
-                    <p className="text-[9px] opacity-45">Permettre l'accès au formulaire de candidature extérieur</p>
-                  </div>
-                </label>
-              </div>
-            </div>
-          </div>
-
-          {/* Bouton de sauvegarde global */}
-          <div className="flex justify-end">
-            <button type="submit" disabled={isSaving} className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-xs text-white transition hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: 'var(--primary)' }}>
-              {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-              Enregistrer les modifications
-            </button>
-          </div>
-
-        </form>
-
-        {/* Colonne Latérale : Sécurité & Actions Système */}
-        <div className="space-y-5">
-          
-          {/* Bloc Changement de Mot de Passe */}
-          <div className="p-5 rounded-2xl border space-y-4" style={cardStyle}>
-            <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <ShieldCheck size={16} className="text-red-500" />
-              <h2 className="text-xs font-black uppercase tracking-wider">Sécurité Administrateur</h2>
-            </div>
-            
-            <form onSubmit={handleUpdatePassword} className="space-y-3 text-xs">
-              <div className="space-y-1.5 relative">
-                <label className="text-[10px] font-bold uppercase opacity-60">Mot de passe actuel</label>
-                <input type={showPwd.actuel ? 'text' : 'password'} value={pwdForm.actuel} onChange={e => setPwdForm({...pwdForm, actuel: e.target.value})} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none pr-10" style={inputStyle} />
-                <button type="button" onClick={() => setShowPwd({...showPwd, actuel: !showPwd.actuel})} className="absolute right-3 bottom-3 opacity-40 hover:opacity-100">
-                  {showPwd.actuel ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-
-              <div className="space-y-1.5 relative">
-                <label className="text-[10px] font-bold uppercase opacity-60">Nouveau mot de passe</label>
-                <input type={showPwd.nouveau ? 'text' : 'password'} value={pwdForm.nouveau} onChange={e => setPwdForm({...pwdForm, nouveau: e.target.value})} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none pr-10" style={inputStyle} />
-                <button type="button" onClick={() => setShowPwd({...showPwd, nouveau: !showPwd.nouveau})} className="absolute right-3 bottom-3 opacity-40 hover:opacity-100">
-                  {showPwd.nouveau ? <EyeOff size={14} /> : <Eye size={14} />}
-                </button>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase opacity-60">Confirmer le mot de passe</label>
-                <input type="password" value={pwdForm.confirmation} onChange={e => setPwdForm({...pwdForm, confirmation: e.target.value})} className="w-full px-3 py-2.5 rounded-xl border focus:outline-none" style={inputStyle} />
-              </div>
-
-              <button type="submit" className="w-full flex items-center justify-center gap-1.5 mt-2 px-4 py-2.5 rounded-xl border border-red-500/20 text-red-500 font-bold transition hover:bg-red-500/5">
-                <Key size={13} /> Mettre à jour la clé
-              </button>
-            </form>
-          </div>
-
-          {/* Bloc Maintenance & Base de Données */}
-          <div className="p-5 rounded-2xl border space-y-4" style={cardStyle}>
-            <div className="flex items-center gap-2 pb-2 border-b" style={{ borderColor: 'var(--border)' }}>
-              <Database size={16} className="text-amber-500" />
-              <h2 className="text-xs font-black uppercase tracking-wider">Maintenance & Données</h2>
-            </div>
-
-            <div className="space-y-4 text-xs">
-              <label className="flex items-center gap-3 cursor-pointer select-none">
-                <input type="checkbox" name="sauvegardeAutomatique" checked={config.sauvegardeAutomatique} onChange={handleCheckboxChange} className="w-4 h-4 accent-amber-500 cursor-pointer" />
-                <div>
-                  <p className="font-bold text-[11px]">Sauvegarde automatique Cloud</p>
-                  <p className="text-[9px] opacity-45">Archiver les bases SQL toutes les 24 heures</p>
-                </div>
-              </label>
-
-              <div className="pt-2 border-t space-y-2" style={{ borderColor: 'var(--border)' }}>
-                <p className="text-[10px] opacity-50">Dernière sauvegarde système effectuée : **Aujourd'hui à 04:00 AM**</p>
-                <button type="button" onClick={() => showToast('Génération instantanée du fichier SQL exporté lancée...')} className="w-full flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-xl bg-black/5 dark:bg-white/5 font-bold transition hover:opacity-80">
-                  <Database size={13} /> Forcer un backup complet (.sql)
-                </button>
-              </div>
-            </div>
-          </div>
-
-        </div>
+        <section className="rounded-3xl border p-5 shadow-sm" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+          <div className="mb-2"><h2 className="text-sm font-black">Répartition par mention</h2><p className="mt-1 text-xs opacity-50">Effectif actuel par parcours</p></div>
+          <div className="h-52"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={mentions} dataKey="total" nameKey="nom" cx="50%" cy="50%" innerRadius={52} outerRadius={78} paddingAngle={3}>{mentions.map((entry) => <Cell key={entry.nom} fill={entry.color} />)}</Pie><Tooltip contentStyle={tooltipStyle} /></PieChart></ResponsiveContainer></div>
+          <div className="space-y-2">{mentions.map((mention) => <div key={mention.nom} className="flex items-center justify-between text-xs"><span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: mention.color }} />{mention.nom}</span><strong>{mention.total}</strong></div>)}</div>
+        </section>
       </div>
+
+      <section className="rounded-3xl border p-5 shadow-sm" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}>
+        <div className="mb-4 flex items-center justify-between"><div><h2 className="text-sm font-black">Activité récente</h2><p className="mt-1 text-xs opacity-50">Dernières actions enregistrées dans le système</p></div><button type="button" className="text-xs font-bold text-[var(--primary)] hover:underline">Voir tout</button></div>
+        <div className="grid gap-2 md:grid-cols-3">{activites.map(([title, detail, color]) => <div key={title} className="flex items-start gap-3 rounded-2xl border p-3" style={{ borderColor: 'var(--border)' }}><span className={`mt-1 h-2.5 w-2.5 shrink-0 rounded-full ${color}`} /><div><p className="text-xs font-bold">{title}</p><p className="mt-1 text-[11px] opacity-50">{detail}</p></div></div>)}</div>
+      </section>
     </div>
   );
+}
+
+function StatCard({ icon, label, value, change, positive, color }: { icon: ReactNode; label: string; value: string; change: string; positive?: boolean; color: string }) {
+  return <div className="rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}><div className={`mb-4 flex h-9 w-9 items-center justify-center rounded-xl bg-black/5 ${color} dark:bg-white/5`}>{icon}</div><p className="text-[11px] font-bold opacity-55">{label}</p><div className="mt-1 flex items-end justify-between gap-2"><strong className="text-2xl font-black">{value}</strong><span className={`flex items-center text-[10px] font-bold ${positive ? 'text-emerald-500' : 'text-red-500'}`}>{positive ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}{change}</span></div></div>;
 }

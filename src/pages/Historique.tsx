@@ -4,10 +4,10 @@ import { useTheme } from '../context/ThemeContext';
 import { useT } from '../config/I18nProvider';
 
 const HISTORIQUE_TEXT = [
-  "L'E-TEC est un institut professionnel polytechnique privé, fondé en octobre 2001 par feu Monsieur RANDRIANIVELO Maminirina Hobivaomalala Daniel. Grande école d'enseignement supérieur habilitée par le ministère de l'Enseignement Supérieur et de la Recherche Scientifique, l'établissement délivre des diplômes homologués par le ministère de la Fonction Publique, avec équivalence administrative.",
-  "A la suite du tragique décès de son fondateur, la direction générale a été confiée à Monsieur RAVELOSON Claude César, l'actuel Directeur général.",
-  "Initialement installé à Anatihazo Andavamamba (près de l'Alliance Française) en 2002, l'institut a transféré son siège à Faravohitra (Tana 101) le 17 octobre 2005.",
-  "Agréé par l'Etat (arrêtés n° 69394/2002METP du 18/11/02 et provincial n° 20001/031 du 05/12/01), l'E-TEC est habilité par le MENRS (31501/2013, 1072/2014) et bénéficie des équivalences FOP (n° 9276/2014, 35384/2013 et 9274/2014).",
+  "Historique L’E-TEC est un établissement d’enseignement polytechnique privé, fondé en octobre 2001 par feu Monsieur RANDRIANARIVELO Maminirina Hobivaomalala Daniel.",
+  "Créé dans le but de contribuer au développement de l’enseignement supérieur et de la formation professionnelle, l’établissement a initialement été implanté à Andavamamba en 2002, avant de transférer son siège à Faravohitra (Lot A126 bis Faravohitra, Antananarivo Madagascar) le 17 octobre 2005, où il est actuellement établi.",
+  "Au fil des années, l’E-TEC a évolué sous différentes directions. Aujourd’hui, l’établissement est dirigé par Monsieur RAVELSON Claude Cesaire, Directeur.",
+  "Les formations dispensées par l’E-TEC sont habilitées par le Ministère de l’Enseignement Supérieur et de la Recherche Scientifique (MESuRePS) et bénéficient d’équivalences administratives conformément aux dispositions en vigueur.",
 ];
 
 const HIGHLIGHTS = [

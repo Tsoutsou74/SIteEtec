@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import {
   Search, Plus, Trash2, X, Send,
   Calendar, CheckCircle, AlertCircle, Bell, Users, GraduationCap, Info,
@@ -69,8 +69,11 @@ export default function Notifications() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.notifications.getAll();
-      setData(res.data);
+      const mockData: NotificationAdmin[] = [
+        { id: 1, titre: 'Rentrée Académique', message: 'La rentrée académique aura lieu le 1er octobre 2026.', cible: 'Tous', type: 'Alerte', dateEnvoi: '2026-09-15', luPar: 150 },
+        { id: 2, titre: 'Rappel Frais de Scolarité', message: 'N\'oubliez pas de régler les frais de scolarité avant le 15 du mois.', cible: 'Étudiants', type: 'Rappel', dateEnvoi: '2026-09-10', luPar: 85 },
+      ];
+      setData(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'historique des notifications.");
@@ -95,40 +98,32 @@ export default function Notifications() {
     }
 
     setIsSending(true);
-    try {
-      const res = await ApiService.notifications.create(form);
-      const newNotification: NotificationAdmin = res.data;
+    setTimeout(() => {
+      const newNotification: NotificationAdmin = {
+        id: Date.now(),
+        ...form,
+        dateEnvoi: new Date().toISOString().split('T')[0],
+        luPar: 0
+      };
       setData(prev => [newNotification, ...prev]);
       setIsModalOpen(false);
       setForm(EMPTY_FORM);
       showToast('Notification push envoyée avec succès');
-    } catch (err) {
-      console.error(err);
-      showToast("Échec de l'envoi, réessaie.");
-    } finally {
       setIsSending(false);
-    }
+    }, 500);
   };
 
   const handleDelete = async () => {
     if (deleteId === null) return;
 
-    const previous = data;
     const idToDelete = deleteId;
-    setData(prev => prev.filter(n => n.id !== idToDelete));
-    setDeleteId(null);
     setIsDeleting(true);
-
-    try {
-      await ApiService.notifications.delete(idToDelete);
+    setTimeout(() => {
+      setData(prev => prev.filter(n => n.id !== idToDelete));
+      setDeleteId(null);
       showToast('Notification supprimée de l\'historique');
-    } catch (err) {
-      console.error(err);
-      setData(previous); // rollback
-      showToast('La suppression a échoué, réessaie.');
-    } finally {
       setIsDeleting(false);
-    }
+    }, 500);
   };
 
   const showToast = (msg: string) => {

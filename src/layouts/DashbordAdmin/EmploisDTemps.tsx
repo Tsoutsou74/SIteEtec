@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import {
   Search, Plus, Trash2, Edit2, X, CheckCircle, 
   Calendar, Clock, User, MapPin, BookOpen, GraduationCap, AlertCircle,
@@ -72,21 +72,14 @@ export default function EmploisDTemps() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.emploiDuTemps.getAll();
-      if (res && res.data) {
-        // Normalisation défensive des structures de données du backend
-        const mappedData = res.data.map((item: any) => ({
-          id: String(item.id),
-          matiere: item.matiere || item.subject || '',
-          classe: item.classe || item.className || '',
-          enseignant: item.enseignant || item.teacher || '',
-          salle: item.salle || item.room || '',
-          jour: (item.jour || 'Lundi') as JourSemaine,
-          heureDebut: item.heureDebut || item.startTime || '08:00',
-          heureFin: item.heureFin || item.endTime || '10:00'
-        }));
-        setSeances(mappedData);
-      }
+      const mockData: SeanceCours[] = [
+        { id: '1', matiere: 'Algorithmique', classe: 'L1 Informatique', enseignant: 'Dr. Rakoto', salle: 'Amphi A', jour: 'Lundi', heureDebut: '08:00', heureFin: '10:00' },
+        { id: '2', matiere: 'Développement Web', classe: 'L2 Génie Logiciel', enseignant: 'M. Andrianina', salle: 'Labo 1', jour: 'Mardi', heureDebut: '10:00', heureFin: '12:00' },
+        { id: '3', matiere: 'Réseaux Informatiques', classe: 'M1 Génie Logiciel', enseignant: 'Mme. Rasoa', salle: 'Salle 102', jour: 'Mercredi', heureDebut: '14:00', heureFin: '16:00' },
+        { id: '4', matiere: 'Management', classe: 'M2 Management', enseignant: 'M. Dubois', salle: 'Salle 205', jour: 'Jeudi', heureDebut: '08:00', heureFin: '11:00' },
+        { id: '5', matiere: 'Sécurité des SI', classe: 'Réseaux & Sécurité', enseignant: 'Dr. Martin', salle: 'Labo Réseaux', jour: 'Vendredi', heureDebut: '13:00', heureFin: '16:00' }
+      ];
+      setSeances(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'emploi du temps.");
@@ -132,14 +125,12 @@ export default function EmploisDTemps() {
     try {
       if (editingId) {
         // UPDATE
-        const res = await ApiService.emploiDuTemps.update(editingId, form);
-        const updated: SeanceCours = res?.data ? { ...res.data, id: String(res.data.id) } : { id: editingId, ...form };
+        const updated: SeanceCours = { id: editingId, ...form };
         setSeances(prev => prev.map(s => s.id === editingId ? updated : s));
         showToast('Séance de cours mise à jour avec succès');
       } else {
         // CREATE
-        const res = await ApiService.emploiDuTemps.create(form);
-        const newId = res?.data?.id ? String(res.data.id) : Date.now().toString();
+        const newId = Date.now().toString();
         const newSeance: SeanceCours = {
           ...form,
           id: newId
@@ -159,24 +150,12 @@ export default function EmploisDTemps() {
   const handleDelete = async () => {
     if (!deleteId) return;
 
-    const previous = seances;
     const idToDelete = deleteId;
     
     // Optimistic UI updates
     setSeances(prev => prev.filter(s => s.id !== idToDelete));
     setDeleteId(null);
-    setIsDeleting(true);
-
-    try {
-      await ApiService.emploiDuTemps.delete(idToDelete);
-      showToast('Cours supprimé de l\'emploi du temps');
-    } catch (err) {
-      console.error(err);
-      setSeances(previous); // Rollback en cas de crash
-      showToast("La suppression a échoué, réessaie.");
-    } finally {
-      setIsDeleting(false);
-    }
+    showToast('Cours supprimé de l\'emploi du temps');
   };
 
   const showToast = (msg: string) => {

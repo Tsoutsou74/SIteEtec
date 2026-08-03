@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService';
+
 import {
   Plus, Pencil, Trash2, X, Save,
   Clock, MapPin, GraduationCap, CheckCircle, Loader2, AlertTriangle
@@ -64,8 +64,10 @@ export default function EmploisDTemps() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.emploiDuTemps.getAll();
-      setData(res.data);
+      const mockData: CoursEnseignant[] = [
+        { id: 1, enseignant: 'Dr. ANDRIA', jour: 'Lundi', heureDebut: '08:00', heureFin: '10:00', matiere: 'Algorithmique', filiere: 'Informatique', niveau: 'L1', salle: 'Amphi A' },
+      ];
+      setData(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'emploi du temps.");
@@ -90,45 +92,30 @@ export default function EmploisDTemps() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    try {
+    setTimeout(() => {
       if (modalMode === 'add') {
-        const res = await ApiService.emploiDuTemps.create(form);
-        const newCours: CoursEnseignant = res.data;
+        const newCours: CoursEnseignant = { id: Date.now(), ...form };
         setData(prev => [...prev, newCours]);
       } else if (modalMode === 'edit' && selected) {
-        const res = await ApiService.emploiDuTemps.update(selected.id, form);
-        const updated: CoursEnseignant = res.data ?? { ...selected, ...form };
+        const updated: CoursEnseignant = { ...selected, ...form };
         setData(prev => prev.map(e => e.id === selected.id ? updated : e));
       }
       setModalMode(null);
       showToast();
-    } catch (err) {
-      console.error(err);
-      alert("L'enregistrement a échoué, réessaie.");
-    } finally {
       setIsSaving(false);
-    }
+    }, 500);
   };
 
   const handleDelete = async () => {
     if (deleteId === null) return;
-
-    const previous = data;
     const idToDelete = deleteId;
-    setData(prev => prev.filter(e => e.id !== idToDelete));
-    setDeleteId(null);
     setIsDeleting(true);
-
-    try {
-      await ApiService.emploiDuTemps.delete(idToDelete);
+    setTimeout(() => {
+      setData(prev => prev.filter(e => e.id !== idToDelete));
+      setDeleteId(null);
       showToast();
-    } catch (err) {
-      console.error(err);
-      setData(previous); // rollback
-      alert("La suppression a échoué, réessaie.");
-    } finally {
       setIsDeleting(false);
-    }
+    }, 500);
   };
 
   const showToast = () => { setSaved(true); setTimeout(() => setSaved(false), 2500); };

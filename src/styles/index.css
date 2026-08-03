@@ -239,4 +239,43 @@ select option:checked {
     -webkit-background-clip: text;
     color: transparent;
   }
+
+  .styled-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary) transparent;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--primary) 65%, transparent);
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+
+  .styled-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+    background-clip: padding-box;
+  }
+
+  .student-slide-panel {
+    animation: studentSlideIn 280ms ease-out both;
+  }
+
+  @keyframes studentSlideIn {
+    from { transform: translateX(100%); opacity: 0.7; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .student-slide-panel { animation: none; }
+  }
 }

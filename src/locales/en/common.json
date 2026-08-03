@@ -1,6 +1,6 @@
 {
   "topbar": {
-    "phone": "+261 22 02 123 45",
+    "phone": "+261 33 11 669 79",
     "email": "contact@etec.mg",
     "theme": "Toggle theme",
     "language": "Language"
@@ -25,7 +25,7 @@
   },
   "hero": {
     "badge": "Open admissions",
-    "title1": "Ecole Professionnel Polytechnique Private",
+    "title1": "Ecole Professionnelle Polytechnique Private",
     "title2": "and innovation",
     "subtitle": "Discover a modern learning environment designed to propel your professional ambitions in Madagascar.",
     "ctaAdmission": "Apply",
@@ -40,17 +40,18 @@
   "about": {
     "sectionLabel": "About",
     "whoWeAre": "Who are we?",
-    "title1": "Academic excellence",
-    "title2": "at the heart of Faravohitra",
-    "desc": "Founded with the ambition of training Madagascar's technological and managerial elite, E-TEC University stands as a major innovation hub.",
+    "title1": "L'E-TEC(Education in Training, Employment and Communication) is a",
+    "title2": "Private Polytechnical Professional School founded in October 2001.",
+    "subtitle": "Our institution is committed to providing quality education, combining theoretical knowledge, practical skills and supporting students towards their academic and professional success.",
+    "desc": "More than 20 years of excellence in professional training, our institution is committed to offering quality education, combining theoretical knowledge, practical skills and supporting students towards their academic and professional success.",
     "keyFigures": "Key figures",
     "articles": "News",
     "structures": "Structures",
     "missionTitle": "Our Mission",
-    "missionDesc": "Boost the employability of Malagasy youth through professional training.",
+    "missionDesc": "Train qualified students by developing their knowledge, skills and sense of responsibility.",
     "visionTitle": "Our Vision",
-    "visionDesc": "Become Madagascar's reference institution for training tomorrow's executives and engineers.",
-    "sloganLabel": "Mission and objectives",
+    "visionDesc": "to be a reference in Madagascar for higher professional education by offering quality training that meets the needs of the professional world.",
+    "sloganLabel": "",
     "sloganTitle": "A future is built with projects",
     "sloganLine1": "Have projects to anticipate",
     "sloganLine2": "Everything is possible for those who believe",

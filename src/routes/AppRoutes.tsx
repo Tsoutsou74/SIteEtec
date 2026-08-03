@@ -108,7 +108,8 @@ export default function AppRoutes() {
         
         <Route path="/admin" element={<DashboardLayout />}>
           <Route index                             element={<AdminHome />} />
-          <Route path="etudiants"                  element={<AdminEtudiants />} />
+          <Route path="etudiants"                  element={<LDT />} />
+          <Route path="etudiants/gestion"          element={<AdminEtudiants />} />
           <Route path="Etudiants/inscriptions"     element={<Inscriptions />} />
           <Route path="Etudiants/resultats"        element={<AResultats />} />
           <Route path="Enseignant/AdmineEnseignants"        element={<Enseignants />} />

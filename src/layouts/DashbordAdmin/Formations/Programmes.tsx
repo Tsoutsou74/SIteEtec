@@ -30,9 +30,15 @@ const EMPTY_FORM = {
   anneeAcademique: '2025-2026', filiere: 'Génie Logiciel', niveau: 'L3' as Programme['niveau'], typeFormation: 'Initiale' as TypeFormation, titre: '', heuresTheoriques: 120, heuresPratiques: 120, statut: 'En attente' as Programme['statut']
 };
 
+const DEMO_PROGRAMMES: Programme[] = [
+  { id: 1, anneeAcademique: '2026-2027', filiere: 'GÃ©nie Logiciel', niveau: 'L3', typeFormation: 'Initiale', titre: 'IngÃ©nierie logicielle et cloud', heuresTheoriques: 180, heuresPratiques: 120, statut: 'Actif' },
+  { id: 2, anneeAcademique: '2026-2027', filiere: 'Administration', niveau: 'M1', typeFormation: 'Initiale', titre: 'Management des organisations', heuresTheoriques: 160, heuresPratiques: 100, statut: 'Actif' },
+  { id: 3, anneeAcademique: '2026-2027', filiere: 'BTP', niveau: 'L2', typeFormation: 'Initiale', titre: 'Construction et infrastructures', heuresTheoriques: 150, heuresPratiques: 140, statut: 'En attente' },
+];
+
 export default function Programmes() {
   const { darkMode } = useTheme();
-  const [data, setData] = useState<Programme[]>([]);
+  const [data, setData] = useState<Programme[]>(DEMO_PROGRAMMES);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
@@ -74,7 +80,7 @@ export default function Programmes() {
           heuresPratiques: Number(item.heuresPratiques || 0),
           statut: item.statut || 'En attente'
         }));
-        setData(mappedData);
+        if (mappedData.length > 0) setData(mappedData);
       }
     } catch (error) {
       console.error("Erreur de récupération des programmes :", error);

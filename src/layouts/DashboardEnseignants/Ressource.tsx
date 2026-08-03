@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { 
   FolderOpen, FileText, Video, Archive, Search, 
   UploadCloud, Trash2, Download, HardDrive, 
@@ -43,18 +43,21 @@ export default function Ressource() {
       setLoading(true);
       setError(null);
       
-      const [fichiersData, quotaData] = await Promise.all([
-        ApiService.getRessources(),
-        ApiService.getQuotaStockage()
-      ]);
+      const fichiersData: FichierRessource[] = [
+        { id: '1', nom: 'Cours_Algorithmique_Chap1.pdf', classe: 'L2 Info G1', matiere: 'Algorithmique', taille: '2.4 MB', dateDepot: '2026-07-25', downloads: 145, format: 'document' },
+        { id: '2', nom: 'TD_Base_De_Donnees_S1.pdf', classe: 'L3 Info G2', matiere: 'Base de données', taille: '1.1 MB', dateDepot: '2026-07-28', downloads: 89, format: 'document' },
+        { id: '3', nom: 'Projet_Genie_Logiciel_Specs.zip', classe: 'M1 GL G1', matiere: 'Génie logiciel', taille: '15.6 MB', dateDepot: '2026-07-30', downloads: 42, format: 'archive' },
+        { id: '4', nom: 'Correction_TP_ProgC.mp4', classe: 'L1 MI G3', matiere: 'Programmation C', taille: '124.5 MB', dateDepot: '2026-07-22', downloads: 210, format: 'video' },
+      ];
+      const quotaData = { utilise: '143.6 MB', max: '2 GB', pourcentage: 7 };
       
-      setFichiers(fichiersData || []);
-      if (quotaData) setQuota(quotaData);
+      setTimeout(() => {
+        setFichiers(fichiersData);
+        setQuota(quotaData);
+        setLoading(false);
+      }, 400);
     } catch (err) {
-      console.error("Erreur lors de la récupération des ressources:", err);
-      setError("Impossible de charger la médiathèque. Veuillez réessayer.");
-    } finally {
-      setLoading(false);
+      console.error("Erreur:", err);
     }
   };
 
@@ -73,58 +76,41 @@ export default function Ressource() {
     });
   }, [fichiers, searchTerm, activeFormat]);
 
-  // ─── Actions via l'API ───
+  // ─── Actions ───
   const handleDelete = async (id: string) => {
     if (!confirm('Voulez-vous vraiment supprimer ce document de la plateforme ?')) return;
     
-    try {
-      setError(null);
-      await ApiService.deleteRessource(id);
-      setFichiers(prev => prev.filter(f => f.id !== id));
-      
-      // Optionnel : Recharger le quota après suppression
-      const quotaData = await ApiService.getQuotaStockage();
-      if (quotaData) setQuota(quotaData);
-    } catch (err) {
-      console.error("Erreur lors de la suppression de la ressource:", err);
-      setError("Erreur lors de la suppression du fichier. Veuillez réessayer.");
-    }
+    setFichiers(prev => prev.filter(f => f.id !== id));
   };
 
   const handleUploadReal = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    const formData = new FormData();
-    formData.append('file', file);
-    // Ajoutez ici d'autres données requises par votre API (ex: classe, matiere) si besoin
-    formData.append('classe', 'L1 Info A'); 
-    formData.append('matiere', 'Général');
-
+    
     try {
       setIsUploading(true);
       setError(null);
       
-      const nouveauFichier = await ApiService.uploadRessource(formData);
+      const nouveauFichier: FichierRessource = {
+        id: Math.random().toString(36).substr(2, 9),
+        nom: file.name,
+        classe: 'L1 Info A',
+        matiere: 'Général',
+        taille: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        dateDepot: new Date().toISOString().split('T')[0],
+        downloads: 0,
+        format: file.name.endsWith('.mp4') ? 'video' : file.name.endsWith('.zip') ? 'archive' : 'document'
+      };
       
-      setUploadSuccess(true);
-      if (nouveauFichier) {
+      setTimeout(() => {
+        setUploadSuccess(true);
         setFichiers(prev => [nouveauFichier, ...prev]);
-      } else {
-        // Fallback sécurisé ou rechargement complet
-        fetchRessources();
-      }
-      
-      // Actualiser l'état du quota après l'ajout
-      const quotaData = await ApiService.getQuotaStockage();
-      if (quotaData) setQuota(quotaData);
-
-      setTimeout(() => setUploadSuccess(false), 3000);
+        setTimeout(() => setUploadSuccess(false), 3000);
+        setIsUploading(false);
+      }, 1000);
     } catch (err) {
-      console.error("Erreur lors du téléversement du fichier:", err);
-      setError("Le téléversement a échoué. Vérifiez la taille ou le format du fichier.");
-    } finally {
-      setIsUploading(false);
+      console.error("Erreur:", err);
     }
   };
 

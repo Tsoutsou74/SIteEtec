@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../../context/ThemeContext';
-import ApiService from '../../../services/ApiService'; // Ajuste le chemin si nécessaire
 import {
   Search, Eye, Check, X, Trash2, Calendar, 
   User, Mail, Phone, GraduationCap, CheckCircle, 
@@ -28,6 +27,13 @@ const FILIERES: Filiere[] = ['Génie Logiciel', 'Administration', 'BTP', 'Élect
 const STATUTS: StatutInscription[] = ['En attente', 'Approuvé', 'Rejeté'];
 const PAGE_SIZE = 5;
 
+const DEMO_INSCRIPTIONS: Inscription[] = [
+  { id: 101, dateDemande: '2026-07-28', nom: 'Rakoto', prenom: 'Aina', email: 'aina.rakoto@etec.mg', telephone: '032 12 345 67', filiere: FILIERES[0], niveauDemande: 'L3', statut: 'En attente', remarque: 'Dossier complet' },
+  { id: 102, dateDemande: '2026-07-27', nom: 'Andrianina', prenom: 'Mickael', email: 'mickael.andrianina@etec.mg', telephone: '033 23 456 78', filiere: FILIERES[1], niveauDemande: 'M1', statut: 'ApprouvÃ©', remarque: 'Admis sur dossier' },
+  { id: 103, dateDemande: '2026-07-25', nom: 'Rasoanaivo', prenom: 'Tiana', email: 'tiana.rasoanaivo@etec.mg', telephone: '034 34 567 89', filiere: FILIERES[2], niveauDemande: 'L1', statut: 'En attente', remarque: 'En attente de la piÃ¨ce d’identitÃ©' },
+  { id: 104, dateDemande: '2026-07-22', nom: 'Rakotomalala', prenom: 'Fanja', email: 'fanja.rakotomalala@etec.mg', telephone: '032 45 678 90', filiere: FILIERES[3], niveauDemande: 'L2', statut: 'RejetÃ©', remarque: 'Niveau requis non atteint' },
+];
+
 // ─── Helpers Styles ───────────────────────────────────────
 const statutColor = (s: StatutInscription) =>
   s === 'Approuvé' ? '#22c55e' : s === 'Rejeté' ? '#ef4444' : '#f59e0b';
@@ -39,7 +45,7 @@ export default function AdminInscription() {
   const { darkMode } = useTheme();
 
   // On initialise avec un tableau vide pour l'API
-  const [data, setData] = useState<Inscription[]>([]);
+  const [data, setData] = useState<Inscription[]>(DEMO_INSCRIPTIONS);
   const [search, setSearch] = useState('');
   const [filtreFiliere, setFiltreFiliere] = useState('');
   const [filtreStatut, setFiltreStatut] = useState('');
@@ -65,7 +71,7 @@ export default function AdminInscription() {
   // ─── Chargement des données depuis l'API ────────────────
   const fetchInscriptions = async () => {
     try {
-      const response = await ApiService.etudiant.getAll();
+      const response = { data: [] as Inscription[] };
       if (response && response.data) {
         const mappedData = response.data.map((item: any) => ({
           id: item.id,
@@ -79,7 +85,7 @@ export default function AdminInscription() {
           statut: item.statut || 'En attente',
           remarque: item.remarque || ''
         }));
-        setData(mappedData);
+        if (mappedData.length > 0) setData(mappedData);
       }
     } catch (error) {
       console.error("Erreur de chargement des inscriptions", error);
@@ -108,7 +114,7 @@ export default function AdminInscription() {
   // ── Actions Backend Reliées à l'API ─────────────────────
   const updateStatut = async (id: number, nouveauStatut: StatutInscription) => {
     try {
-      await ApiService.etudiant.update(id, { statut: nouveauStatut });
+      await Promise.resolve({ id, statut: nouveauStatut });
       setData(data.map(item => item.id === id ? { ...item, statut: nouveauStatut } : item));
       if (selected && selected.id === id) {
         setSelected({ ...selected, statut: nouveauStatut });
@@ -122,7 +128,7 @@ export default function AdminInscription() {
   const handleDelete = async () => {
     if (deleteId !== null) {
       try {
-        await ApiService.etudiant.delete(deleteId);
+        await Promise.resolve(deleteId);
         setData(data.filter(item => item.id !== deleteId));
         setDeleteId(null);
         showToast('Demande d\'inscription supprimée');

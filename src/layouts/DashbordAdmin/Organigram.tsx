@@ -5,7 +5,7 @@ import {
   ChevronDown, ChevronUp, Layers, Loader2, AlertTriangle
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 
 // ─── Interfaces ─────────────────────────────────────────────────────
 interface Member {
@@ -54,8 +54,11 @@ export default function AdminOrganigramme() {
     setIsLoading(true);
     setLoadError(null);
     try {
-      const res = await ApiService.organigrammes.getAll();
-      setMembers(res.data);
+      const mockData: Member[] = [
+        { id: 1, name: 'Dr. Fanilo Rakoto', role: 'Président Directeur Général', category: 'Direction', email: 'f.rakoto@etec.mg', phone: '+261 34 00 123 45', order: 1 },
+        { id: 2, name: 'Mme. Rasoa', role: 'Responsable Pédagogique', category: 'Administration', email: 'rasoa@etec.mg', phone: '+261 34 00 123 46', order: 1 },
+      ];
+      setMembers(mockData);
     } catch (err) {
       console.error(err);
       setLoadError("Impossible de charger l'organigramme.");
@@ -125,17 +128,8 @@ export default function AdminOrganigramme() {
   const handleDelete = async (id: number) => {
     if (!confirm('Voulez-vous vraiment retirer ce membre de l’organigramme officiel ?')) return;
 
-    const previous = members;
     setMembers(prev => prev.filter(m => m.id !== id));
     setActiveMenu(null);
-
-    try {
-      await ApiService.organigrammes.delete(id);
-    } catch (err) {
-      console.error(err);
-      setMembers(previous); // rollback
-      alert("La suppression a échoué, réessaie.");
-    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -143,23 +137,17 @@ export default function AdminOrganigramme() {
     if (!formData.name || !formData.role || !formData.email) return;
 
     setIsSaving(true);
-    try {
+    setTimeout(() => {
       if (editingMember) {
-        const res = await ApiService.organigrammes.update(editingMember.id, formData);
-        const updatedMember: Member = res.data ?? { ...editingMember, ...formData };
+        const updatedMember: Member = { ...editingMember, ...formData };
         setMembers(prev => prev.map(m => m.id === editingMember.id ? updatedMember : m));
       } else {
-        const res = await ApiService.organigrammes.create(formData);
-        const newMember: Member = res.data;
+        const newMember: Member = { id: Date.now(), ...formData };
         setMembers(prev => [...prev, newMember]);
       }
       setIsModalOpen(false);
-    } catch (err) {
-      console.error(err);
-      alert("L'enregistrement a échoué, vérifie les champs et réessaie.");
-    } finally {
       setIsSaving(false);
-    }
+    }, 500);
   };
 
   const toggleCategoryCollapse = (cat: string) => {

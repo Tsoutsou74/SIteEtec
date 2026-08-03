@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import { 
   Layers, BookOpen, Clock, FileText, Download, 
   Search, ShieldAlert, GraduationCap, ChevronRight, Loader2 
@@ -45,37 +45,33 @@ export default function Niveaux() {
   const cardBg = darkMode ? 'rgba(18,18,18,0.7)' : 'rgba(255,255,255,0.9)';
   const borderStyle = { borderColor: 'var(--border)' };
 
-  // Configuration globale des en-têtes HTTP
-  const getRequestConfig = () => {
-    const token = localStorage.getItem('token');
-    return {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      }
-    };
-  };
-
-  // ─── Chargement des données via l'API ───────────────────
+  // ─── Chargement des données ───────────────────
   useEffect(() => {
     const fetchNiveaux = async () => {
       setIsLoading(true);
       try {
-        if (ApiService.etudiant?.getNiveaux) {
-          const res = await ApiService.etudiant.getNiveaux(getRequestConfig());
-          if (res && res.data && res.data.length > 0) {
-            setNiveauxData(res.data);
-            // Initialisation automatique sur le premier niveau disponible
-            const premierNiveau = res.data[0];
-            setActiveNiveauId(premierNiveau.id);
-            if (premierNiveau.matieres && premierNiveau.matieres.length > 0) {
-              setSelectedMatiereId(premierNiveau.matieres[0].id);
-            }
+        const mockNiveaux: NiveauStructure[] = [
+          {
+            id: 'n1', nom: 'L1 Info', description: 'Première année d\'informatique', responsable: 'M. Dupont',
+            matieres: [
+              { id: 'm1', code: 'PRG101', titre: 'Programmation C', enseignant: 'M. Dupont', volumeHoraire: 45, progress: 80, ressources: [{ id: 'r1', titre: 'Chapitre 1', type: 'Cours', taille: '2.5 MB' }] }
+            ]
+          },
+          {
+            id: 'n2', nom: 'L2 Info', description: 'Deuxième année', responsable: 'Mme Martin',
+            matieres: [
+              { id: 'm2', code: 'ALG201', titre: 'Algorithmique 2', enseignant: 'Mme Martin', volumeHoraire: 40, progress: 50, ressources: [] }
+            ]
           }
-        }
+        ];
+        setTimeout(() => {
+          setNiveauxData(mockNiveaux);
+          setActiveNiveauId(mockNiveaux[0].id);
+          setSelectedMatiereId(mockNiveaux[0].matieres[0].id);
+          setIsLoading(false);
+        }, 500);
       } catch (err) {
-        console.error("Erreur lors de la récupération de la structure des niveaux :", err);
-      } finally {
+        console.error("Erreur:", err);
         setIsLoading(false);
       }
     };

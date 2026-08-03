@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
+
 import {
   Search, Plus, Pencil, Trash2, X, Save,
   Calendar, CheckCircle, AlertCircle, Image, Loader2, Upload
@@ -68,29 +68,39 @@ export default function Actualites() {
   const fetchActualites = async () => {
     setIsLoading(true);
     try {
-      // On utilise getPage() de ton ApiService car ton backend renvoie un objet paginé (Spring Data Page)
-      const res = await ApiService.actualites.getPage();
-      
-      if (res && res.content) {
-        const mappedData = res.content.map((item: any) => {
-          let catFormatee: CategorieActualite = 'Événement';
-          if (item.categorie === 'FLASH_INFO') catFormatee = 'Flash Info';
-          if (item.categorie === 'PEDAGOGIE') catFormatee = 'Pédagogie';
-          if (item.categorie === 'VIE8ETUDIANT') catFormatee = 'Vie Étudiante';
-
-          return {
-            id: Number(item.id),
-            titre: item.titre || item.title || '',
-            categorie: catFormatee,
-            datePublication: item.datePublication || item.date || new Date().toISOString().split('T')[0],
-            contenu: item.description || item.contenu || item.content || '', 
-            imageUrl: item.image || item.imageUrl || '',                    
-            statut: item.statut === 'PUBLIE' ? 'Publié' : item.statut === 'ARCHIVE' ? 'Archivé' : 'Brouillon',
-            important: !!item.important
-          };
-        });
-        setData(mappedData);
-      }
+      const mockData: Actualite[] = [
+        {
+          id: 1,
+          titre: 'Cérémonie de remise des diplômes',
+          categorie: 'Événement',
+          datePublication: '2026-07-25',
+          contenu: 'La cérémonie de remise des diplômes pour la promotion 2026 aura lieu ce vendredi à l\'auditorium principal.',
+          imageUrl: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94',
+          statut: 'Publié',
+          important: true
+        },
+        {
+          id: 2,
+          titre: 'Nouveaux modules d\'IA',
+          categorie: 'Pédagogie',
+          datePublication: '2026-07-28',
+          contenu: 'De nouveaux modules sur l\'Intelligence Artificielle générative ont été ajoutés au programme de Master 1.',
+          imageUrl: '',
+          statut: 'Publié',
+          important: false
+        },
+        {
+          id: 3,
+          titre: 'Fermeture de la bibliothèque',
+          categorie: 'Flash Info',
+          datePublication: '2026-07-30',
+          contenu: 'La bibliothèque universitaire sera fermée pour inventaire le week-end prochain.',
+          imageUrl: '',
+          statut: 'Brouillon',
+          important: false
+        }
+      ];
+      setData(mockData);
     } catch (err) {
       console.error("Erreur de chargement des actualités:", err);
     } finally {
@@ -125,35 +135,12 @@ export default function Actualites() {
       return;
     }
 
-    const mappingCategories: Record<CategorieActualite, string> = {
-      'Événement': 'EVENEMENT',
-      'Flash Info': 'FLASH_INFO',
-      'Pédagogie': 'PEDAGOGIE',
-      'Vie Étudiante': 'VIE8ETUDIANT'
-    };
-
-    const mappingStatuts = {
-      'Publié': 'PUBLIE',
-      'Brouillon': 'BROUILLON',
-      'Archivé': 'ARCHIVE'
-    };
-
-    const payloadBackend = {
-      titre: form.titre,
-      description: form.contenu, 
-      categorie: mappingCategories[form.categorie],
-      status: mappingStatuts[form.statut],
-      important: form.important
-    };
-
     try {
       if (modalMode === 'add') {
-        const res = await ApiService.actualites.create({ ...payloadBackend, file: form.imageFile });
-        const newId = res?.id ? Number(res.id) : Date.now();
+        const newId = Date.now();
         setData([{ id: newId, ...form }, ...data]);
         showToast('Actualité créée avec succès');
       } else if (modalMode === 'edit' && selected) {
-        await ApiService.actualites.update(selected.id, { ...payloadBackend, file: form.imageFile });
         setData(data.map(p => p.id === selected.id ? { ...p, ...form } : p));
         showToast('Actualité mise à jour');
       }
@@ -167,18 +154,9 @@ export default function Actualites() {
   const handleDelete = async () => {
     if (deleteId !== null) {
       const idToDelete = deleteId;
-      const previousData = data;
       setData(data.filter(p => p.id !== idToDelete));
       setDeleteId(null);
-
-      try {
-        await ApiService.actualites.remove(idToDelete); // Utilise .remove() configuré dans ton createCrudService
-        showToast('Article supprimé définitivement');
-      } catch (err) {
-        console.error("Erreur de suppression:", err);
-        setData(previousData);
-        showToast("Impossible de supprimer l'article.");
-      }
+      showToast('Article supprimé définitivement');
     }
   };
 

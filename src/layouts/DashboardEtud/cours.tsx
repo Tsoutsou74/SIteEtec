@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../../context/ThemeContext';
-import ApiService from '../../services/ApiService';
 import {
   ArrowLeft,
   BookOpen,
@@ -173,18 +172,7 @@ export default function Cours() {
     const fetchCoursData = async () => {
       setIsLoading(true);
       try {
-        if (ApiService.etudiant?.getCours) {
-          const res = await ApiService.etudiant.getCours();
-          if (res?.data?.length) {
-            setMatieres(res.data);
-            const defaultMatiere =
-              res.data.find((matiere: MatiereCours) => !connectedFormationType || matiere.typeFormation === connectedFormationType) ??
-              res.data[0];
-            setSelectedMatiere(defaultMatiere ?? null);
-            return;
-          }
-        }
-
+        await new Promise(resolve => setTimeout(resolve, 500));
         setMatieres(INITIAL_MATIERES);
         setSelectedMatiere(
           INITIAL_MATIERES.find((matiere) => !connectedFormationType || matiere.typeFormation === connectedFormationType) ??

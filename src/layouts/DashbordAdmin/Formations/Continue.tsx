@@ -19,8 +19,14 @@ interface FormationContinue {
   statut: 'Disponible' | 'En cours' | 'Clôturé';
 }
 
+const DEMO_FORMATIONS_CONTINUES: FormationContinue[] = [
+  { id: 'fc-1', code: 'FC-IA-01', titre: 'Intelligence artificielle appliquee', domaine: 'Technologies', volumeHoraire: '60 heures', tarifEntreprise: '1 200 000 Ar', typePublic: 'Cadres et ingenieurs', description: 'Maitriser les outils d IA pour les projets professionnels.', statut: 'Disponible' },
+  { id: 'fc-2', code: 'FC-MGT-02', titre: 'Management de projet agile', domaine: 'Management', volumeHoraire: '40 heures', tarifEntreprise: '850 000 Ar', typePublic: 'Chefs de projet', description: 'Piloter une equipe et livrer des projets avec Scrum.', statut: 'En cours' },
+  { id: 'fc-3', code: 'FC-DATA-03', titre: 'Analyse de donnees avec Python', domaine: 'Data', volumeHoraire: '48 heures', tarifEntreprise: '950 000 Ar', typePublic: 'Professionnels', description: 'Transformer des donnees metiers en indicateurs fiables.', statut: 'Disponible' },
+];
+
 export default function Continue() {
-  const [formations, setFormations] = useState<FormationContinue[]>([]);
+  const [formations, setFormations] = useState<FormationContinue[]>(DEMO_FORMATIONS_CONTINUES);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   
@@ -45,7 +51,7 @@ export default function Continue() {
           description: item.description || '',
           statut: item.statut || 'Disponible',
         }));
-        setFormations(mappedData);
+        if (mappedData.length > 0) setFormations(mappedData);
       }
     } catch (error) {
       console.error("Erreur lors du chargement des formations continues :", error);

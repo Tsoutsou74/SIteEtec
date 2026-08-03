@@ -1,6 +1,6 @@
 ﻿{
- "topbar": {
-    "phone": "+261 34 01 077 01",
+  "topbar": {
+    "phone": "+261 33 11 669 79",
     "email": "etecpoly@gmail.com",
     "theme": "Toggle theme",
     "language": "Language"
@@ -25,8 +25,8 @@
   },
   "hero": {
     "badge": "Inscriptions ouvertes",
-    "title1": "École Professionnel Polytechnique Privé",
-    "title2": "",
+    "title1": "école professionnelle,",
+    "title2": " Polytechnique Privée.",
     "subtitle": "Decouvrez un environnement d'apprentissage moderne concu pour propulser vos ambitions professionnelles a Madagascar.",
     "ctaAdmission": "Admission",
     "ctaPrograms": "Formations"
@@ -40,17 +40,18 @@
   "about": {
     "sectionLabel": "A propos",
     "whoWeAre": "Qui sommes-nous ?",
-    "title1": "L'excellence academique",
-    "title2": "au coeur de Faravohitra",
-    "desc": "Fondee avec l'ambition de former l'elite technologique et manageriale de Madagascar, l'Universite E-TEC s'impose comme un pole d'innovation majeur.",
-    "keyFigures": "Chiffres cles",
+    "title1": "L'E-TEC(Education in Training, Employment and Communication) est une",
+    "title2": "École Professionnelle Polytechnique Privée fondée en octobre 2001.",
+    "subtitle": "Notre établissement s'engage à offrir un enseignement de qualité, alliant connaissances théoriques, compétences pratiques et accompagnements des étudiants vers leur réussite académique et professionnelle.",
+    "desc": "Plus de 20 ans d'excellence au service de la formation professionnelle, notre établissement s'engage à offrir un enseignement de qualité, alliant connaissances théoriques, compétences pratiques et accompagnements des étudiants vers leur réussite académique et professionnelle.",
+    "keyFigures": "Chiffres clés",
     "articles": "Actualites",
     "structures": "Structures",
     "missionTitle": "Notre Mission",
-    "missionDesc": "Propulser l'employabilite des jeunes malgaches par le biais de formations professionnalisantes.",
+    "missionDesc": "Former des étudiants qualifiés en développant leurs connaissances, leurs compétences et leur sens des responsabilités.",
     "visionTitle": "Notre Vision",
-    "visionDesc": "Devenir l'etablissement de reference a Madagascar pour la formation des cadres et ingenieurs de demain.",
-    "sloganLabel": "Mission et objectifs",
+    "visionDesc": "être une référence à Madagascar dans l'enseignement supérieur professionnel en offrant des formations de qualité répondant aux besoins du monde professionnel.",
+    "sloganLabel": "",
     "sloganTitle": "Un avenir se construit avec des projets",
     "sloganLine1": "Ayez des projets pour anticiper",
     "sloganLine2": "Tout est possible à celui qui croit",

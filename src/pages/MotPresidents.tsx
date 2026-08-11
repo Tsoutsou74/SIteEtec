@@ -15,7 +15,7 @@ const STATIC_MESSAGE = {
   quote: "Bâtir ensemble l'avenir technologique et professionnel de Madagascar.",
   content:
     "Chers étudiants, chers parents, chers partenaires,\n\nBienvenue à E-TEC University. Notre ambition est simple : offrir une formation supérieure utile, exigeante et directement reliée aux réalités du monde professionnel.\n\nLes métiers évoluent rapidement. Le numérique, la gestion, les réseaux, le bâtiment et les technologies industrielles demandent des profils capables d'apprendre, de pratiquer et de s'adapter. C'est dans cet esprit que nous construisons nos programmes.\n\nÀ E-TEC, nous croyons à la discipline, au travail concret, à l'accompagnement des étudiants et à la responsabilité. Notre mission est de former des jeunes compétents, confiants et prêts à contribuer au développement de Madagascar.\n\nJe vous invite à découvrir nos formations, notre histoire et notre organisation. Votre parcours commence par une décision, et nous sommes prêts à vous accompagner.",
-  imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=520',
+  imageUrl: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&q=80&w=520',
 };
 
 export default function MotPresidents() {

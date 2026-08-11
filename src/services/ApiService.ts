@@ -545,7 +545,7 @@ import axios, {
  * donc le frontend n'a jamais besoin de connaître les ports individuels.
  */
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8090/api";
+  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8002/api";
 
 const TOKEN_KEY = "etec_access_token";
 const REFRESH_TOKEN_KEY = "etec_refresh_token";
@@ -605,9 +605,15 @@ apiClient.interceptors.response.use(
       _retry?: boolean;
     };
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    const requestUrl = originalRequest?.url ?? "";
+    const isPublicAuthRequest = requestUrl.includes("/auth/login") ||
+      requestUrl.includes("/auth/registration");
+
+    if (error.response?.status === 401 && !originalRequest?._retry && !isPublicAuthRequest) {
       TokenStorage.clear();
-      window.location.href = "/log_in";
+      if (window.location.pathname !== "/log_in") {
+        window.location.href = "/log_in";
+      }
       return Promise.reject(error);
     }
 

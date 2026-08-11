@@ -22,12 +22,11 @@ function CustomTooltip({ active, payload, label, darkMode }: any) {
   );
 }
 
-function StatCard({ icon, label, value, delta, color, onClick }: { icon: React.ReactNode; label: string; value: string; delta: string; color: string; onClick?: () => void; }) {
+function StatCard({ icon, label, value, color, onClick }: { icon: React.ReactNode; label: string; value: string; color: string; onClick?: () => void; }) {
   return (
     <div className="rounded-2xl border p-5 flex flex-col gap-3 transition-all duration-300 hover:shadow-md cursor-pointer" style={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)', color: 'var(--text)' }} onClick={onClick}>
       <div className="flex items-center justify-between">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: color + '18', color }}>{icon}</div>
-        <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ backgroundColor: color + '15', color }}>{delta}</span>
       </div>
       <div>
         <div className="text-2xl font-black tracking-tight">{value}</div>
@@ -122,10 +121,10 @@ export default function AdminHome() {
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={<Users size={18} />} label={t('dashboard.admin.home.students')} value={stats.etudiants} delta={t('dashboard.admin.home.apiFlux')} color="#3b82f6" onClick={() => navigate('/admin/etudiants')} />
-        <StatCard icon={<UserCheck size={18} />} label={t('dashboard.admin.home.teachers')} value={stats.enseignants} delta={t('dashboard.admin.home.apiFlux')} color="#22c55e" onClick={() => navigate('/admin/Enseignant/AdmineEnseignants')} />
-        <StatCard icon={<BookOpen size={18} />} label={t('dashboard.admin.home.formations')} value={stats.formations} delta={t('dashboard.admin.home.apiFlux')} color="#f59e0b" onClick={() => navigate('/admin/Formations/Filiers')} />
-        <StatCard icon={<ClipboardList size={18} />} label={t('dashboard.admin.home.dossiers')} value={stats.dossiers} delta={t('dashboard.admin.home.apiFlux')} color="#ef4444" onClick={() => navigate('/admin/Notes&Resultats')} />
+        <StatCard icon={<Users size={18} />} label={t('dashboard.admin.home.students')} value={stats.etudiants} color="#3b82f6" onClick={() => navigate('/admin/etudiants')} />
+        <StatCard icon={<UserCheck size={18} />} label={t('dashboard.admin.home.teachers')} value={stats.enseignants} color="#22c55e" onClick={() => navigate('/admin/Enseignant/AdmineEnseignants')} />
+        <StatCard icon={<BookOpen size={18} />} label={t('dashboard.admin.home.formations')} value={stats.formations} color="#f59e0b" onClick={() => navigate('/admin/Formations/Filiers')} />
+        <StatCard icon={<ClipboardList size={18} />} label={t('dashboard.admin.home.dossiers')} value={stats.dossiers} color="#ef4444" onClick={() => navigate('/admin/Notes&Resultats')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

@@ -17,7 +17,7 @@ interface ArticleProps {
 
 const STATIC_ARTICLES: ArticleProps[] = [
   {
-    image: 'https://images.unsplash.com/photo-1532649538693-f3a2ec1bf8bd?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=600&q=80',
     category: 'Événement',
     date: '15 Mai 2026',
     author: 'ETEC University',
@@ -25,7 +25,7 @@ const STATIC_ARTICLES: ArticleProps[] = [
     excerpt: 'Les diplômés de la promotion 2026 ont été célébrés lors d\'une cérémonie solennelle organisée au sein du campus de Faravohitra.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80',
     category: 'Innovation',
     date: '12 Mai 2026',
     author: 'ETEC University',
@@ -33,7 +33,7 @@ const STATIC_ARTICLES: ArticleProps[] = [
     excerpt: 'E-TEC lance un programme d\'incubation dédié aux étudiants entrepreneurs souhaitant développer leurs projets numériques innovants.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1497032628192-86f99bcd76bc?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=600&q=80',
     category: 'Partenariat',
     date: '05 Mai 2026',
     author: 'ETEC University',
@@ -41,7 +41,7 @@ const STATIC_ARTICLES: ArticleProps[] = [
     excerpt: 'E-TEC University renforce ses liens avec le secteur professionnel grâce à de nouveaux accords de stage et d\'emploi pour ses diplômés.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=600&q=80',
     category: 'Formation',
     date: '28 Avril 2026',
     author: 'ETEC University',
@@ -49,7 +49,7 @@ const STATIC_ARTICLES: ArticleProps[] = [
     excerpt: 'Les candidatures pour la prochaine année académique sont désormais ouvertes. Découvrez les formations disponibles et les modalités d\'admission.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=600&q=80',
     category: 'Numérique',
     date: '20 Avril 2026',
     author: 'ETEC University',
@@ -57,7 +57,7 @@ const STATIC_ARTICLES: ArticleProps[] = [
     excerpt: 'Un atelier pratique de développement web et mobile a été organisé pour les étudiants en génie logiciel avec des intervenants professionnels.',
   },
   {
-    image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1564078516393-cf04bd966897?auto=format&fit=crop&w=600&q=80',
     category: 'Campus',
     date: '10 Avril 2026',
     author: 'ETEC University',

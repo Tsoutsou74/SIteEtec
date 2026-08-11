@@ -4,8 +4,8 @@ import { useT } from '../../config/I18nProvider';
 export default function NewsSection() {
   const { t } = useT();
   const news = [
-    { title: t('news', 'item1Title'), date: t('news', 'item1Date'), img: 'https://images.unsplash.com/photo-1532649538693-f3a2ec1bf8bd?auto=format&fit=crop&w=400&q=80' },
-    { title: t('news', 'item2Title'), date: t('news', 'item2Date'), img: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=400&q=80' },
+    { title: t('news', 'item1Title'), date: t('news', 'item1Date'), img: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=400&q=80' },
+    { title: t('news', 'item2Title'), date: t('news', 'item2Date'), img: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=400&q=80' },
   ];
 
   return (
@@ -20,7 +20,7 @@ export default function NewsSection() {
                 alt={item.title} 
                 className="h-full w-full object-cover transition-transform duration-400 group-hover:scale-105" 
                 onError={(e) => {
-                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=600&auto=format&fit=crop&q=60';
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?w=600&auto=format&fit=crop&q=60';
                 }}
               />
             </div>

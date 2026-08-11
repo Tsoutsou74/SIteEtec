@@ -51,7 +51,7 @@ export default function AdminSlides() {
     setError(null);
     try {
       const mockData: Slide[] = [
-        { id: 1, title: 'Inscriptions Ouvertes', subtitle: 'Rejoignez-nous pour la rentrée 2026', imageUrl: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94', ctaText: 'S\'inscrire', ctaLink: '/inscription', isActive: true, order: 1 },
+        { id: 1, title: 'Inscriptions Ouvertes', subtitle: 'Rejoignez-nous pour la rentrée 2026', imageUrl: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a', ctaText: 'S\'inscrire', ctaLink: '/inscription', isActive: true, order: 1 },
         { id: 2, title: 'Nouveau Campus', subtitle: 'Découvrez nos nouvelles infrastructures', imageUrl: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a', ctaText: 'Visiter', ctaLink: '/campus', isActive: true, order: 2 },
       ];
       setSlides(mockData);

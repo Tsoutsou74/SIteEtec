@@ -10,6 +10,7 @@ import ApiService, { TokenStorage } from "../services/api";
 type Role = "etudiant" | "enseignant";
 type StudentFormationType = "initiale" | "continue" | "enligne";
 const STUDENT_FORMATION_STORAGE_KEY = "etec_student_formation_type";
+const API_ENABLED = import.meta.env.VITE_ENABLE_API === "true";
 
 /* ── Animated floating particles component ── */
 function Particles() {
@@ -65,6 +66,34 @@ export default function Auth() {
     setLoading(true);
     setErrorMessage("");
     try {
+      // Mode autonome : l'interface reste utilisable sans backend démarré.
+      if (!API_ENABLED) {
+        const offlineRole = isLogin
+          ? (localStorage.getItem("etec_user_role") || role).toLowerCase()
+          : role;
+        const offlineToken = "offline-session";
+        TokenStorage.setTokens(offlineToken);
+        localStorage.setItem("token", offlineToken);
+        localStorage.setItem("etec_user_id", "offline-user");
+        localStorage.setItem("userId", "offline-user");
+        localStorage.setItem("etec_user_role", offlineRole);
+        localStorage.setItem("role", offlineRole);
+        if (offlineRole.includes("etudiant")) {
+          localStorage.setItem(STUDENT_FORMATION_STORAGE_KEY, formationType);
+        }
+        if (!isLogin) {
+          setIsLogin(true);
+          setErrorMessage("Compte local créé. Vous pouvez vous connecter.");
+        } else if (offlineRole.includes("enseign")) {
+          navigate("/enseignants");
+        } else if (offlineRole.includes("admin")) {
+          navigate("/admin");
+        } else {
+          navigate("/etudiants");
+        }
+        return;
+      }
+
       if (isLogin) {
         const auth = await ApiService.auth.login({ email: form.email, password: form.password });
         TokenStorage.setTokens(auth.token);
@@ -541,6 +570,67 @@ export default function Auth() {
 
         /* 2-col */
         .a-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+
+        /* Theme alignment with the public pages */
+        .a-root {
+          background: var(--bg);
+          color: var(--text);
+          padding: 1.5rem 1rem;
+        }
+        .a-bg-vignette { background: radial-gradient(ellipse at 50% 50%, transparent 45%, color-mix(in srgb, var(--bg) 85%, transparent) 100%); }
+        .a-bg-grid { opacity: 0.35; }
+        .a-card {
+          background: var(--card);
+          border-color: var(--border);
+          border-radius: 1.5rem;
+          box-shadow: 0 20px 50px rgba(15, 23, 42, 0.12);
+        }
+        .a-card::before { display: none; }
+        .a-spotlight { display: none; }
+        .a-left {
+          padding: 2.5rem;
+          background: linear-gradient(155deg, #064e3b 0%, #0b7a3b 58%, #16a34a 100%);
+          border-right: 0;
+        }
+        .a-brand-name { font-size: 1.75rem; }
+        .a-hero { padding: 2rem 0; }
+        .a-headline { font-size: clamp(1.8rem, 3.2vw, 2.6rem); }
+        .a-desc { color: rgba(255,255,255,0.7); }
+        .a-feature { color: rgba(255,255,255,0.72); }
+        .a-right { background: var(--card); padding: 2.5rem; }
+        .a-tabs { background: color-mix(in srgb, var(--bg) 65%, transparent); border-color: var(--border); margin-bottom: 1.5rem; }
+        .a-tab { color: color-mix(in srgb, var(--text) 48%, transparent); }
+        .a-tab.on { color: var(--primary); background: color-mix(in srgb, var(--primary) 10%, transparent); border-color: color-mix(in srgb, var(--primary) 35%, transparent); box-shadow: none; }
+        .a-form-title { color: var(--text); font-size: 1.35rem; }
+        .a-form-sub { color: color-mix(in srgb, var(--text) 52%, transparent); }
+        .a-role, .a-inp, .a-sel { background: color-mix(in srgb, var(--bg) 72%, transparent); border-color: var(--border); color: var(--text); }
+        .a-role { color: color-mix(in srgb, var(--text) 58%, transparent); }
+        .a-role.on { color: var(--primary); background: color-mix(in srgb, var(--primary) 9%, transparent); border-color: color-mix(in srgb, var(--primary) 45%, transparent); box-shadow: none; }
+        .a-inp { font-size: 0.8rem; padding-top: 0.95rem; padding-bottom: 0.95rem; }
+        .a-inp:focus, .a-sel:focus { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 5%, var(--card)); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 13%, transparent); }
+        .a-inp:focus ~ .a-ico { color: var(--primary); }
+        .a-ico { color: color-mix(in srgb, var(--text) 40%, transparent); }
+        .a-lbl { color: color-mix(in srgb, var(--text) 50%, transparent); font-size: 0.8rem; }
+        .a-inp:focus ~ .a-lbl, .a-inp:not(:placeholder-shown) ~ .a-lbl { color: var(--primary); background: var(--card); }
+        .a-sel option { background: var(--card); color: var(--text); }
+        .a-eye { color: color-mix(in srgb, var(--text) 42%, transparent); }
+        .a-eye:hover, .a-foot-lnk { color: var(--primary); }
+        .a-btn { background: var(--primary); box-shadow: 0 8px 20px color-mix(in srgb, var(--primary) 25%, transparent); font-size: 0.78rem; padding: 0.9rem 1rem; border-radius: 0.75rem; }
+        .a-btn:hover { box-shadow: 0 12px 26px color-mix(in srgb, var(--primary) 32%, transparent); }
+        .a-foot { border-color: var(--border); margin-top: 1.25rem; padding-top: 1.25rem; }
+        .a-foot-txt { color: color-mix(in srgb, var(--text) 52%, transparent); }
+        .a-foot-lnk:hover { color: var(--primary); text-shadow: none; }
+        .a-live-badge { color: #a7f3d0; }
+
+        @media (max-width: 860px) {
+          .a-right { padding: 2rem 1.25rem; }
+        }
+        @media (max-width: 480px) {
+          .a-root { padding: 0; align-items: stretch; }
+          .a-wrap { max-width: none; }
+          .a-card { min-height: 100vh; border-radius: 0; border-left: 0; border-right: 0; }
+          .a-right { padding: 1.5rem 1rem; }
+        }
       `}</style>
 
       <div className="a-root">

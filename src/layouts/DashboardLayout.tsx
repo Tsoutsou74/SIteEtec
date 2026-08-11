@@ -8,7 +8,7 @@ import {
   LayoutDashboard, Users, BookOpen, Calendar,
   FileText, Bell, Settings, LogOut, Menu, ChevronDown,
   TrendingUp, UserCheck, ClipboardList, Sun, Moon,
-  Search, ChevronRight, Presentation, Landmark, ClipboardCheck, MessageSquare
+  Search, ChevronRight, Presentation, Landmark, ClipboardCheck, MessageSquare, LibraryBig
 } from 'lucide-react';
 
 type ChildItem = { key: string; path: string; label?: string };
@@ -58,6 +58,7 @@ const NAV_CONFIG: Array<Omit<NavItem, 'icon'> & { icon: React.ReactNode }> = [
     { key: 'modules', path: '/admin/Formations/Modules' },
     { key: 'courses', path: '/admin/Formations/Coures' },
   ]},
+  { icon: <LibraryBig size={18} />, key: 'digitalLibrary', path: '/admin/bibliotheque' },
   { icon: <Calendar size={18} />, key: 'schedule', path: '/admin/edt' },
   { icon: <ClipboardList size={18} />, key: 'notesResults', path: '/admin/Notes&Resultats' },
   { icon: <FileText size={18} />, key: 'news', path: '/admin/actualites' },

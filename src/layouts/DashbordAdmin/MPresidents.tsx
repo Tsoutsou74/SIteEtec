@@ -57,7 +57,7 @@ export default function AdminMotsduPresidents() {
           authorTitle: 'Président Fondateur',
           quote: 'L\'éducation est l\'arme la plus puissante pour changer le monde.',
           content: 'Bienvenue à tous les étudiants pour cette nouvelle année académique. Notre institution s\'engage à fournir une éducation de qualité et à former les leaders de demain dans le domaine de la technologie et de l\'innovation.',
-          imageUrl: 'https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&q=80&w=200&h=200',
+          imageUrl: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&q=80&w=200&h=200',
           dateUpdated: '2026-01-15',
           isActive: true
         }

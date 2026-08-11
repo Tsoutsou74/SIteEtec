@@ -51,6 +51,7 @@ import Organigrammes from "../layouts/DashbordAdmin/Organigram";
 import Historiques from "../layouts/DashbordAdmin/Historique";
 import InscriptionsOuverts from "../layouts/DashbordAdmin/InscriptionOuvert";
 import AdminMessages from "../layouts/DashbordAdmin/Messages";
+import DigitalLibrary from "../layouts/DashbordAdmin/Bibliotheque";
 
 
 {/*── Espace enseignant ────────────────────────────────────*/}
@@ -122,6 +123,7 @@ export default function AppRoutes() {
           <Route path="Formations/formationenligne" element={<FormationsEnLigne />} />
           <Route path="Formations/formationinitiale" element={<FormationsInitiale />} />
           <Route path="Formations/coures" element={<Coures />} />
+          <Route path="bibliotheque" element={<DigitalLibrary />} />
           <Route path="Formations/devoir" element={<DevoirPage />} />
           <Route path="Formations/quiz" element={<QuizPage />} />
 

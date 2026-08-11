@@ -39,80 +39,86 @@ body {
 /* Public pages: a tighter rhythm keeps the content easier to scan. */
 .public-layout main > .animate-fade-in .space-y-16 > :not([hidden]) ~ :not([hidden]),
 .public-layout main > .animate-fade-in .space-y-12 > :not([hidden]) ~ :not([hidden]) {
-  margin-top: 2.5rem;
+  margin-top: 1.5rem;
 }
 
 .public-layout main > .animate-fade-in .space-y-10 > :not([hidden]) ~ :not([hidden]),
 .public-layout main > .animate-fade-in .space-y-8 > :not([hidden]) ~ :not([hidden]) {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
 }
 
 .public-layout main > .animate-fade-in .space-y-7 > :not([hidden]) ~ :not([hidden]),
 .public-layout main > .animate-fade-in .space-y-6 > :not([hidden]) ~ :not([hidden]) {
-  margin-top: 1.5rem;
+  margin-top: 1.125rem;
 }
 
 .public-layout main > .animate-fade-in .space-y-5 > :not([hidden]) ~ :not([hidden]),
 .public-layout main > .animate-fade-in .space-y-4 > :not([hidden]) ~ :not([hidden]) {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
 .public-layout main > .animate-fade-in .gap-12,
 .public-layout main > .animate-fade-in .gap-10,
 .public-layout main > .animate-fade-in .gap-8 {
-  gap: 1.5rem;
+  gap: 1.125rem;
 }
 
 .public-layout main > .animate-fade-in .gap-6,
 .public-layout main > .animate-fade-in .gap-5 {
-  gap: 1.25rem;
+  gap: 1rem;
 }
 
 .public-layout main > .animate-fade-in .gap-4,
 .public-layout main > .animate-fade-in .gap-3 {
-  gap: 0.875rem;
+  gap: 0.625rem;
 }
 
 .public-layout main > .animate-fade-in .p-12,
 .public-layout main > .animate-fade-in .p-10,
 .public-layout main > .animate-fade-in .p-8 {
-  padding: 1.5rem;
+  padding: 1.125rem;
 }
 
 .public-layout main > .animate-fade-in .p-6,
 .public-layout main > .animate-fade-in .p-5 {
-  padding: 1.125rem;
+  padding: 0.875rem;
 }
 
 .public-layout main > .animate-fade-in .p-4 {
-  padding: 0.875rem;
+  padding: 0.625rem;
 }
 
 .public-layout main > .animate-fade-in .mt-16,
 .public-layout main > .animate-fade-in .mt-12 {
-  margin-top: 2.5rem;
+  margin-top: 1.5rem;
 }
 
 .public-layout main > .animate-fade-in .mt-10,
 .public-layout main > .animate-fade-in .mt-8 {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
 }
 
 .public-layout main > .animate-fade-in .mb-16,
 .public-layout main > .animate-fade-in .mb-14,
 .public-layout main > .animate-fade-in .mb-12 {
-  margin-bottom: 2.5rem;
+  margin-bottom: 1.5rem;
 }
 
 .public-layout main > .animate-fade-in .mb-10,
 .public-layout main > .animate-fade-in .mb-8 {
-  margin-bottom: 2rem;
+  margin-bottom: 1.25rem;
+}
+
+/* Keep every public page compact, including the larger desktop top spacing. */
+.public-layout main > .animate-fade-in {
+  padding-top: 3.5rem !important;
+  padding-bottom: 2rem !important;
 }
 
 /* Sections stacked on the public homepage should not repeat hero spacing. */
 .public-layout main > .w-full > .animate-fade-in {
-  padding-top: 2.5rem;
-  padding-bottom: 2.5rem;
+  padding-top: 2rem !important;
+  padding-bottom: 2rem !important;
 }
 
 select {

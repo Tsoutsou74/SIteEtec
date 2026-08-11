@@ -214,7 +214,7 @@ const STATIC_FILIERES: FilierDetail[] = [
     options: ['Développement web & mobile', 'Administration système', 'Cloud et réseaux', 'Cybersécurité'],
     duration: 'Licence 3 ans / Master 5 ans',
     icon: <Code size={18} />,
-    image: 'https://images.unsplash.com/photo-1461749280684-dccba630e2f6?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=600&q=80',
     category: 'Informatique',
     objectifs: [
       'Maîtriser les langages de programmation modernes (Java, Python, JavaScript)',
@@ -242,7 +242,7 @@ const STATIC_FILIERES: FilierDetail[] = [
     options: ['Management', 'Comptabilité et finance', 'Marketing', 'Ressources humaines'],
     duration: 'Licence 3 ans / Master 5 ans',
     icon: <Landmark size={18} />,
-    image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=600&q=80',
     category: 'Gestion',
     objectifs: [
       'Maîtriser les outils de gestion et de comptabilité d\'entreprise',
@@ -298,7 +298,7 @@ const STATIC_FILIERES: FilierDetail[] = [
     options: ['Automatisme', 'Maintenance industrielle', 'Électricité', 'Systèmes mécaniques'],
     duration: 'Licence professionnelle 3 ans',
     icon: <Cpu size={18} />,
-    image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=600&q=80',
+    image: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=900&q=85',
     category: 'Industrie',
     objectifs: [
       'Installer et maintenir des équipements électromécaniques',

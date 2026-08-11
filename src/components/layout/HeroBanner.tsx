@@ -5,74 +5,53 @@ import { useT } from '../../config/I18nProvider';
 
 const SLIDES = [
   {
-    image: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=1600&q=80',
     label: 'Campus E-TEC',
   },
   {
-    image: 'https://images.unsplash.com/photo-1532649538693-f3a2ec1bf8bd?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1600&q=80',
     label: 'Remise des diplômes',
   },
   {
-    image: 'https://images.unsplash.com/photo-1517486808906-6ca8b3f04846?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80',
     label: 'Vie étudiante',
   },
   {
-    image: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=80',
     label: 'Salles de cours',
   },
   {
-    image: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=80',
     label: 'Bibliothèque & Ressources',
   },
   {
-    image: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=1600&q=80',
     label: 'Travaux pratiques',
   },
   {
-    image: 'https://images.unsplash.com/photo-1571260899304-425eee4c7efc?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1564078516393-cf04bd966897?auto=format&fit=crop&w=1600&q=80',
     label: 'Formations techniques',
   },
   {
-    image: 'https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1498243691581-b145c3f54a5a?auto=format&fit=crop&w=1600&q=80',
     label: 'Recherche & Innovation',
   },
   {
-    image: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=1600&q=80',
     label: 'Conférences & Séminaires',
   },
   {
-    image: 'https://images.unsplash.com/photo-1507537297725-24a1c029d3ca?auto=format&fit=crop&w=1600&q=80',
+    image: 'https://images.unsplash.com/photo-1518005020951-eccb494ad742?auto=format&fit=crop&w=1600&q=80',
     label: 'Projets collaboratifs',
   },
 ];
-
-const ANNEE_SCOLAIRE = {
-  debut: { mois: 5, jour: 1 },
-  fin: { mois: 9, jour: 15 },
-};
-
-function isPeriodeScolaireActive(): boolean {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const day = now.getDate();
-  const { debut, fin } = ANNEE_SCOLAIRE;
-
-  if (debut.mois > fin.mois) {
-    const apresDebut = month > debut.mois || (month === debut.mois && day >= debut.jour);
-    const avantFin = month < fin.mois || (month === fin.mois && day <= fin.jour);
-    return apresDebut || avantFin;
-  }
-
-  const apresDebut = month > debut.mois || (month === debut.mois && day >= debut.jour);
-  const avantFin = month < fin.mois || (month === fin.mois && day <= fin.jour);
-  return apresDebut && avantFin;
-}
 
 export default function HeroBanner() {
   const { t } = useT();
   const [currentIndex, setCurrentIndex] = useState(0);
   const navigate = useNavigate();
-  const [inscriptionVisible] = useState(isPeriodeScolaireActive());
+  // Le badge reste visible pour mettre en avant les admissions ouvertes.
+  const inscriptionVisible = true;
   const [paused, setPaused] = useState(false);
 
   const goNext = useCallback(() => {

@@ -75,7 +75,7 @@ export default function Actualites() {
           categorie: 'Événement',
           datePublication: '2026-07-25',
           contenu: 'La cérémonie de remise des diplômes pour la promotion 2026 aura lieu ce vendredi à l\'auditorium principal.',
-          imageUrl: 'https://images.unsplash.com/photo-1523580494863-6f3031224c94',
+          imageUrl: 'https://images.unsplash.com/photo-1562774053-701939374585',
           statut: 'Publié',
           important: true
         },
